@@ -1,0 +1,10 @@
+# Curriculum
+
+> Cập nhật sau mỗi buổi T7. Buổi tiếp theo chỉ ghi những gì đã được thông báo, không đoán trước.
+
+| # | Module | Topic | Bài tập / Case study | Áp dụng ecommerce | Slide |
+|---|---|---|---|---|---|
+| S01 | M1 – Java Fundamentals | JVM/JRE/JDK, ClassLoader, Stack/Heap/Metaspace, GC, primitive & autoboxing, casting, String/StringBuilder | Practice: WordCounter, TextTransformer | `ReceiptPrinter` dùng StringBuilder, `TextUtils` | session-1-v2.pptx |
+| S02 | M1 – Java Fundamentals | if/switch (switch expression), loops, arrays, class/constructor, access modifiers, static, constructor overloading/chaining | **Case Study 1**: Inventory & Order Line Calculator | `Product`, `OrderLine`, `Order`, `InventoryManager` (array), `ReceiptPrinter` | session-2.pptx |
+| S03 | M2 – OOP | 4 OOP pillars, abstract class vs interface, overriding/overloading, equals/hashCode/toString, SOLID | Practice: Shape hierarchy · **Case Study 2**: Product Pricing | `Product` abstract + Physical/Digital/Subscription, `Discountable`, `Shippable`, `PricingEngine` | session-3-v3.pptx |
+| S04 | ? | Generics & Java Collections – List | _chờ buổi học_ | (dự kiến) catalog chuyển từ array sang `List<Product>` | |

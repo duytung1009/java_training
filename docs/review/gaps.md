@@ -1,0 +1,26 @@
+# Gap Register – kiến thức ngoài/sâu hơn lớp học
+
+Loại: `lớp chưa dạy` · `lớp dạy lướt` · `mình hiểu sai` · `biết bề mặt`
+Trạng thái: `Mở` → `Đã học` (đã đọc/đã thử code) → `Đã quiz` (java-quiz trả lời đúng)
+
+> Kinh nghiệm thực tế của Tùng dừng ở **Java 8**: mọi kiến thức Java 9+ (tầng L5) mặc định tính là gap, loại `lớp chưa dạy`, không cần dò.
+
+| Ngày | Chủ đề / Buổi | Keyword | Tầng | Loại | Tóm tắt điều cần biết | Nguồn học | Trạng thái |
+|---|---|---|---|---|---|---|---|
+| 2026-10-01 | S04 Set | HashSet mutable key | L3 | mình hiểu sai | Node lưu hash cache + THAM CHIẾU key; sửa field trong hashCode → phần tử mồ côi, contains/remove đều hỏng | Javadoc `Map`; Effective Java Item 17 | Mở |
+| 2026-10-01 | S04 TreeSet | TreeSet không Comparable | L3 | lớp chưa dạy | Compile được; CCE ngay add đầu tiên (TreeMap.put gọi compare(key,key)) | Javadoc `TreeMap` | Mở |
+| 2026-10-01 | S04 Exception | finally + return | L3 | mình hiểu sai | finally luôn chạy; giá trị return được tính & cất trước finally; return trong finally nuốt exception | JLS §14.20.2; JVMS §3.13 | Mở |
+| 2026-10-01 | S04 Stream | Lazy / vertical / short-circuit / single-use | L2–L3 | mình hiểu sai | Không chạy tới khi có terminal; từng phần tử qua cả pipeline; findFirst dừng sớm; mọi thao tác tiêu thụ Stream | Javadoc package `java.util.stream` | Mở |
+| 2026-10-01 | S04 Collection | Fail-fast / modCount | L3 | biết bề mặt | CME nổ ở next() kế tiếp chứ không ở remove; best-effort | Javadoc `ConcurrentModificationException`, `ArrayList` | Mở |
+| 2026-10-01 | S04 Collection | Iterator & lỗ hổng fail-fast | L3 | lớp chưa dạy | Xóa phần tử áp chót của ArrayList: hasNext() false → bỏ qua phần tử cuối, không CME; dùng removeIf / it.remove() | Javadoc `Iterator`, `ArrayList` | Mở |
+| 2026-10-01 | S04 Lambda | Checked exception trong lambda | L3 | biết bề mặt | Lambda là thân Function.apply (không throws); throws của method bao ngoài vô tác dụng; bọc UncheckedIOException | JLS §11.2.3, §15.27.3 | Mở |
+| 2026-10-01 | S04 Stream | Collectors.toMap trùng key / null | L2 | mình hiểu sai | 2 tham số → IllegalStateException khi trùng key; cần merge fn (tham số 3); value null → NPE | Javadoc `Collectors` | Mở |
+| 2026-10-01 | S04 Lambda | Effectively final capture | L2 | lớp chưa dạy | Lambda chụp giá trị biến local; không sửa được; dùng mapToLong().sum() thay vì cộng dồn ngoài | JLS §15.27.2 | Mở |
+| 2026-10-07 | Map/Set (pretest) | Identity hashCode không duy nhất | L3 | biết bề mặt | hashCode mặc định của Object là số 32-bit (thường random, lưu trong header), không phải địa chỉ, KHÔNG bảo đảm duy nhất → equals không kèm hashCode thì HashSet 'gần như luôn' sai, thỉnh thoảng đúng | Javadoc `Object.hashCode`; Effective Java Item 11 | Mở |
+| 2026-10-07 | Map/Set (pretest) | Map.of / Set.of / List.of (Java 9) | L5 | lớp chưa dạy | Bất biến thật (put → UOE); key/phần tử trùng → IllegalArgumentException; null ở key/value và cả contains(null)/get(null) → NPE; thứ tự duyệt cố ý xáo trộn | JEP 269; Javadoc `Map` (mục Unmodifiable Maps) | Mở |
+| 2026-10-07 | Map/Set (pretest) | Map.merge / compute* & null | L4 | mình hiểu sai | merge: key vắng → put value, không gọi remap; remap trả null → XÓA key. computeIfAbsent: hàm trả non-null → put + trả value (idiom multimap `computeIfAbsent(k, k -> new ArrayList<>()).add(x)`); trả null → không thêm. Không sửa chính map trong hàm truyền vào | Javadoc `Map.merge`, `Map.computeIfAbsent` | Mở |
+| 2026-10-07 | Exception (pretest) | Checked vs unchecked theo hierarchy | L2 | mình hiểu sai | Checked/unchecked do kế thừa, không theo tên: không nằm dưới RuntimeException/Error là checked (FileNotFoundException extends IOException → checked). catch checked exception mà try không ném được → lỗi compile, trừ Exception/Throwable | JLS §11.1.1, §11.2.3; Javadoc `FileNotFoundException` | Mở |
+| 2026-10-07 | Exception (pretest) | try-with-resources: thứ tự close | L3 | mình hiểu sai | Resource đóng NGƯỢC thứ tự khai báo (LIFO: rs → ps → conn); exception của body thắng, exception của close() vào getSuppressed() (try/finally cũ thì close ghi đè, mất nguyên nhân gốc) | JLS §14.20.3; Javadoc `Throwable.addSuppressed` | Mở |
+| 2026-10-07 | Exception (pretest) | Override & throws | L2 | biết bề mặt | Không khai báo throws = không ném checked nào (không phải 'ngầm throws Exception'). Override không được thêm/mở rộng checked exception; unchecked thì compiler không theo dõi, khai báo tùy ý. Bọc bằng UncheckedIOException, giữ cause | JLS §8.4.8.3; Javadoc `UncheckedIOException` | Mở |
+| 2026-10-07 | Exception (pretest) | Chọn checked hay unchecked | L4 | biết bề mặt | Tiêu chí không phải 'check được lúc compile' (checked cũng là sự kiện runtime) mà là: caller phục hồi hợp lý được → checked; lỗi lập trình/vi phạm precondition → unchecked. Spring @Transactional mặc định chỉ rollback RuntimeException/Error → checked phải thêm rollbackFor | Effective Java Item 70, 71; Javadoc Spring `Transactional.rollbackFor` | Mở |
+| 2026-10-07 | Exception (pretest) | Precise rethrow (Java 7) | L3 | lớp chưa dạy | `catch (Exception e) { throw e; }` vẫn compile trong method `throws IOException` nếu e effectively final: compiler tính kiểu ném = checked mà try ném được. Gán lại e → mất, coi là Exception → lỗi compile | JLS §11.2.2 | Mở |
