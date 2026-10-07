@@ -7,7 +7,7 @@
 
 | Buổi | Ngày T7 | Self-study | Bài tập lớp | Homework | Ecommerce task | PR | Review T4 | Tự tin | Quiz |
 |---|---|---|---|---|---|---|---|---|---|
-| S01 – JVM, Data & String | dd/mm | Done | Todo | Todo | Todo | – | – | ?/3 | ?/12 |
+| S01 – JVM, Data & String | dd/mm | Done | Todo | Todo | Done | – | – | ?/3 | ?/12 |
 | S02 – Control flow, Arrays, Classes | dd/mm | Done | Todo | Todo | Todo | – | – | ?/3 | ?/12 |
 | S03 – OOP, SOLID | dd/mm | Done | Todo | Todo | Todo | – | – | 1.9/3 | 7/8 (biến tấu, 28/09) |
 | S04 – Generics & List | dd/mm | Todo | Todo | Todo | Todo | – | – | ?/3 | – |
