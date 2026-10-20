@@ -58,13 +58,15 @@ Ngoài spec: ký tự có dấu không thuộc tiếng Việt (ví dụ `ñ`, `�
 | 5 | `ReceiptPrinter` | `interfaces/cli` | StringBuilder + `String.format("%-20s%5d%12.2f")` |
 | 6 | `App` | `interfaces/cli` | demo: tạo catalog, đặt hàng, in receipt |
 
+> Đã merge (tag `s02-done`).
+
 **Acceptance** (theo tiêu chí chấm của slide)
-- [ ] Catalog dùng array
-- [ ] Công thức: subtotal = Σ(qty × price) → áp discount → cộng tax → final
-- [ ] Receipt: tên căn trái 20 ký tự, qty/price căn phải
-- [ ] Xử lý: product không tồn tại, thiếu hàng tồn, quantity âm hoặc bằng 0
-- [ ] Encapsulation đúng, có constructor chaining, tên biến có nghĩa
-- [ ] Bonus: dùng `BigDecimal` cho tiền thay vì `double` (xem S01 Q10). Nếu làm thì ghi rõ trong PR để bàn khi review.
+- [x] Catalog dùng array
+- [x] Công thức: subtotal = Σ(qty × price) → áp discount → cộng tax → final
+- [x] Receipt: tên căn trái 20 ký tự, qty/price căn phải
+- [x] Xử lý: product không tồn tại, thiếu hàng tồn, quantity âm hoặc bằng 0
+- [x] Encapsulation đúng, có constructor chaining, tên biến có nghĩa
+- [x] Bonus: dùng `BigDecimal` cho tiền thay vì `double` (xem S01 Q10). Nếu làm thì ghi rõ trong PR để bàn khi review.
 
 **Spec hành vi** (chốt 20/10, test: `domain/src/test/java/com/training/ecommerce/domain/{catalog/ProductTest, inventory/InventoryManagerTest, order/OrderLineTest, order/OrderTest}.java`, `app/src/test/java/com/training/ecommerce/interfaces/cli/ReceiptPrinterTest.java`)
 

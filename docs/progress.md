@@ -9,7 +9,7 @@
 | Buổi | Ngày T7 | Self-study | Ecommerce task | PR | Review T4 | Tự tin | Quiz |
 |---|---|---|---|---|---|---|---|
 | S01 – JVM, Data & String | dd/mm | Done | Done | – | – | ?/3 | ?/12 |
-| S02 – Control flow, Arrays, Classes | dd/mm | Done | Todo | – | – | ?/3 | ?/12 |
+| S02 – Control flow, Arrays, Classes | dd/mm | Done | Done | – | – | ?/3 | ?/12 |
 | S03 – OOP, SOLID | dd/mm | Done | Todo | – | – | 1.9/3 | 7/8 (biến tấu, 28/09) |
 | S04 – Generics & List | dd/mm | Todo | Todo | – | – | ?/3 | – |
 
@@ -18,7 +18,7 @@
 
 ## 2. Nợ cần trả (catch-up)
 
-- [ ] S02 – Case Study 1 vào ecommerce
+- [x] S02 – Case Study 1 vào ecommerce
 - [ ] S03 – Case Study 2 vào ecommerce
 
 Đọc thêm (tham khảo, không tính vào tiến độ): Effective Java Item 6 và Item 15; VisualVM; G1 vs ZGC.
