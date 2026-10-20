@@ -168,8 +168,26 @@ Ngoài spec: `getBasePrice()` của BundleProduct, so sánh city không phân bi
 
 **Kiểm khi review:** không dùng `instanceof` trong phần tính giá (`PricingEngine`, `BundleProduct`); `Product` là abstract, constructor `protected`; `DigitalProduct` không implement `Shippable` (ISP); cây kế thừa không quá 3 tầng; field `private`, không có setter thừa; mô tả PR có mục "SOLID check" (S/O/L/I/D mỗi nguyên tắc 1 dòng); `S03Demo` in tổng doanh thu cho list đủ các loại product.
 
-## S04 – Generics & Collections
-_Tự nghiên cứu, không có slide. Task ecommerce sẽ chốt khi soạn session S04._
+## S04 – Generics, Collections & Exception: Repository, Cart, domain exception
+**Nhánh:** `s04/collections-repository` · tự nghiên cứu (03/10), không có slide
+
+| # | Class/Task | Package | Ghi chú |
+|---|---|---|---|
+| 1 | `Identifiable<ID>` (`ID getId()`) + `Repository<T extends Identifiable<ID>, ID>`: `save`, `findById`, `findAll`, `deleteById`, `count` | `shared/repository` | mới, generic; `Product implements Identifiable<String>` |
+| 2 | `InMemoryRepository<T extends Identifiable<ID>, ID>` dùng `Map<ID, T>` | `infrastructure/persistence/inmemory` (app) | mới; giữ thứ tự thêm |
+| 3 | `InventoryManager`: catalog `Product[]` → `Map<String, Product>` | `domain/inventory` | refactor S02, giữ nguyên hành vi đã spec |
+| 4 | Domain exception unchecked: `ProductNotFoundException`, `OutOfStockException` (kèm productId, requested, available) | `domain/inventory` | thay `IllegalArgumentException` / `IllegalStateException` đang ném trong InventoryManager/OrderLine |
+| 5 | `Cart`: `add(product, qty)` cộng dồn, `remove`, `changeQuantity` (về 0 thì bỏ), `getItems()` không sửa được từ ngoài, `toOrder(discountRate, taxRate)` | `domain/order` | mới; `Map` giữ thứ tự thêm |
+| 6 | `S04Demo` | `demo` | catalog qua Repository, giỏ hàng, lỗi thiếu hàng / không tìm thấy |
+
+**Acceptance**
+- [ ] `Repository` generic dùng được cho `Product` mà không ép kiểu; không có raw type
+- [ ] `InventoryManager` không còn `Product[]`; tra theo id bằng `Map`
+- [ ] `Cart` gộp cùng sản phẩm bằng `Map.merge` (hoặc tương đương); `getItems()` trả về view / bản copy không sửa được
+- [ ] Domain exception là unchecked, message rõ ràng; code/test S02–S03 vẫn xanh (hoặc nâng cấp có chủ đích, ghi rõ)
+- [ ] Không sửa collection trong lúc for-each (dùng `removeIf` / `Iterator.remove`)
+- [ ] Key của `HashMap`/`HashSet` là bất biến (id `final`)
+- [ ] Bonus: API nhận nhiều product dùng wildcard, ví dụ `saveAll(Collection<? extends T>)`
 
 ---
 
@@ -178,7 +196,7 @@ _Tự nghiên cứu, không có slide. Task ecommerce sẽ chốt khi soạn ses
 
 | # | Class/Task | Package | Ghi chú |
 |---|---|---|---|
-| 1 | `InventoryManager`: thay vòng lặp bằng Stream (`findById`, `addProduct`, `decreaseStock`) | `domain/inventory` | refactor S02, giữ nguyên hành vi đã spec; catalog có thể chuyển `Product[]` → `List<Product>` (ràng buộc array chỉ áp cho S02) |
+| 1 | `InventoryManager`: thay vòng lặp bằng Stream (`findById`, `addProduct`, `decreaseStock`) | `domain/inventory` | refactor S02/S04 (catalog đã là `Map` từ S04), giữ nguyên hành vi đã spec |
 | 2 | `Order`: `subtotal` bằng `reduce(BigDecimal.ZERO, BigDecimal::add)` | `domain/order` | refactor S02 |
 | 3 | `PricingRule` (`@FunctionalInterface`, `BigDecimal apply(BigDecimal price)`, default method để ghép) + cách gộp một danh sách rule thành một rule | `domain/pricing` | mới; ví dụ rule: thành viên −5%, flash sale −20.000đ |
 | 4 | `PricingEngine`: doanh thu bằng Stream; áp chuỗi `PricingRule` lên giá bán | `application` | refactor S03 |

@@ -82,6 +82,37 @@ Cách dùng: sau mỗi lần ôn, cập nhật cột *Tự tin* và *Ôn lần c
 | DIP | 2 | 28/09 |  |
 | Anti-pattern: God class, deep inheritance | | | |
 
+## S04
+
+| Keyword | Tự tin | Ôn lần cuối | Ghi chú |
+|---|---|---|---|
+| Type parameter · generic method · diamond | | | |
+| Bounded type (extends, nhiều bound) | | | |
+| Generics invariant vs array covariant (ArrayStoreException) | | | |
+| Wildcard ? extends / ? super · PECS | | | |
+| Type erasure (new T[], T.class, instanceof) | | | |
+| Raw type | | | |
+| ArrayList vs LinkedList · ArrayList tự nới | | | |
+| remove(int) vs remove(Object) | | | |
+| List.of vs Arrays.asList vs List.copyOf vs unmodifiableList | | | |
+| HashSet / LinkedHashSet / TreeSet | | | |
+| Key mutable trong HashSet/HashMap | | | |
+| TreeSet + Comparator: compare == 0 là trùng | | | |
+| TreeSet với class không Comparable | | | |
+| HashMap / LinkedHashMap / TreeMap · bucket, treeify, load factor | | | |
+| merge / compute / computeIfAbsent / getOrDefault | | | |
+| Map.of (giới hạn, trùng key, null) | | | |
+| Duyệt Map: entrySet / keySet / values | | | |
+| Queue/Deque: offer-poll-peek vs add-remove-element · ArrayDeque làm stack | | | |
+| PriorityQueue (heap, toString không sắp xếp) | | | |
+| Iterator · fail-fast · modCount · removeIf | | | |
+| Comparable vs Comparator | | | |
+| Exception hierarchy · checked vs unchecked | | | |
+| finally + return | | | |
+| Multi-catch · thứ tự catch | | | |
+| try-with-resources · close LIFO · suppressed | | | |
+| Custom / domain exception · giữ cause | | | |
+
 ## S05
 
 | Keyword | Tự tin | Ôn lần cuối | Ghi chú |
