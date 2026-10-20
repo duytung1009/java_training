@@ -1,5 +1,7 @@
 package com.training.ecommerce.domain.catalog;
 
+import com.training.ecommerce.shared.repository.Identifiable;
+
 import java.math.BigDecimal;
 import java.util.Objects;
 
@@ -7,7 +9,7 @@ import java.util.Objects;
  * Sản phẩm trong catalog. Mỗi loại sản phẩm tự quyết định giá bán qua {@link #calculateFinalPrice()}.
  * Hai product bằng nhau khi cùng id, bất kể là subtype nào.
  */
-public abstract class Product {
+public abstract class Product implements Identifiable<String> {
     protected static final int MONEY_SCALE = 2;
 
     private final String id;
@@ -57,6 +59,7 @@ public abstract class Product {
         stock -= quantity;
     }
 
+    @Override
     public String getId() { return id; }
     public String getName() { return name; }
     public BigDecimal getBasePrice() { return basePrice; }

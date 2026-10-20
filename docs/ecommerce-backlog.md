@@ -176,7 +176,7 @@ Ngoài spec: `getBasePrice()` của BundleProduct, so sánh city không phân bi
 | 1 | `Identifiable<ID>` (`ID getId()`) + `Repository<T extends Identifiable<ID>, ID>`: `save`, `findById`, `findAll`, `deleteById`, `count` | `shared/repository` | mới, generic; `Product implements Identifiable<String>` |
 | 2 | `InMemoryRepository<T extends Identifiable<ID>, ID>` dùng `Map<ID, T>` | `infrastructure/persistence/inmemory` (app) | mới; giữ thứ tự thêm |
 | 3 | `InventoryManager`: catalog `Product[]` → `Map<String, Product>` | `domain/inventory` | refactor S02, giữ nguyên hành vi đã spec |
-| 4 | Domain exception unchecked: `ProductNotFoundException`, `OutOfStockException` (kèm productId, requested, available) | `domain/inventory` | thay `IllegalArgumentException` / `IllegalStateException` đang ném trong InventoryManager/OrderLine |
+| 4 | Domain exception unchecked: `ProductNotFoundException`, `OutOfStockException` (kèm productId, requested, available) | `domain/catalog` | thay `IllegalArgumentException` / `IllegalStateException` đang ném trong InventoryManager/OrderLine |
 | 5 | `Cart`: `add(product, qty)` cộng dồn, `remove`, `changeQuantity` (về 0 thì bỏ), `getItems()` không sửa được từ ngoài, `toOrder(discountRate, taxRate)` | `domain/order` | mới; `Map` giữ thứ tự thêm |
 | 6 | `S04Demo` | `demo` | catalog qua Repository, giỏ hàng, lỗi thiếu hàng / không tìm thấy |
 
@@ -188,6 +188,35 @@ Ngoài spec: `getBasePrice()` của BundleProduct, so sánh city không phân bi
 - [ ] Không sửa collection trong lúc for-each (dùng `removeIf` / `Iterator.remove`)
 - [ ] Key của `HashMap`/`HashSet` là bất biến (id `final`)
 - [ ] Bonus: API nhận nhiều product dùng wildcard, ví dụ `saveAll(Collection<? extends T>)`
+
+**Spec hành vi** (chốt 21/10, test: `app/src/test/java/com/training/ecommerce/infrastructure/persistence/inmemory/InMemoryRepositoryTest.java`, `domain/src/test/java/com/training/ecommerce/domain/{order/CartTest, catalog/DomainExceptionTest}.java`; test S02–S03 giữ nguyên)
+
+API (quyết định 21/10): `Identifiable<ID>` + `Repository<T extends Identifiable<ID>, ID>` (`save`, `saveAll(Collection<? extends T>)`, `findById` → `null` khi không có, `findAll`, `deleteById`, `count`) ở `shared/repository`; `InMemoryRepository` ở app `infrastructure/persistence/inmemory`; `Product implements Identifiable<String>`. Exception **ở `domain/catalog`** (tránh vòng phụ thuộc catalog ↔ inventory): `ProductNotFoundException extends IllegalArgumentException` (`getProductId`), `OutOfStockException extends IllegalStateException` (`getProductId/getRequested/getAvailable`). `Cart` ở `domain/order`. Chưa dùng `Optional`/Stream (S05).
+
+| Method | Input | Kết quả mong đợi | Test |
+|---|---|---|---|
+| `save` / `findById` | lưu áo, Office; tìm `"P001"`, `new String("P001")` | `save` trả chính entity; `findById` trả đúng instance (so id theo giá trị) | `savesAndFindsSameInstance`, `findsByIdValue` |
+| `findById` | id không có / `null` | `null` (D1) | `returnsNullWhenMissing` |
+| `save` | cùng id P001 lần 2 | ghi đè (upsert, D2), `count` không đổi, giữ vị trí cũ trong `findAll` | `upsertsSameId` |
+| `save` | `null` | `IllegalArgumentException` | `rejectsNullEntity` |
+| `findAll` / `count` | thêm Office, áo, quần; repo rỗng | đúng thứ tự thêm; rỗng → list rỗng, count 0; list trả về không sửa được (UOE), repo không đổi | `findAllKeepsInsertionOrder`, `emptyRepository`, `findAllIsUnmodifiable` |
+| `deleteById` | có / xóa lần 2 / không có | `true` rồi `false`, `false`; entity biến mất, count giảm | `deletesById` |
+| Generic | `Repository<Customer, Long>` (entity khác, id Long) | dùng được không ép kiểu | `worksWithOtherEntityType` |
+| `saveAll` | `List<PhysicalProduct>` vào `Repository<Product, String>` | lưu đủ (wildcard `? extends T`) — **bonus** | `saveAllAcceptsSubtypeCollection` |
+| `Cart.add` | áo 2; thêm áo 3; cùng id khác instance; thứ tự quần → áo → tất → quần | 2 → 5 (cộng dồn, 1 dòng); cộng dồn theo id; `getItems` theo thứ tự thêm, thêm lại không đổi vị trí | `addsProduct`, `accumulatesSameProduct`, `accumulatesByProductId`, `keepsInsertionOrder` |
+| `Cart.add` | `null`; quantity 0 / −1 | `IllegalArgumentException`, giỏ giữ nguyên | `rejectsNullProduct`, `rejectsNonPositiveQuantity` |
+| `Cart.add` | quần 21 (tồn 20); áo 30 rồi thêm 21 (tồn 50); quần 15 + 5 | `OutOfStockException` (P002, 21, 20), giỏ rỗng; `OutOfStockException` (requested 51, available 50), giỏ giữ 30 (D4); đúng bằng tồn → hợp lệ | `rejectsQuantityOverStock`, `rejectsAccumulatedQuantityOverStock`, `allowsQuantityEqualToStock` |
+| `changeQuantity` | 2 → 10; → 0; −1; sản phẩm chưa có; vượt tồn | đặt lại 10; bỏ khỏi giỏ; IAE giữ nguyên; `ProductNotFoundException` (D5); `OutOfStockException` giữ số cũ | `setsQuantity`, `zeroRemovesProduct`, `rejectsNegativeQuantity`, `rejectsProductNotInCart`, `rejectsChangeOverStock` |
+| `remove` / `getQuantity` | remove có / chưa có; getQuantity chưa có | bỏ / không làm gì (D5); `0` | `removesProduct`, `quantityOfMissingProductIsZero` |
+| `getItems` | `put` từ bên ngoài | `UnsupportedOperationException`, giỏ không đổi | `itemsAreUnmodifiable` |
+| `toOrder` | áo 1, quần 1, áo 1; discount 0.10, tax 0.08 | 2 OrderLine (áo 2, quần 1) theo thứ tự thêm; final `729000.00`; không trừ kho | `createsOrderFromItems`, `doesNotDecreaseStock` |
+| `toOrder` | giỏ rỗng; rate 1.5 | `IllegalStateException` (D6); `IllegalArgumentException` | `rejectsEmptyCart`, `rejectsInvalidRates` |
+| Exception | `new OutOfStockException("P002", 21, 20)`, `new ProductNotFoundException("P999")` | unchecked, đúng lớp cha (ISE / IAE), getter đúng, message có id | `outOfStockCarriesData`, `notFoundCarriesId` |
+| Nơi ném | `Product.decreaseStock(21)` (tồn 20); `new OrderLine(áo, 51)`; `InventoryManager.decreaseStock` 30 + 30 áo; product không có trong kho | `OutOfStockException` (21/20), (51/50), (60/50 – cộng dồn); `ProductNotFoundException` (P002) | `productDecreaseStock`, `orderLineOverStock`, `inventoryOutOfStock`, `inventoryProductNotFound` |
+
+Ngoài spec: `Repository.saveAll(null)`, `Cart.changeQuantity(null, …)` trả về exception khác IAE, hiệu năng.
+
+**Kiểm khi review:** `InventoryManager` không còn `Product[]` (dùng `Map`); không raw type; không sửa collection trong lúc for-each (`removeIf` / `Iterator.remove`); `Cart` cộng dồn bằng `Map.merge` (hoặc tương đương) với `Map` giữ thứ tự thêm; key bất biến (id `final`); `S04Demo` chạy được; module `domain` không import module khác (`domain.**` dùng `shared.repository` là hợp lệ vì cùng module).
 
 ---
 
