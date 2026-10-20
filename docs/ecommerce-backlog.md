@@ -132,5 +132,39 @@ Ngoài spec: cùng product add 2 lần (gộp hay tách line), header receipt, c
 - [ ] Không có cây kế thừa sâu quá 3 tầng
 - [ ] Code S02 (`OrderLine`, `InventoryManager`) vẫn chạy với `Product` mới
 
+**Spec hành vi** (chốt 20/10, test: `domain/src/test/java/com/training/ecommerce/domain/{catalog/PhysicalProductTest, catalog/DigitalProductTest, catalog/SubscriptionProductTest, catalog/BundleProductTest, catalog/ProductIdentityTest, pricing/DiscountCodeTest, customer/AddressTest}.java`, `app/src/test/java/com/training/ecommerce/application/PricingEngineTest.java`; nâng cấp test S02)
+
+API (quyết định 20/10, theo khuyến nghị):
+- `abstract class Product`: constructor `protected (id, name, basePrice, stock)` và `(id, name, basePrice)`; `getId/getName/getBasePrice/getStock`, `decreaseStock(int)`; `public abstract BigDecimal calculateFinalPrice()`; `equals`/`hashCode` **chỉ theo id** (final, bất kể subtype); `toString()` có id + tên. `getPrice()` đổi thành `getBasePrice()`.
+- `PhysicalProduct(id, name, basePrice, stock, BigDecimal weightKg)` implements `Shippable`, `Discountable` · `DigitalProduct(id, name, basePrice, stock)` implements `Discountable` · `SubscriptionProduct(id, name, monthlyPrice, int months, stock)` · `BundleProduct(id, name, stock, BigDecimal discountRate, Product... items)`
+- `Discountable.applyDiscount(DiscountCode)` → giá sau giảm · `DiscountCode(String code, BigDecimal rate)` (không có hạn dùng) · `Shippable.calculateShipping(Address)` · `Address(String street, String city)`
+- `PricingEngine` (app, `application`): instance method `BigDecimal calculateRevenue(List<Product>)`
+- `OrderLine` chụp giá từ `calculateFinalPrice()` (không phải basePrice). Mọi số tiền scale 2, HALF_UP.
+
+| Method | Input | Kết quả mong đợi | Test |
+|---|---|---|---|
+| `calculateFinalPrice` | Physical/Digital giá 150.000 / 1.000.000 | bằng giá gốc: `150000.00`, `1000000.00` (chưa gồm giảm giá, phí ship) | `equalsBasePrice`, `finalPriceEqualsBasePrice` |
+| `calculateFinalPrice` | Subscription 499.000 × 1 / × 12; 99999.995 × 2 | `499000.00`, `5988000.00`, `199999.99` | `multipliesMonthlyPriceByMonths` |
+| `calculateFinalPrice` | Bundle (áo 150k + quần 450k, giảm 10%); (Office + Claude Pro 12 tháng, giảm 20%); bundle lồng bundle; giảm 0 / 15% | `540000.00`, `5590400.00`, `1463000.00`, `12345.67` / `10493.82` | `BundleProductTest.*` |
+| `BundleProduct` | items rỗng / chứa null; discountRate null hoặc ngoài [0, 1] | `IllegalArgumentException` | `rejects…` |
+| `applyDiscount` | áo 150k với rate 0.10 / 0.25 / 0.333 / 1; Office 1tr với 0.25 / 0.5 / 1 | `135000.00`, `112500.00`, `100050.00`, `0.00`; `750000.00`, `500000.00`, `0.00`; giá bán của product không đổi | `appliesRate`, `doesNotChangeFinalPrice` |
+| `applyDiscount` | `null` | `IllegalArgumentException` | `rejectsNullCode` |
+| `DiscountCode` | rate 0 / −0.1 / 1.01 / null; code null/rỗng; rate 1 | `IllegalArgumentException`; rate 1 hợp lệ | `DiscountCodeTest.*` |
+| `calculateShipping` | áo 0.3 kg: "Hà Nội" / "Hồ Chí Minh"; 2.5 kg, 0.0001 kg, 0.3333 kg ở Hà Nội | 20.000 (HN) hoặc 35.000 + 5.000 × kg: `21500.00`, `36500.00`, `32500.00`, `20000.50`, `21666.50` | `innerCityFee`, `otherCityFee`, `feeDependsOnWeight` |
+| `calculateShipping` | `null` | `IllegalArgumentException` | `rejectsNullAddress` |
+| `PhysicalProduct` | weightKg 0 / −0.5 / null; giá âm | `IllegalArgumentException` | `rejectsNonPositiveWeight`, `rejectsNullWeight`, `keepsProductRules` |
+| `SubscriptionProduct` | months 0 / −1; getBasePrice / getMonths | `IllegalArgumentException`; basePrice = giá tháng | `rejectsMonthsBelowOne`, `exposesMonthlyPriceAndMonths` |
+| `Address` | street/city null/rỗng | `IllegalArgumentException` | `AddressTest.*` |
+| `equals`/`hashCode` | 2 product cùng id (khác dữ liệu, khác subtype); khác id; null; khác kiểu | cùng id → bằng nhau, `HashSet.size() == 1`, đối xứng; khác id → khác; `equals(null)` / `equals("P001")` = false | `ProductIdentityTest.*` |
+| `toString` | áo P001 | có `P001` và `Áo thun nam` | `toStringContainsIdAndName` |
+| `calculateRevenue` | áo + quần + Office + Claude Pro 12 tháng; có bundle; subtype mới chỉ định nghĩa trong test (GiftCard 95%) | `7588000.00`; `1540000.00`; `625000.00` (không sửa PricingEngine – OCP) | `PricingEngineTest.*` |
+| `calculateRevenue` | list rỗng / null / chứa null | `0.00` / `IllegalArgumentException` | `emptyListIsZero`, `rejectsNull…` |
+| `OrderLine.lineTotal` | Subscription 499.000 × 12 tháng, quantity 2 | `11976000.00` | `usesFinalPriceForSubscription` |
+| Test S02 | `new Product(...)` | nâng cấp: `ProductTest` test qua subclass ẩn danh (`getPrice` → `getBasePrice`); các test còn lại dùng `PhysicalProduct` 0.5 kg; kỳ vọng S02 giữ nguyên | các file test S02 |
+
+Ngoài spec: `getBasePrice()` của BundleProduct, so sánh city không phân biệt hoa thường/dấu, hạn dùng mã giảm giá, giảm giá cho gói dài hạn.
+
+**Kiểm khi review:** không dùng `instanceof` trong phần tính giá (`PricingEngine`, `BundleProduct`); `Product` là abstract, constructor `protected`; `DigitalProduct` không implement `Shippable` (ISP); cây kế thừa không quá 3 tầng; field `private`, không có setter thừa; mô tả PR có mục "SOLID check" (S/O/L/I/D mỗi nguyên tắc 1 dòng); `App` demo in tổng doanh thu cho list đủ các loại product.
+
 ## S04 – Generics & Collections: List
 _Chờ buổi học. Dự kiến: thay `Product[]` bằng `List<Product>`, có thể tạo generic `Repository<T, ID>` ở `infrastructure/persistence/inmemory`._

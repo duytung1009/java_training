@@ -1,6 +1,8 @@
 // SPEC S02 – sinh bởi java-start-backlog 20/10. Không sửa test để cho pass; muốn đổi spec thì sửa bảng Spec trong backlog trước.
+// SPEC S03 – nâng cấp 20/10: Product thành abstract → dùng PhysicalProduct (0.5 kg); kỳ vọng S02 giữ nguyên.
 package com.training.ecommerce.domain.inventory;
 
+import com.training.ecommerce.domain.catalog.PhysicalProduct;
 import com.training.ecommerce.domain.catalog.Product;
 import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.domain.order.OrderLine;
@@ -25,8 +27,8 @@ class InventoryManagerTest {
     @BeforeEach
     void setUp() {
         inventory = new InventoryManager();
-        tshirt = new Product("P001", "Áo thun nam", new BigDecimal("150000"), 50);
-        jeans = new Product("P002", "Quần jean", new BigDecimal("450000"), 20);
+        tshirt = new PhysicalProduct("P001", "Áo thun nam", new BigDecimal("150000"), 50, new BigDecimal("0.5"));
+        jeans = new PhysicalProduct("P002", "Quần jean", new BigDecimal("450000"), 20, new BigDecimal("0.5"));
         inventory.addProduct(tshirt);
         inventory.addProduct(jeans);
     }
@@ -79,7 +81,7 @@ class InventoryManagerTest {
             InventoryManager bigInventory = new InventoryManager();
             Product[] added = new Product[15];
             for (int i = 0; i < added.length; i++) {
-                added[i] = new Product("P1" + (10 + i), "Sản phẩm số " + (i + 1), new BigDecimal("99000"), 10);
+                added[i] = new PhysicalProduct("P1" + (10 + i), "Sản phẩm số " + (i + 1), new BigDecimal("99000"), 10, new BigDecimal("0.5"));
                 bigInventory.addProduct(added[i]);
             }
 
@@ -97,7 +99,7 @@ class InventoryManagerTest {
         @Test
         @DisplayName("Trùng id → IllegalArgumentException, product cũ giữ nguyên")
         void rejectsDuplicateId() {
-            Product duplicate = new Product(new String("P001"), "Áo thun nam (bản trùng)", new BigDecimal("120000"), 5);
+            Product duplicate = new PhysicalProduct(new String("P001"), "Áo thun nam (bản trùng)", new BigDecimal("120000"), 5, new BigDecimal("0.5"));
 
             assertThrows(IllegalArgumentException.class, () -> inventory.addProduct(duplicate));
             assertSame(tshirt, inventory.findById("P001"));
@@ -193,7 +195,7 @@ class InventoryManagerTest {
         @Test
         @DisplayName("Line có product không có trong kho → IllegalArgumentException, kho giữ nguyên")
         void rejectsProductNotInInventory() {
-            Product socks = new Product("P003", "Tất cổ ngắn", new BigDecimal("12345.67"), 100);
+            Product socks = new PhysicalProduct("P003", "Tất cổ ngắn", new BigDecimal("12345.67"), 100, new BigDecimal("0.5"));
             Order order = newOrder(new OrderLine(tshirt, 2), new OrderLine(socks, 1));
 
             assertThrows(IllegalArgumentException.class, () -> inventory.decreaseStock(order));

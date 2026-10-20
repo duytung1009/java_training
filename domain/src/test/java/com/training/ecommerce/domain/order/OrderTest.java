@@ -1,6 +1,8 @@
 // SPEC S02 – sinh bởi java-start-backlog 20/10. Không sửa test để cho pass; muốn đổi spec thì sửa bảng Spec trong backlog trước.
+// SPEC S03 – nâng cấp 20/10: Product thành abstract → dùng PhysicalProduct (0.5 kg); kỳ vọng S02 giữ nguyên.
 package com.training.ecommerce.domain.order;
 
+import com.training.ecommerce.domain.catalog.PhysicalProduct;
 import com.training.ecommerce.domain.catalog.Product;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,9 +29,9 @@ class OrderTest {
 
     @BeforeEach
     void setUp() {
-        tshirt = new Product("P001", "Áo thun nam", new BigDecimal("150000"), 50);
-        jeans = new Product("P002", "Quần jean", new BigDecimal("450000"), 20);
-        socks = new Product("P003", "Tất cổ ngắn", new BigDecimal("12345.67"), 100);
+        tshirt = new PhysicalProduct("P001", "Áo thun nam", new BigDecimal("150000"), 50, new BigDecimal("0.5"));
+        jeans = new PhysicalProduct("P002", "Quần jean", new BigDecimal("450000"), 20, new BigDecimal("0.5"));
+        socks = new PhysicalProduct("P003", "Tất cổ ngắn", new BigDecimal("12345.67"), 100, new BigDecimal("0.5"));
     }
 
     private static BigDecimal money(String value) {

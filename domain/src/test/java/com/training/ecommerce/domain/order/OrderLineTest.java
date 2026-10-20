@@ -1,7 +1,10 @@
 // SPEC S02 – sinh bởi java-start-backlog 20/10. Không sửa test để cho pass; muốn đổi spec thì sửa bảng Spec trong backlog trước.
+// SPEC S03 – nâng cấp 20/10: Product thành abstract → dùng PhysicalProduct (0.5 kg); kỳ vọng S02 giữ nguyên.
 package com.training.ecommerce.domain.order;
 
+import com.training.ecommerce.domain.catalog.PhysicalProduct;
 import com.training.ecommerce.domain.catalog.Product;
+import com.training.ecommerce.domain.catalog.SubscriptionProduct;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,7 +25,7 @@ class OrderLineTest {
 
     @BeforeEach
     void setUp() {
-        tshirt = new Product("P001", "Áo thun nam", new BigDecimal("150000"), 50);
+        tshirt = new PhysicalProduct("P001", "Áo thun nam", new BigDecimal("150000"), 50, new BigDecimal("0.5"));
     }
 
     @Nested
@@ -88,9 +91,18 @@ class OrderLineTest {
                 "0, 5, 0.00",
         })
         void multipliesPriceByQuantity(String price, int quantity, String expected) {
-            Product product = new Product("P010", "Tất cổ ngắn", new BigDecimal(price), 100);
+            Product product = new PhysicalProduct("P010", "Tất cổ ngắn", new BigDecimal(price), 100, new BigDecimal("0.5"));
 
             assertEquals(new BigDecimal(expected), new OrderLine(product, quantity).lineTotal());
+        }
+
+        // SPEC S03 (bổ sung 20/10): lineTotal dựa trên calculateFinalPrice(), không phải basePrice
+        @Test
+        @DisplayName("Gói thuê bao: lineTotal = (giá tháng × số tháng) × quantity")
+        void usesFinalPriceForSubscription() {
+            Product claudePro = new SubscriptionProduct("S001", "Gói Claude Pro 12 tháng", new BigDecimal("499000"), 12, 100);
+
+            assertEquals(new BigDecimal("11976000.00"), new OrderLine(claudePro, 2).lineTotal());
         }
     }
 }

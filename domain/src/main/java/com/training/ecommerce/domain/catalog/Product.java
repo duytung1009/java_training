@@ -50,6 +50,21 @@ public class Product {
         stock -= quantity;
     }
 
+    /**
+     * S03: giá gốc (đổi tên từ getPrice). Với SubscriptionProduct là monthlyPrice.
+     */
+    public BigDecimal getBasePrice() {
+        throw new UnsupportedOperationException("TODO S03");
+    }
+
+    /**
+     * S03: giá bán theo loại sản phẩm, chưa gồm giảm giá và phí ship; scale 2, HALF_UP.
+     * Sẽ thành {@code public abstract} khi Product được refactor thành abstract class.
+     */
+    public BigDecimal calculateFinalPrice() {
+        throw new UnsupportedOperationException("TODO S03");
+    }
+
     public String getId() { return id; }
     public String getName() { return name; }
     public BigDecimal getPrice() { return price; }
