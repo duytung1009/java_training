@@ -24,24 +24,23 @@ public class S02Demo {
 
         // Giảm 10%, VAT 8%
         Order order = new Order(new BigDecimal("0.10"), new BigDecimal("0.08"));
-        order.addLine(new OrderLine(inventory.findById("P01"), 2));
-        order.addLine(new OrderLine(inventory.findById("P02"), 5));
+        order.addLine(new OrderLine(inventory.findById("P01").orElseThrow(), 2));
+        order.addLine(new OrderLine(inventory.findById("P02").orElseThrow(), 5));
         processOrder(inventory, printer, order);
 
         // Lỗi: product không tồn tại
-        Product unknown = inventory.findById("P99");
-        System.out.println(">>> Tìm P99: " + (unknown == null ? "không tồn tại" : unknown.getName()));
+                System.out.println(">>> Tìm P99: " + inventory.findById("P99").map(Product::getName).orElse("không tồn tại"));
 
         // Lỗi: thiếu hàng (ức gà chỉ còn 20)
         try {
-            new OrderLine(inventory.findById("P03"), 21);
+            new OrderLine(inventory.findById("P03").orElseThrow(), 21);
         } catch (IllegalStateException e) {
             System.out.println(">>> Lỗi: " + e.getMessage());
         }
 
         // Lỗi: quantity <= 0
         try {
-            new OrderLine(inventory.findById("P01"), 0);
+            new OrderLine(inventory.findById("P01").orElseThrow(), 0);
         } catch (IllegalArgumentException e) {
             System.out.println(">>> Lỗi: " + e.getMessage());
         }

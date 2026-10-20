@@ -24,6 +24,13 @@ public class BundleProduct extends Product {
         this.discountRate = discountRate;
     }
 
+    /** S05: kèm category (đứng trước varargs items). */
+    public BundleProduct(String id, String name, int stock, BigDecimal discountRate, Category category, Product... items) {
+        this(id, name, stock, discountRate, items);
+        // TODO S05: constructor này chưa truyền được category lên Product (đang gọi this(...) bản cũ).
+        //  Gợi ý: cho constructor cũ gọi this(..., Category.OTHER), còn constructor này gọi super(..., category).
+    }
+
     @Override
     public BigDecimal calculateFinalPrice() {
         return getBasePrice().multiply(BigDecimal.ONE.subtract(discountRate)).setScale(MONEY_SCALE, RoundingMode.HALF_UP);

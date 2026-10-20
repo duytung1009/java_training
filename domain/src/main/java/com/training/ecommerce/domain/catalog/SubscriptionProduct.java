@@ -17,6 +17,13 @@ public class SubscriptionProduct extends Product {
         this.months = months;
     }
 
+    /** S05: kèm category. */
+    public SubscriptionProduct(String id, String name, BigDecimal monthlyPrice, int months, int stock, Category category) {
+        this(id, name, monthlyPrice, months, stock);
+        // TODO S05: constructor này chưa truyền được category lên Product (đang gọi this(...) bản cũ).
+        //  Gợi ý: cho constructor cũ gọi this(..., Category.OTHER), còn constructor này gọi super(..., category).
+    }
+
     public int getMonths() {
         return months;
     }

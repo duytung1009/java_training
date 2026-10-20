@@ -2,6 +2,7 @@ package com.training.ecommerce.shared.repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Kho lưu trữ generic theo id.
@@ -22,8 +23,8 @@ public interface Repository<T extends Identifiable<ID>, ID> {
     /** Lưu lần lượt từng entity (wildcard: nhận cả collection của subtype). */
     void saveAll(Collection<? extends T> entities);
 
-    /** @return entity có id tương ứng, hoặc {@code null} nếu không có (kể cả khi id null) */
-    T findById(ID id);
+    /** S05: entity có id tương ứng; không có (kể cả id null) → {@code Optional.empty()}. */
+    Optional<T> findById(ID id);
 
     /** @return mọi entity theo thứ tự thêm; list không sửa được */
     List<T> findAll();

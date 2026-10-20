@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Repository lưu trong bộ nhớ bằng {@code LinkedHashMap}, giữ thứ tự thêm.
@@ -34,11 +35,8 @@ public class InMemoryRepository<T extends Identifiable<ID>, ID> implements Repos
     }
 
     @Override
-    public T findById(ID id) {
-        if (id == null) {
-            return null;
-        }
-        return store.get(id);
+    public Optional<T> findById(ID id) {
+        throw new UnsupportedOperationException("TODO S05");
     }
 
     @Override

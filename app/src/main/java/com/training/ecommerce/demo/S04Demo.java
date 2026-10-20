@@ -36,9 +36,9 @@ public class S04Demo {
         }
 
         Cart cart = new Cart();
-        Product tshirt = catalog.findById("P001");
+        Product tshirt = catalog.findById("P001").orElseThrow();
         cart.add(tshirt, 1);
-        cart.add(catalog.findById("P002"), 1);
+        cart.add(catalog.findById("P002").orElseThrow(), 1);
         cart.add(tshirt, 1); // cộng dồn: áo = 2
         System.out.println(">>> Giỏ hàng:");
         for (Map.Entry<Product, Integer> item : cart.getItems().entrySet()) {
@@ -46,12 +46,12 @@ public class S04Demo {
         }
 
         try {
-            cart.add(catalog.findById("P002"), 20);
+            cart.add(catalog.findById("P002").orElseThrow(), 20);
         } catch (OutOfStockException e) {
             System.out.println(">>> Lỗi: " + e.getMessage());
         }
         try {
-            cart.changeQuantity(catalog.findById("D001"), 1);
+            cart.changeQuantity(catalog.findById("D001").orElseThrow(), 1);
         } catch (ProductNotFoundException e) {
             System.out.println(">>> Lỗi (" + e.getProductId() + " chưa có trong giỏ): " + e.getMessage());
         }

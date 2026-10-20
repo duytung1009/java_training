@@ -22,6 +22,13 @@ public class PhysicalProduct extends Product implements Shippable, Discountable 
         this.weightKg = weightKg;
     }
 
+    /** S05: kèm category. */
+    public PhysicalProduct(String id, String name, BigDecimal basePrice, int stock, BigDecimal weightKg, Category category) {
+        this(id, name, basePrice, stock, weightKg);
+        // TODO S05: constructor này chưa truyền được category lên Product (đang gọi this(...) bản cũ).
+        //  Gợi ý: cho constructor cũ gọi this(..., Category.OTHER), còn constructor này gọi super(..., category).
+    }
+
     public BigDecimal getWeightKg() {
         return weightKg;
     }

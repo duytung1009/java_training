@@ -7,7 +7,10 @@ import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.domain.order.OrderLine;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Quản lý catalog và tồn kho. Catalog lưu bằng {@code Map<id, Product>} (giữ thứ tự thêm), tra theo id O(1).
@@ -28,12 +31,18 @@ public class InventoryManager {
         catalog.put(product.getId(), product);
     }
 
-    /** @return product có id tương ứng, hoặc {@code null} nếu không có. */
-    public Product findById(String id) {
-        if (id == null) {
-            return null;
-        }
-        return catalog.get(id);
+    /** S05: product có id tương ứng; không có (kể cả id null) → {@code Optional.empty()}. */
+    public Optional<Product> findById(String id) {
+        throw new UnsupportedOperationException("TODO S05");
+    }
+
+    /**
+     * S05: lọc catalog theo điều kiện, giữ thứ tự thêm; list trả về là snapshot.
+     *
+     * @throws IllegalArgumentException khi criteria null
+     */
+    public List<Product> search(Predicate<Product> criteria) {
+        throw new UnsupportedOperationException("TODO S05");
     }
 
     /**

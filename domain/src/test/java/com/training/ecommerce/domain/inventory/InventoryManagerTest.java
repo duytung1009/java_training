@@ -1,5 +1,6 @@
 // SPEC S02 – sinh bởi java-start-backlog 20/10. Không sửa test để cho pass; muốn đổi spec thì sửa bảng Spec trong backlog trước.
 // SPEC S03 – nâng cấp 20/10: Product thành abstract → dùng PhysicalProduct (0.5 kg); kỳ vọng S02 giữ nguyên.
+// SPEC S05 – nâng cấp 21/10: findById trả Optional (Spec S05 D2).
 package com.training.ecommerce.domain.inventory;
 
 import com.training.ecommerce.domain.catalog.PhysicalProduct;
@@ -14,9 +15,9 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InventoryManagerTest {
 
@@ -40,8 +41,8 @@ class InventoryManagerTest {
         @Test
         @DisplayName("Trả về đúng instance đã add")
         void returnsSameInstanceThatWasAdded() {
-            assertSame(tshirt, inventory.findById("P001"));
-            assertSame(jeans, inventory.findById("P002"));
+            assertSame(tshirt, inventory.findById("P001").orElseThrow());
+            assertSame(jeans, inventory.findById("P002").orElseThrow());
         }
 
         @Test
@@ -49,25 +50,25 @@ class InventoryManagerTest {
         void comparesIdByValueNotReference() {
             String idFromUserInput = new String("P001");
 
-            assertSame(tshirt, inventory.findById(idFromUserInput));
+            assertSame(tshirt, inventory.findById(idFromUserInput).orElseThrow());
         }
 
         @Test
-        @DisplayName("id không tồn tại → null")
+        @DisplayName("id không tồn tại → Optional.empty()")
         void returnsNullForUnknownId() {
-            assertNull(inventory.findById("P999"));
+            assertTrue(inventory.findById("P999").isEmpty());
         }
 
         @Test
-        @DisplayName("id null → null")
+        @DisplayName("id null → Optional.empty()")
         void returnsNullForNullId() {
-            assertNull(inventory.findById(null));
+            assertTrue(inventory.findById(null).isEmpty());
         }
 
         @Test
-        @DisplayName("Kho rỗng → null")
+        @DisplayName("Kho rỗng → Optional.empty()")
         void returnsNullOnEmptyInventory() {
-            assertNull(new InventoryManager().findById("P001"));
+            assertTrue(new InventoryManager().findById("P001").isEmpty());
         }
     }
 
@@ -86,7 +87,7 @@ class InventoryManagerTest {
             }
 
             for (Product product : added) {
-                assertSame(product, bigInventory.findById(product.getId()));
+                assertSame(product, bigInventory.findById(product.getId()).orElseThrow());
             }
         }
 
@@ -102,7 +103,7 @@ class InventoryManagerTest {
             Product duplicate = new PhysicalProduct(new String("P001"), "Áo thun nam (bản trùng)", new BigDecimal("120000"), 5, new BigDecimal("0.5"));
 
             assertThrows(IllegalArgumentException.class, () -> inventory.addProduct(duplicate));
-            assertSame(tshirt, inventory.findById("P001"));
+            assertSame(tshirt, inventory.findById("P001").orElseThrow());
         }
     }
 
@@ -127,7 +128,7 @@ class InventoryManagerTest {
 
             assertEquals(47, tshirt.getStock());
             assertEquals(18, jeans.getStock());
-            assertEquals(47, inventory.findById("P001").getStock());
+            assertEquals(47, inventory.findById("P001").orElseThrow().getStock());
         }
 
         @Test

@@ -1,4 +1,5 @@
 // SPEC S04 – sinh bởi java-start-backlog 21/10. Không sửa test để cho pass; muốn đổi spec thì sửa bảng Spec trong backlog trước.
+// SPEC S05 – nâng cấp 21/10: findById trả Optional (Spec S05 D2).
 package com.training.ecommerce.infrastructure.persistence.inmemory;
 
 import com.training.ecommerce.domain.catalog.DigitalProduct;
@@ -18,7 +19,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -48,8 +48,8 @@ class InMemoryRepositoryTest {
             assertSame(tshirt, products.save(tshirt));
             products.save(office);
 
-            assertSame(tshirt, products.findById("P001"));
-            assertSame(office, products.findById("D001"));
+            assertSame(tshirt, products.findById("P001").orElseThrow());
+            assertSame(office, products.findById("D001").orElseThrow());
         }
 
         @Test
@@ -57,16 +57,16 @@ class InMemoryRepositoryTest {
         void findsByIdValue() {
             products.save(tshirt);
 
-            assertSame(tshirt, products.findById(new String("P001")));
+            assertSame(tshirt, products.findById(new String("P001")).orElseThrow());
         }
 
         @Test
-        @DisplayName("id không tồn tại / null → null")
-        void returnsNullWhenMissing() {
+        @DisplayName("id không tồn tại / null → Optional.empty()")
+        void returnsEmptyWhenMissing() {
             products.save(tshirt);
 
-            assertNull(products.findById("P999"));
-            assertNull(products.findById(null));
+            assertTrue(products.findById("P999").isEmpty());
+            assertTrue(products.findById(null).isEmpty());
         }
 
         @Test
@@ -79,7 +79,7 @@ class InMemoryRepositoryTest {
             products.save(tshirtUpdated);
 
             assertEquals(2, products.count());
-            assertSame(tshirtUpdated, products.findById("P001"));
+            assertSame(tshirtUpdated, products.findById("P001").orElseThrow());
             assertSame(tshirtUpdated, products.findAll().get(0));
             assertSame(jeans, products.findAll().get(1));
         }
@@ -136,7 +136,7 @@ class InMemoryRepositoryTest {
             assertTrue(products.deleteById("P001"));
             assertFalse(products.deleteById("P001"));
             assertFalse(products.deleteById("P999"));
-            assertNull(products.findById("P001"));
+            assertTrue(products.findById("P001").isEmpty());
             assertEquals(1, products.count());
             assertSame(jeans, products.findAll().get(0));
         }
@@ -169,7 +169,7 @@ class InMemoryRepositoryTest {
             Customer tung = new Customer(1L, "Tùng");
             customers.save(tung);
 
-            assertSame(tung, customers.findById(1L));
+            assertSame(tung, customers.findById(1L).orElseThrow());
             assertEquals(1, customers.count());
         }
 
@@ -184,7 +184,7 @@ class InMemoryRepositoryTest {
             products.saveAll(physicalProducts);
 
             assertEquals(2, products.count());
-            assertSame(jeans, products.findById("P002"));
+            assertSame(jeans, products.findById("P002").orElseThrow());
         }
     }
 }

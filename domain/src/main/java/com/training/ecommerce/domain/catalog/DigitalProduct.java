@@ -14,6 +14,13 @@ public class DigitalProduct extends Product implements Discountable {
         super(id, name, basePrice, stock);
     }
 
+    /** S05: kèm category. */
+    public DigitalProduct(String id, String name, BigDecimal basePrice, int stock, Category category) {
+        this(id, name, basePrice, stock);
+        // TODO S05: constructor này chưa truyền được category lên Product (đang gọi this(...) bản cũ).
+        //  Gợi ý: cho constructor cũ gọi this(..., Category.OTHER), còn constructor này gọi super(..., category).
+    }
+
     @Override
     public BigDecimal calculateFinalPrice() {
 

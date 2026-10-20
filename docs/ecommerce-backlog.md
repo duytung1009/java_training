@@ -191,12 +191,12 @@ Ngoài spec: `getBasePrice()` của BundleProduct, so sánh city không phân bi
 
 **Spec hành vi** (chốt 21/10, test: `app/src/test/java/com/training/ecommerce/infrastructure/persistence/inmemory/InMemoryRepositoryTest.java`, `domain/src/test/java/com/training/ecommerce/domain/{order/CartTest, catalog/DomainExceptionTest}.java`; test S02–S03 giữ nguyên)
 
-API (quyết định 21/10): `Identifiable<ID>` + `Repository<T extends Identifiable<ID>, ID>` (`save`, `saveAll(Collection<? extends T>)`, `findById` → `null` khi không có, `findAll`, `deleteById`, `count`) ở `shared/repository`; `InMemoryRepository` ở app `infrastructure/persistence/inmemory`; `Product implements Identifiable<String>`. Exception **ở `domain/catalog`** (tránh vòng phụ thuộc catalog ↔ inventory): `ProductNotFoundException extends IllegalArgumentException` (`getProductId`), `OutOfStockException extends IllegalStateException` (`getProductId/getRequested/getAvailable`). `Cart` ở `domain/order`. Chưa dùng `Optional`/Stream (S05).
+API (quyết định 21/10): `Identifiable<ID>` + `Repository<T extends Identifiable<ID>, ID>` (`save`, `saveAll(Collection<? extends T>)`, `findById` → `null` khi không có (S05: `Optional`), `findAll`, `deleteById`, `count`) ở `shared/repository`; `InMemoryRepository` ở app `infrastructure/persistence/inmemory`; `Product implements Identifiable<String>`. Exception **ở `domain/catalog`** (tránh vòng phụ thuộc catalog ↔ inventory): `ProductNotFoundException extends IllegalArgumentException` (`getProductId`), `OutOfStockException extends IllegalStateException` (`getProductId/getRequested/getAvailable`). `Cart` ở `domain/order`. Chưa dùng `Optional`/Stream (S05).
 
 | Method | Input | Kết quả mong đợi | Test |
 |---|---|---|---|
 | `save` / `findById` | lưu áo, Office; tìm `"P001"`, `new String("P001")` | `save` trả chính entity; `findById` trả đúng instance (so id theo giá trị) | `savesAndFindsSameInstance`, `findsByIdValue` |
-| `findById` | id không có / `null` | `null` (D1) | `returnsNullWhenMissing` |
+| `findById` | id không có / `null` | `null` (D1; **S05 đổi sang `Optional.empty()`**, xem Spec S05 D2) | `returnsNullWhenMissing` (S05: `returnsEmptyWhenMissing`) |
 | `save` | cùng id P001 lần 2 | ghi đè (upsert, D2), `count` không đổi, giữ vị trí cũ trong `findAll` | `upsertsSameId` |
 | `save` | `null` | `IllegalArgumentException` | `rejectsNullEntity` |
 | `findAll` / `count` | thêm Office, áo, quần; repo rỗng | đúng thứ tự thêm; rỗng → list rỗng, count 0; list trả về không sửa được (UOE), repo không đổi | `findAllKeepsInsertionOrder`, `emptyRepository`, `findAllIsUnmodifiable` |
@@ -240,4 +240,45 @@ Ngoài spec: `Repository.saveAll(null)`, `Cart.changeQuantity(null, …)` trả 
 - [ ] Logic tính toán pure: không sửa list / `Order` đầu vào, không đọc giờ hệ thống; test không cần mock
 - [ ] Test S02 + S03 vẫn xanh sau refactor (hoặc được nâng cấp có chủ đích, ghi rõ)
 - [ ] Không `forEach` để add vào list bên ngoài, không đặt logic trong `peek`, không `Optional.get()` trần
-- [ ] Bonus: `findById` trả `Optional<Product>` (đổi quyết định D2 của S02, chốt ở `java-start-backlog`)
+- [ ] `findById` trả `Optional` ở `InventoryManager` và `Repository` (đổi D1 của S04, chốt 21/10)
+
+**Spec hành vi** (chốt 21/10, test: `domain/src/test/java/com/training/ecommerce/domain/{catalog/ProductCategoryTest, inventory/InventoryManagerSearchTest, pricing/PricingRuleTest}.java`, `app/src/test/java/com/training/ecommerce/application/{PricingEngineRuleTest, ReportServiceTest}.java`; nâng cấp có chủ đích `InventoryManagerTest`, `InMemoryRepositoryTest` cho `Optional` (D2), các test S02–S04 khác giữ nguyên)
+
+API (quyết định 21/10):
+- **D1** `enum Category { FASHION, ELECTRONICS, SOFTWARE, SUBSCRIPTION, OTHER }` ở `domain/catalog`. Mỗi subtype thêm constructor có `Category` ở cuối (`BundleProduct`: trước varargs `items`); constructor cũ giữ nguyên, mặc định `OTHER`. `Product.getCategory()`; category `null` → IAE.
+- **D2** `InventoryManager.findById` và `Repository.findById` trả `Optional` (đổi D1 của S04). `InventoryManager.search(Predicate<Product>)` → list mới theo thứ tự thêm.
+- `PricingRule` (`@FunctionalInterface`) ở `domain/pricing`: `apply`, default `andThen(next)`, static `identity()`, `percentOff(rate)` với rate trong (0, 1], `amountOff(amount)` với amount ≥ 0, `chain(List<PricingRule>)` = `reduce(identity, andThen)`. Rule giảm giá trả scale 2 HALF_UP.
+- `PricingEngine.calculateRevenue(products, rule)` = Σ `rule.apply(calculateFinalPrice())` từng product, scale 2 (overload S03 giữ nguyên).
+- `ReportService` ở `application`: `revenueByCategory(List<Order>)` → `Map<Category, BigDecimal>` (Σ `lineTotal`, trước giảm giá/thuế của đơn); `topSellingProducts(orders, n)` → `List<Product>` (**D4**); `partitionByFinalAmount(orders, threshold)` → `Map<Boolean, List<Order>>`.
+- Tham số `null` → IAE ở mọi method mới.
+
+| Method | Input | Kết quả mong đợi | Test |
+|---|---|---|---|
+| `Category` | `values()` | đúng 5 giá trị theo thứ tự trên | `categoryValues` |
+| Constructor cũ | Physical / Digital / Subscription / Bundle | `getCategory()` = `OTHER` | `oldConstructorsDefaultToOther` |
+| Constructor mới | áo FASHION, Office SOFTWARE, Claude Pro SUBSCRIPTION, combo FASHION | lưu đúng category; weight/stock/giá như cũ (5988000.00, combo 1035000.00) | `storesCategory` |
+| Constructor mới | category `null`; giá âm / months 0 | IAE (mọi subtype); validation cũ vẫn chạy | `rejectsNullCategory`, `keepsOldValidation` |
+| `findById` | có / không có / `null` / kho rỗng | `Optional` chứa đúng instance; `Optional.empty()` (D2) | `presentWhenFound`, `emptyWhenMissing`, `InventoryManagerTest$FindById`, `InMemoryRepositoryTest` |
+| `search` | category FASHION; `inStock.and(under500k)`, `inStock.negate()` | `[áo, quần]` theo thứ tự thêm; `[áo, quần]`, `[chuột]` | `filtersByCategoryInInsertionOrder`, `combinesPredicates` |
+| `search` | không khớp; kho rỗng; sửa list trả về; `null` | list rỗng; catalog không đổi; IAE | `emptyWhenNothingMatches`, `resultIsSnapshot`, `rejectsNullCriteria` |
+| `identity` / lambda | 150000 | giữ giá; gán lambda vào `PricingRule` được | `identityKeepsPrice`, `acceptsLambda` |
+| `percentOff` | 10% của 150000; 15% của 12345.67; 100% | `135000.00`; `10493.82` (HALF_UP); `0.00` | `tenPercent`, `roundsHalfUp`, `fullDiscount` |
+| `percentOff` | 0, −0.1, 1.01, `null` | IAE | `rejectsInvalidRate`, `rejectsNullRate` |
+| `amountOff` | −50000; −200000; −0 trên 150000 | `100000.00`; `0.00`, không âm (**D6**); `150000.00` | `subtractsAmount`, `neverNegative`, `zeroAmount` |
+| `amountOff` | âm / `null` | IAE | `rejectsInvalidAmount` |
+| `andThen` | 10% rồi −50000; −50000 rồi 10%; với lambda; `null` | `85000.00`; `90000.00` (thứ tự quan trọng); chạy được; IAE | `andThenOrderMatters`, `andThenWithLambda`, `andThenRejectsNull` |
+| `chain` | 2 rule hai thứ tự; 3 rule; `List.of()`; `null` / chứa `null` | `85000.00` / `90000.00`; `76500.00`; identity; IAE | `chainAppliesInOrder`, `chainThreeRules`, `emptyChainIsIdentity`, `chainRejectsNull` |
+| `calculateRevenue(products, rule)` | identity; 10%; −200000 trên [áo, Office] | bằng bản S03 (`7138000.00`); `1035000.00`; `800000.00` (trừ từng product, không trừ trên tổng) | `identityMatchesOldOverload`, `appliesRulePerProduct` |
+| `calculateRevenue(products, rule)` | lambda +10000; chain; list rỗng; `null` | `1170000.00`; `1055000.00`; `0.00`; IAE | `acceptsLambdaAndChain`, `emptyListIsZero`, `rejectsNulls` |
+| `revenueByCategory` | o1 (áo 2, Office 1, −10%, +8%), o2 (quần 1, áo 3), o3 (chuột 5) | FASHION `1200000.00`, SOFTWARE `1000000.00`, ELECTRONICS `1250000.00`; chỉ 3 key | `sumsLineTotalsPerCategory`, `onlyCategoriesWithSales` |
+| `revenueByCategory` | product constructor cũ; không có order; `null` | key `OTHER`; map rỗng; IAE | `defaultCategoryIsOther`, `emptyAndNull` |
+| `topSellingProducts` | tổng SL: áo 5, chuột 5, Office 1, quần 1; n = 2, 3, 10 | `[chuột, áo]`, `[chuột, áo, Office]`, cả 4 (bằng nhau thì id tăng dần, **D3**; n lớn hơn thì trả hết) | `sortsByQuantityThenId`, `nLargerThanProductCount` |
+| `topSellingProducts` | quần ở instance khác cùng id P002 thêm 9 | cộng chung theo id → quần đứng đầu | `groupsByProductId` |
+| `topSellingProducts` | không có order; n 0 / −1; `null` | list rỗng; IAE; IAE | `emptyOrders`, `rejectsNonPositiveN`, `rejectsNullOrders` |
+| `partitionByFinalAmount` | ngưỡng 1000000 (o1 1263600, o2 900000, o3 1250000) | true `[o1, o3]`, false `[o2]`, giữ thứ tự đơn | `partitionsByThreshold` |
+| `partitionByFinalAmount` | ngưỡng `900000` với o2 `900000.00`; không có order; `null` | nhóm true (≥, so bằng `compareTo`, **D5**); đủ 2 key, list rỗng; IAE | `equalGoesToTrue`, `emptyOrdersHaveBothKeys`, `rejectsNulls` |
+| Pure | gọi cả 3 báo cáo | list order và các order giữ nguyên | `doesNotMutateInput` |
+
+Ngoài spec: list trả về của `search` / `topSellingProducts` có sửa được hay không, kiểu `Map` cụ thể (`EnumMap` hay `HashMap`), thứ tự key của `revenueByCategory`, hiệu năng.
+
+**Kiểm khi review:** không còn `for`/`while` trong `InventoryManager`, `Order`, `PricingEngine`, `ReportService`; không `forEach` để add vào collection bên ngoài; không đặt logic trong `peek`; không `Optional.get()` trần (dùng `orElseThrow` / `map` / `orElse`); gộp `BigDecimal` bằng `reduce` / `reducing`, không `double`; `toMap` có merge function; `PricingRule.chain` dùng `reduce(identity(), PricingRule::andThen)`; constructor có category tái sử dụng validation cũ (constructor chaining, không chép lại kiểm tra); có `S05Demo` chạy được.

@@ -40,6 +40,21 @@ public abstract class Product implements Identifiable<String> {
         this.stock = stock;
     }
 
+    /**
+     * S05: như constructor 4 tham số, kèm category (constructor cũ mặc định {@link Category#OTHER}).
+     *
+     * @throws IllegalArgumentException khi category null
+     */
+    protected Product(String id, String name, BigDecimal basePrice, int stock, Category category) {
+        this(id, name, basePrice, stock);
+        // TODO S05: kiểm tra và lưu category
+    }
+
+    /** S05: danh mục; constructor không có category thì là OTHER. */
+    public Category getCategory() {
+        throw new UnsupportedOperationException("TODO S05");
+    }
+
     /** Giá bán theo loại sản phẩm, chưa gồm giảm giá và phí ship; scale 2, HALF_UP. */
     public abstract BigDecimal calculateFinalPrice();
 
