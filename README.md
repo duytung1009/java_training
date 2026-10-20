@@ -40,7 +40,8 @@ java_training/
         ├── EcommerceApplication.java
         ├── application/            # service / use case (PricingEngine, CheckoutService…)
         ├── infrastructure/         # lưu trữ in-memory / JDBC, đọc/ghi file
-        └── interfaces/             # cli/ (App, ReceiptPrinter), REST controller
+        ├── interfaces/             # cli/ (ReceiptPrinter…), REST controller
+        └── demo/                   # SXXDemo: entry point chạy thử theo từng buổi
 ```
 
 Dependency rule: `interfaces → application → domain ← infrastructure`. Package `domain` không được import package nào khác trong project. Rule này được **compiler enforce**: module `domain` không có Spring/Lombok/`app` trên classpath, nên import vào là compile lỗi; thêm dependency đó vào `domain/pom.xml` thì `maven-enforcer-plugin` chặn.
@@ -49,6 +50,7 @@ Dependency rule: `interfaces → application → domain ← infrastructure`. Pac
 
 - Nhánh: `s02/order-line-calculator`, `s03/product-pricing`…
 - Commit: `[S03] add PhysicalProduct shipping`
+- Demo console mỗi buổi: `app/.../demo/SXXDemo.java` (package `com.training.ecommerce.demo`, ví dụ `S03Demo`)
 - Mỗi PR dùng template trong `.github/PULL_REQUEST_TEMPLATE.md`
 - Review T4 xong và merge thì gắn tag: `git tag s03-done`
 

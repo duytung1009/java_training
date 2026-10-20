@@ -1,6 +1,8 @@
 // SPEC S02 – sinh bởi java-start-backlog 20/10. Không sửa test để cho pass; muốn đổi spec thì sửa bảng Spec trong backlog trước.
+// SPEC S03 – nâng cấp 20/10: Product thành abstract → dùng PhysicalProduct (0.5 kg); kỳ vọng S02 giữ nguyên.
 package com.training.ecommerce.interfaces.cli;
 
+import com.training.ecommerce.domain.catalog.PhysicalProduct;
 import com.training.ecommerce.domain.catalog.Product;
 import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.domain.order.OrderLine;
@@ -33,8 +35,8 @@ class ReceiptPrinterTest {
         Locale.setDefault(Locale.US);
 
         printer = new ReceiptPrinter();
-        Product tshirt = new Product("P001", "Áo thun nam", new BigDecimal("150000"), 50);
-        Product jeans = new Product("P002", "Quần jean", new BigDecimal("450000"), 20);
+        Product tshirt = new PhysicalProduct("P001", "Áo thun nam", new BigDecimal("150000"), 50, new BigDecimal("0.5"));
+        Product jeans = new PhysicalProduct("P002", "Quần jean", new BigDecimal("450000"), 20, new BigDecimal("0.5"));
         order = new Order(new BigDecimal("0.10"), new BigDecimal("0.08"));
         order.addLine(new OrderLine(tshirt, 2));
         order.addLine(new OrderLine(jeans, 1));
@@ -94,7 +96,7 @@ class ReceiptPrinterTest {
     @Test
     @DisplayName("Tên dài hơn 20 ký tự được giữ nguyên, không cắt")
     void keepsLongNameInFull() {
-        Product longName = new Product("P004", "Áo thun nam cổ tròn tay ngắn", new BigDecimal("199000"), 10);
+        Product longName = new PhysicalProduct("P004", "Áo thun nam cổ tròn tay ngắn", new BigDecimal("199000"), 10, new BigDecimal("0.5"));
         Order longOrder = new Order(BigDecimal.ZERO, BigDecimal.ZERO);
         longOrder.addLine(new OrderLine(longName, 1));
 

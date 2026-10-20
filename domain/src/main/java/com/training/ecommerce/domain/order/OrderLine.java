@@ -11,7 +11,7 @@ import java.math.RoundingMode;
 public class OrderLine {
     private final Product product;
     private final int quantity;
-    private final BigDecimal unitPrice; // Snapshot giá tại thời điểm tạo đơn
+    private final BigDecimal unitPrice; // Snapshot giá bán (calculateFinalPrice) tại thời điểm tạo đơn
 
     public OrderLine(Product product, int quantity) {
         if (product == null) {
@@ -26,7 +26,7 @@ public class OrderLine {
         }
         this.product = product;
         this.quantity = quantity;
-        this.unitPrice = product.getPrice();
+        this.unitPrice = product.calculateFinalPrice();
     }
 
     /** unitPrice × quantity, scale 2, HALF_UP. */
