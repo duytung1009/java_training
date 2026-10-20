@@ -8,9 +8,9 @@
 
 | Buổi | Ngày T7 | Self-study | Ecommerce task | PR | Review T4 | Tự tin | Quiz |
 |---|---|---|---|---|---|---|---|
-| S01 – JVM, Data & String | dd/mm | Done | Done | – | – | ?/3 | ?/12 |
-| S02 – Control flow, Arrays, Classes | dd/mm | Done | Done | – | – | ?/3 | ?/12 |
-| S03 – OOP, SOLID | dd/mm | Done | Done | – | – | 1.9/3 | 7/8 (biến tấu, 28/09) |
+| S01 – JVM, Data & String | 12/09 | Done | Done | – | – | ?/3 | ?/12 |
+| S02 – Control flow, Arrays, Classes | 19/09 | Done | Done | – | – | ?/3 | ?/12 |
+| S03 – OOP, SOLID | 26/09 | Done | Done | – | – | 1.9/3 | 7/8 (biến tấu, 28/09) |
 | S04 – Generics, Collections & Exception | 03/10 | Todo | Todo | – | – | ?/3 | ?/15 |
 | S05 – FP, Lambda & Stream | 17/10 | Todo | Todo | – | – | ?/3 | ?/15 |
 
