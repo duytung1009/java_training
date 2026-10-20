@@ -44,7 +44,7 @@ java_training/
         └── demo/                   # SXXDemo: entry point chạy thử theo từng buổi
 ```
 
-Dependency rule: `interfaces → application → domain ← infrastructure`. Package `domain` không được import package nào khác trong project. Rule này được **compiler enforce**: module `domain` không có Spring/Lombok/`app` trên classpath, nên import vào là compile lỗi; thêm dependency đó vào `domain/pom.xml` thì `maven-enforcer-plugin` chặn.
+Dependency rule: `interfaces → application → domain ← infrastructure`. Module `domain` (gồm package `domain.**` và `shared.**`) **không được import module khác** (`app`); trong module, `domain.**` được dùng `shared.**`. Rule này được **compiler enforce**: module `domain` không có Spring/Lombok/`app` trên classpath, nên import vào là compile lỗi; thêm dependency đó vào `domain/pom.xml` thì `maven-enforcer-plugin` chặn.
 
 ## Quy ước
 
