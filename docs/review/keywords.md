@@ -82,7 +82,7 @@ Cách dùng: sau mỗi lần ôn, cập nhật cột *Tự tin* và *Ôn lần c
 | DIP | 2 | 28/09 |  |
 | Anti-pattern: God class, deep inheritance | | | |
 
-## S04
+## S05
 
 | Keyword | Tự tin | Ôn lần cuối | Ghi chú |
 |---|---|---|---|
@@ -121,12 +121,12 @@ Cách dùng: sau mỗi lần ôn, cập nhật cột *Tự tin* và *Ôn lần c
 | HashSet mutable key (S04) | | | ngoài lớp · gaps.md |
 | TreeSet không Comparable (S04) | | | ngoài lớp · gaps.md |
 | finally + return (S04) | | | ngoài lớp · gaps.md |
-| Stream lazy / vertical / short-circuit / single-use (S04) | | | ngoài lớp · gaps.md |
+| Stream lazy / vertical / short-circuit / single-use (S05) | | | ngoài lớp · gaps.md |
 | Fail-fast / modCount (S04) | | | ngoài lớp · gaps.md |
 | Iterator & lỗ hổng fail-fast (S04) | | | ngoài lớp · gaps.md |
-| Checked exception trong lambda (S04) | | | ngoài lớp · gaps.md |
-| Collectors.toMap trùng key / null (S04) | | | ngoài lớp · gaps.md |
-| Effectively final capture (S04) | | | ngoài lớp · gaps.md |
+| Checked exception trong lambda (S05) | | | ngoài lớp · gaps.md |
+| Collectors.toMap trùng key / null (S05) | | | ngoài lớp · gaps.md |
+| Effectively final capture (S05) | | | ngoài lớp · gaps.md |
 | Identity hashCode không duy nhất (pretest) | | | ngoài lớp · gaps.md |
 | Map.of / Set.of / List.of (Java 9) (pretest) | | | ngoài lớp · gaps.md |
 | Map.merge / compute* & null (pretest) | | | ngoài lớp · gaps.md |

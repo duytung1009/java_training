@@ -8,10 +8,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * S04 – Functional Programming, Lambda & Stream API.
- * Chạy: java playground/session04/FunctionalStreamPitfalls.java   (cần JDK 16+ vì Stream.toList())
+ * S05 – Functional Programming, Lambda & Stream API.
+ * Chạy: java playground/session05/FunctionalStreamPitfalls.java   (cần JDK 16+ vì Stream.toList())
  *
- * ĐOÁN output từng dòng trước khi chạy! Số đầu dòng khớp với số câu quiz trong docs/sessions/session-04.md.
+ * ĐOÁN output từng dòng trước khi chạy! Số đầu dòng khớp với số câu quiz trong docs/sessions/session-05.md.
  * Câu 3 và câu 15 không có output (lỗi compile / câu thiết kế), xem phần comment.
  */
 public class FunctionalStreamPitfalls {

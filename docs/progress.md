@@ -11,7 +11,8 @@
 | S01 – JVM, Data & String | dd/mm | Done | Done | – | – | ?/3 | ?/12 |
 | S02 – Control flow, Arrays, Classes | dd/mm | Done | Done | – | – | ?/3 | ?/12 |
 | S03 – OOP, SOLID | dd/mm | Done | Done | – | – | 1.9/3 | 7/8 (biến tấu, 28/09) |
-| S04 – FP, Lambda & Stream | 17/10 | Todo | Todo | – | – | ?/3 | ?/15 |
+| S04 – Generics & Collections | dd/mm | Todo | Todo | – | – | ?/3 | – |
+| S05 – FP, Lambda & Stream | 17/10 | Todo | Todo | – | – | ?/3 | ?/15 |
 
 - **Quiz:** số câu trả lời đúng khi *chưa mở* đáp án (phần quiz trong `sessions/session-XX.md`).
 - **Tự tin:** trung bình mức tự tin các keyword của buổi đó trong `review/keywords.md`.
@@ -20,7 +21,7 @@
 
 - [x] S02 – Case Study 1 vào ecommerce
 - [x] S03 – Case Study 2 vào ecommerce
-- [ ] S04 – Refactor Stream + PricingRule + ReportService vào ecommerce
+- [ ] S05 – Refactor Stream + PricingRule + ReportService vào ecommerce
 
 Đọc thêm (tham khảo, không tính vào tiến độ): Effective Java Item 6 và Item 15; VisualVM; G1 vs ZGC.
 

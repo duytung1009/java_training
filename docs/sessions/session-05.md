@@ -1,7 +1,7 @@
-# S04 – Functional Programming, Lambda & Stream API
+# S05 – Functional Programming, Lambda & Stream API
 
 - **Module:** – (format mới: tự nghiên cứu + tự làm slide trình bày trên lớp) · **Ngày T7:** 17/10 · **Slide:** [Functional Programming, Lambda & Stream API](https://claude.ai/artifact/7P9Vr9WS3AvWsCdYVFUjFS) (Tùng trình bày)
-- **Demo:** `java playground/session04/FunctionalStreamPitfalls.java` (cần JDK 16+ vì `Stream.toList()`) · pretest cũ: `playground/session04/CollectionsStreamDeepDive.java`
+- **Demo:** `java playground/session05/FunctionalStreamPitfalls.java` (cần JDK 16+ vì `Stream.toList()`) · pretest cũ (01/10): `playground/session04/CollectionsStreamDeepDive.java`
 
 ## 1. Tóm tắt 1 phút
 1. **Functional Programming** là tư duy *mô tả kết quả muốn có* (declarative) thay vì *mô tả từng bước* (imperative). Hai nguyên tắc chính: **pure function** (không side effect, deterministic) và **immutability**.
@@ -111,20 +111,20 @@ Câu 1–14 có trong demo `FunctionalStreamPitfalls.java` (dòng in ra cùng s�
 
 ## 4. Bài tập & homework
 > Tham khảo, **không tính tiến độ**. Chỉ phần đưa vào ecommerce (mục 5) mới được tính.
-- [ ] Tự làm và trình bày slide S04 (đã trình bày 17/10)
+- [ ] Tự làm và trình bày slide S05 (đã trình bày 17/10)
 - [ ] Chạy `FunctionalStreamPitfalls.java`, đoán output trước rồi mới chạy
-- [ ] Xem lại các gap S04 còn `Mở` trong `docs/review/gaps.md` (pretest 01/10: lazy/short-circuit, toMap trùng key, effectively final, checked exception trong lambda…)
+- [ ] Xem lại các gap Stream/Lambda còn `Mở` trong `docs/review/gaps.md` (pretest 01/10: lazy/short-circuit, toMap trùng key, effectively final, checked exception trong lambda…)
 - [ ] `javap -c -p` một class có lambda để thấy `invokedynamic` và `lambda$…$0`
 
 ## 5. Áp dụng vào ecommerce
-Xem `docs/ecommerce-backlog.md` → **S04**. Đây là bài tập cuối slide: refactor sang Stream, mỗi quy tắc giá là một hàm, thêm `ReportService`.
+Xem `docs/ecommerce-backlog.md` → **S05**. Đây là bài tập cuối slide: refactor sang Stream, mỗi quy tắc giá là một hàm, thêm `ReportService`.
 
 ## 6. Ghi chú cá nhân / câu hỏi mang lên lớp
 - **Slide ex-pricing:** `inStock.and(digital.negate())` dùng để lọc "sản phẩm cần giao", nhưng trong project thì `SubscriptionProduct` và `BundleProduct` cũng không phải `Digital`, nên sẽ bị lọc nhầm thành "cần giao". Đúng ra nên lọc theo khả năng giao hàng: `Shippable.class::isInstance`. Cũng nên cân nhắc việc dùng `instanceof` ở đây có mâu thuẫn với rule S03 "không dùng `instanceof`" hay không (rule đó chỉ áp cho phần tính giá).
-- **Slide fp-why / ex-*:** code ví dụ dùng `getPrice()`, `getSubtotal()`, `getCategory()`, `OrderStatus.PAID`. Project hiện tại dùng `getBasePrice()`/`calculateFinalPrice()` và `lineTotal()`, chưa có category hay status. Task S04 sẽ bổ sung những gì cần.
+- **Slide fp-why / ex-*:** code ví dụ dùng `getPrice()`, `getSubtotal()`, `getCategory()`, `OrderStatus.PAID`. Project hiện tại dùng `getBasePrice()`/`calculateFinalPrice()` và `lineTotal()`, chưa có category hay status. Task S05 sẽ bổ sung những gì cần.
 - **Slide q5 (speaker notes):** "`Stream.of(...).map(...).count()` có thể không in gì". Đúng với Java 9+: `count()` bỏ qua cả pipeline khi biết trước kích thước (SIZED) và không có `filter`. Nhưng đây là tối ưu của implementation chứ không phải hành vi được spec đảm bảo, nên tránh đặt logic quan trọng trong `peek`/`map`.
 - **Slide fi-more:** ghi "~40 interface" trong `java.util.function`. Con số thực tế là 43, nên giữ chữ "khoảng".
-- **Format mới (S04, S05):** tự nghiên cứu và tự trình bày. Hỏi mentor xem buổi T4 vẫn review code ecommerce như trước, hay review cả slide.
+- **Format mới (từ S04):** tự nghiên cứu và tự trình bày. Hỏi mentor xem buổi T4 vẫn review code ecommerce như trước, hay review cả slide.
 
 ## 7. Feedback review T4
 - 

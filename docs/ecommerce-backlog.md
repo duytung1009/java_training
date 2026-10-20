@@ -168,8 +168,13 @@ Ngoài spec: `getBasePrice()` của BundleProduct, so sánh city không phân bi
 
 **Kiểm khi review:** không dùng `instanceof` trong phần tính giá (`PricingEngine`, `BundleProduct`); `Product` là abstract, constructor `protected`; `DigitalProduct` không implement `Shippable` (ISP); cây kế thừa không quá 3 tầng; field `private`, không có setter thừa; mô tả PR có mục "SOLID check" (S/O/L/I/D mỗi nguyên tắc 1 dòng); `S03Demo` in tổng doanh thu cho list đủ các loại product.
 
-## S04 – Functional Programming, Lambda & Stream: refactor + ReportService
-**Nhánh:** `s04/stream-report` · bài tập cuối slide S04 (tự trình bày 17/10)
+## S04 – Generics & Collections
+_Tự nghiên cứu, không có slide. Task ecommerce sẽ chốt khi soạn session S04._
+
+---
+
+## S05 – Functional Programming, Lambda & Stream: refactor + ReportService
+**Nhánh:** `s05/stream-report` · bài tập cuối slide S05 (tự trình bày 17/10)
 
 | # | Class/Task | Package | Ghi chú |
 |---|---|---|---|
@@ -179,7 +184,7 @@ Ngoài spec: `getBasePrice()` của BundleProduct, so sánh city không phân bi
 | 4 | `PricingEngine`: doanh thu bằng Stream; áp chuỗi `PricingRule` lên giá bán | `application` | refactor S03 |
 | 5 | `Category` cho sản phẩm | `domain/catalog` | mới, phục vụ báo cáo theo category (cách gắn vào `Product` chốt ở spec) |
 | 6 | `ReportService`: doanh thu theo category, top N sản phẩm bán chạy (theo số lượng), tách đơn lớn / nhỏ theo ngưỡng | `application` | mới; pure, không sửa input |
-| 7 | `S04Demo` | `demo` | in giá sau chuỗi rule + 3 báo cáo |
+| 7 | `S05Demo` | `demo` | in giá sau chuỗi rule + 3 báo cáo |
 
 **Acceptance**
 - [ ] Không còn vòng `for`/`while` trong `InventoryManager`, `Order`, `PricingEngine`, `ReportService`; dùng Stream, method reference khi làm code dễ đọc hơn
