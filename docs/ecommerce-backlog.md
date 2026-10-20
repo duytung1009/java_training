@@ -14,10 +14,12 @@ Quy trình: tạo nhánh `sXX/...` → code → PR (dùng template) → review T
 | 1 | `TextUtils.toTitleCase`, `slugify(productName)` (ví dụ "Áo Thun Nam" → "ao-thun-nam", phần bỏ dấu là bonus) | `shared/text` |
 | 2 | `WordCounter`, `TextTransformer` (bài practice) | `playground/session01` |
 
+> Task #2 chưa làm, đang nằm trong mục "Nợ cần trả" ở `docs/progress.md`. Task #1 đã merge (tag `s01-done`).
+
 **Acceptance**
-- [ ] Không dùng `+=` với String trong vòng lặp, dùng `StringBuilder`
-- [ ] So sánh chuỗi bằng `equals`, xử lý input `null` / rỗng
-- [ ] Unit test cho mỗi method public
+- [x] Không dùng `+=` với String trong vòng lặp, dùng `StringBuilder`
+- [x] So sánh chuỗi bằng `equals`, xử lý input `null` / rỗng
+- [x] Unit test cho mỗi method public
 
 **Spec hành vi** (chốt 07/10, test: `src/test/java/com/training/ecommerce/shared/text/TextUtilsTest.java`)
 
@@ -28,7 +30,7 @@ API: `public static String toTitleCase(String)`, `public static String slugify(S
 | `toTitleCase` | `"áo sơ mi"`, `"hello world"`, `"123 abc"` | `"Áo Sơ Mi"`, `"Hello World"`, `"123 Abc"` | `capitalizesFirstLetterOfEachWord` |
 | `toTitleCase` | `"hELLO woRLD"`, `"ÁO THUN NAM"` | `"Hello World"`, `"Áo Thun Nam"`: các chữ còn lại về chữ thường | `lowercasesRemainingLetters`, `convertsUppercaseProductName` |
 | `toTitleCase` | `""`, `"   "`, `"  hello   world  "` | giữ nguyên mọi khoảng trắng | `preservesLeadingTrailingAndMultipleSpaces`, `keepsWhitespaceOnlyInput` |
-| `toTitleCase` | `"hello\tworld"`, `"hello\nworld"`, NBSP | mọi khoảng trắng đều tách từ, và được giữ nguyên | `treatsTabAndNewlineAsSeparator`, `treatsNonBreakingSpaceAsSeparator` |
+| `toTitleCase` | `"hello\tworld"`, `"hello\nworld"`, NBSP | space, tab, newline và NBSP tách từ, và được giữ nguyên | `treatsTabAndNewlineAsSeparator`, `treatsNonBreakingSpaceAsSeparator` |
 | `toTitleCase` | `"áo-thun nam"` | `"Áo-thun Nam"`: dấu `-` không tách từ | `doesNotTreatHyphenAsSeparator` |
 | `toTitleCase` | `null` | `null` | `returnsNullForNull` |
 | `slugify` | `"Hello World"`, `"iPhone 15 Pro"`, `""` | `"hello-world"`, `"iphone-15-pro"`, `""` | `convertsToLowercaseHyphenated` |
@@ -39,7 +41,7 @@ API: `public static String toTitleCase(String)`, `public static String slugify(S
 | `slugify` | `"   "`, `" ?! "`, `"---"` | `""` | `returnsEmptyWhenOnlySpacesOrPunctuation` |
 | `slugify` | `null` | `null` | `returnsNullForNull` |
 
-Ngoài spec: ký tự có dấu không thuộc tiếng Việt (ví dụ `ñ`, `ü`) và input Unicode dạng NFD.
+Ngoài spec: ký tự có dấu không thuộc tiếng Việt (ví dụ `ñ`, `ü`), input Unicode dạng NFD, và các khoảng trắng khác (`\r`, `\f`, `\u000B`) trong `toTitleCase`.
 
 **Kiểm khi review:** không dùng `+=` với String trong vòng lặp (dùng `StringBuilder`); so sánh chuỗi bằng `equals`; `TextUtils` có constructor `private`.
 
