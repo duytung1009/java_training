@@ -2,12 +2,12 @@
 package com.training.ecommerce.domain.inventory;
 
 import com.training.ecommerce.domain.catalog.Product;
+import com.training.ecommerce.domain.order.Order;
+import com.training.ecommerce.domain.order.OrderLine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 
@@ -104,78 +104,106 @@ class InventoryManagerTest {
         }
     }
 
+    // SPEC S02 – sửa 20/10 (Tùng quyết): decreaseStock nhận Order thay cho (productId, quantity);
+    // all-or-nothing; cùng product ở nhiều line thì cộng dồn.
     @Nested
-    @DisplayName("decreaseStock")
+    @DisplayName("decreaseStock(Order)")
     class DecreaseStock {
 
+        private Order newOrder(OrderLine... lines) {
+            Order order = new Order(BigDecimal.ZERO, BigDecimal.ZERO);
+            for (OrderLine line : lines) {
+                order.addLine(line);
+            }
+            return order;
+        }
+
         @Test
-        @DisplayName("Giảm tồn kho, thấy được qua chính reference product đã add")
-        void decreasesStockOfStoredProduct() {
-            inventory.decreaseStock("P001", 3);
+        @DisplayName("Trừ kho theo từng line, thấy được qua chính reference product đã add")
+        void decreasesStockForEachLine() {
+            inventory.decreaseStock(newOrder(new OrderLine(tshirt, 3), new OrderLine(jeans, 2)));
 
             assertEquals(47, tshirt.getStock());
+            assertEquals(18, jeans.getStock());
             assertEquals(47, inventory.findById("P001").getStock());
         }
 
         @Test
-        @DisplayName("Không ảnh hưởng product khác")
-        void doesNotAffectOtherProducts() {
-            inventory.decreaseStock("P001", 3);
+        @DisplayName("Không ảnh hưởng product không có trong order")
+        void doesNotAffectProductsNotInOrder() {
+            inventory.decreaseStock(newOrder(new OrderLine(tshirt, 3)));
 
             assertEquals(20, jeans.getStock());
         }
 
         @Test
-        @DisplayName("Giảm đúng bằng tồn kho → còn 0")
+        @DisplayName("Đặt đúng bằng tồn kho → còn 0")
         void allowsDecreasingToZero() {
-            inventory.decreaseStock("P002", 20);
+            inventory.decreaseStock(newOrder(new OrderLine(jeans, 20)));
 
             assertEquals(0, jeans.getStock());
         }
 
         @Test
-        @DisplayName("Giảm nhiều lần liên tiếp cộng dồn đúng")
-        void accumulatesSuccessiveDecreases() {
-            inventory.decreaseStock("P001", 3);
-            inventory.decreaseStock("P001", 7);
+        @DisplayName("Nhiều order liên tiếp trừ cộng dồn đúng")
+        void accumulatesSuccessiveOrders() {
+            inventory.decreaseStock(newOrder(new OrderLine(tshirt, 3)));
+            inventory.decreaseStock(newOrder(new OrderLine(tshirt, 7)));
 
             assertEquals(40, tshirt.getStock());
         }
 
         @Test
-        @DisplayName("Thiếu hàng → IllegalStateException, tồn kho giữ nguyên")
-        void throwsWhenInsufficientStock() {
-            assertThrows(IllegalStateException.class, () -> inventory.decreaseStock("P002", 21));
+        @DisplayName("Order rỗng → không thay đổi kho")
+        void emptyOrderChangesNothing() {
+            inventory.decreaseStock(newOrder());
+
+            assertEquals(50, tshirt.getStock());
             assertEquals(20, jeans.getStock());
         }
 
         @Test
-        @DisplayName("Thiếu hàng sau vài lần giảm → IllegalStateException, giữ số đã giảm trước đó")
-        void throwsWhenInsufficientAfterPreviousDecreases() {
-            inventory.decreaseStock("P001", 10);
+        @DisplayName("Một line thiếu hàng → IllegalStateException, KHÔNG line nào bị trừ (all-or-nothing)")
+        void throwsAndChangesNothingWhenAnyLineIsInsufficient() {
+            Order order = newOrder(new OrderLine(tshirt, 3), new OrderLine(jeans, 20));
+            inventory.decreaseStock(newOrder(new OrderLine(jeans, 1)));   // jeans còn 19 sau khi order được tạo
 
-            assertThrows(IllegalStateException.class, () -> inventory.decreaseStock("P001", 41));
-            assertEquals(40, tshirt.getStock());
+            assertThrows(IllegalStateException.class, () -> inventory.decreaseStock(order));
+            assertEquals(50, tshirt.getStock());
+            assertEquals(19, jeans.getStock());
         }
 
-        @ParameterizedTest(name = "quantity = {0}")
-        @ValueSource(ints = {0, -1, -5})
-        @DisplayName("quantity <= 0 → IllegalArgumentException, tồn kho giữ nguyên")
-        void rejectsNonPositiveQuantity(int quantity) {
-            assertThrows(IllegalArgumentException.class, () -> inventory.decreaseStock("P001", quantity));
+        @Test
+        @DisplayName("Cùng product ở 2 line: cộng dồn, vượt tồn kho → IllegalStateException, kho giữ nguyên")
+        void accumulatesQuantityOfSameProductAcrossLines() {
+            Order order = newOrder(new OrderLine(tshirt, 30), new OrderLine(tshirt, 30));
+
+            assertThrows(IllegalStateException.class, () -> inventory.decreaseStock(order));
             assertEquals(50, tshirt.getStock());
         }
 
         @Test
-        @DisplayName("id không tồn tại → IllegalArgumentException")
-        void rejectsUnknownId() {
-            assertThrows(IllegalArgumentException.class, () -> inventory.decreaseStock("P999", 1));
+        @DisplayName("Cùng product ở 2 line, tổng vừa đủ → trừ hết")
+        void allowsSameProductAcrossLinesWithinStock() {
+            inventory.decreaseStock(newOrder(new OrderLine(tshirt, 20), new OrderLine(tshirt, 30)));
+
+            assertEquals(0, tshirt.getStock());
         }
 
         @Test
-        @DisplayName("id null → IllegalArgumentException")
-        void rejectsNullId() {
-            assertThrows(IllegalArgumentException.class, () -> inventory.decreaseStock(null, 1));
+        @DisplayName("Line có product không có trong kho → IllegalArgumentException, kho giữ nguyên")
+        void rejectsProductNotInInventory() {
+            Product socks = new Product("P003", "Tất cổ ngắn", new BigDecimal("12345.67"), 100);
+            Order order = newOrder(new OrderLine(tshirt, 2), new OrderLine(socks, 1));
+
+            assertThrows(IllegalArgumentException.class, () -> inventory.decreaseStock(order));
+            assertEquals(50, tshirt.getStock());
+        }
+
+        @Test
+        @DisplayName("order null → IllegalArgumentException")
+        void rejectsNullOrder() {
+            assertThrows(IllegalArgumentException.class, () -> inventory.decreaseStock(null));
         }
     }
 }

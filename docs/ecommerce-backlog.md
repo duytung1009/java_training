@@ -70,7 +70,7 @@ Ngoài spec: ký tự có dấu không thuộc tiếng Việt (ví dụ `ñ`, `�
 
 API (quyết định 20/10: tiền dùng **`BigDecimal`** ngay từ S02, mọi số tiền trả về có scale 2, làm tròn HALF_UP):
 - `Product(String id, String name, BigDecimal price, int stock)` · `Product(String id, String name, BigDecimal price)` (stock = 0, chaining) · `getId/getName/getPrice/getStock`
-- `InventoryManager()` · `void addProduct(Product)` · `Product findById(String)` · `void decreaseStock(String productId, int quantity)`
+- `InventoryManager()` · `void addProduct(Product)` · `Product findById(String)` · `void decreaseStock(Order order)` (sửa 20/10: thay cho `(productId, quantity)`)
 - `OrderLine(Product, int quantity)` · `getProduct/getQuantity` · `BigDecimal lineTotal()`
 - `Order(BigDecimal discountRate, BigDecimal taxRate)` · `void addLine(OrderLine)` · `OrderLine[] getLines()` · `subtotal/discountAmount/taxAmount/finalAmount()`
 - `ReceiptPrinter.print(Order)` trả về `String`
@@ -84,9 +84,9 @@ API (quyết định 20/10: tiền dùng **`BigDecimal`** ngay từ S02, mọi s
 | `findById` | id không tồn tại, `null`, kho rỗng | `null` (D2) | `returnsNullFor…` |
 | `addProduct` | 15 product | mảng tự nới, tìm thấy đủ | `growsBeyondInitialCapacity` |
 | `addProduct` | `null`, trùng id | `IllegalArgumentException`, product cũ giữ nguyên | `rejectsNullProduct`, `rejectsDuplicateId` |
-| `decreaseStock` | P001 −3, giảm liên tiếp, giảm đúng bằng stock | 47 (thấy qua reference product), cộng dồn, về 0; product khác không đổi | `decreasesStockOfStoredProduct`, `accumulatesSuccessiveDecreases`, `allowsDecreasingToZero`, `doesNotAffectOtherProducts` |
-| `decreaseStock` | quantity > stock | `IllegalStateException`, stock giữ nguyên (D3) | `throwsWhenInsufficient…` |
-| `decreaseStock` | quantity 0/−1/−5, id không tồn tại/null | `IllegalArgumentException`, stock giữ nguyên | `rejectsNonPositiveQuantity`, `rejectsUnknownId`, `rejectsNullId` |
+| `decreaseStock(Order)` | 3×P001 + 2×P002; nhiều order liên tiếp; đặt đúng bằng tồn | 47 / 18 (thấy qua reference product), cộng dồn, về 0; product không có trong order không đổi; order rỗng không đổi | `decreasesStockForEachLine`, `accumulatesSuccessiveOrders`, `allowsDecreasingToZero`, `doesNotAffectProductsNotInOrder`, `emptyOrderChangesNothing` |
+| `decreaseStock(Order)` | một line thiếu hàng; cùng product ở 2 line vượt tồn (30+30 > 50) | `IllegalStateException`, **all-or-nothing**: không line nào bị trừ; trùng product thì cộng dồn (20+30 = 50 → về 0) | `throwsAndChangesNothingWhenAnyLineIsInsufficient`, `accumulatesQuantityOfSameProductAcrossLines`, `allowsSameProductAcrossLinesWithinStock` |
+| `decreaseStock(Order)` | `null`, line có product không có trong kho | `IllegalArgumentException`, kho giữ nguyên | `rejectsNullOrder`, `rejectsProductNotInInventory` |
 | `OrderLine` | quantity = stock | hợp lệ; tạo line **không** giảm stock | `allowsQuantityEqualToStock`, `doesNotChangeStock` |
 | `OrderLine` | quantity > stock | `IllegalStateException` (D8: OrderLine có kiểm tồn kho) | `rejectsQuantityGreaterThanStock` |
 | `OrderLine` | product null, quantity 0/−5 | `IllegalArgumentException` | `rejectsNullProduct`, `rejectsNonPositiveQuantity` |
