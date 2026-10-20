@@ -82,6 +82,38 @@ Cách dùng: sau mỗi lần ôn, cập nhật cột *Tự tin* và *Ôn lần c
 | DIP | 2 | 28/09 |  |
 | Anti-pattern: God class, deep inheritance | | | |
 
+## S04
+
+| Keyword | Tự tin | Ôn lần cuối | Ghi chú |
+|---|---|---|---|
+| Imperative vs Declarative | | | |
+| Pure function · side effect · deterministic | | | |
+| Immutability (record, final, List.of, toList) | | | |
+| BigDecimal / String immutable (add không gán lại) | | | |
+| First-class · Higher-order function | | | |
+| Functional interface (SAM) · @FunctionalInterface | | | |
+| Supplier / Consumer / Function / Predicate | | | |
+| Bi… / UnaryOperator / BinaryOperator / primitive variants | | | |
+| Composition: andThen vs compose · and/or/negate · Predicate.not | | | |
+| Lambda syntax · target type | | | |
+| Effectively final capture | | | |
+| this trong lambda vs anonymous class | | | |
+| Checked exception trong lambda | | | |
+| Method reference (static / bound / unbound / constructor) | | | |
+| Stream pipeline: source → intermediate → terminal | | | |
+| Lazy evaluation | | | |
+| Xử lý theo chiều dọc · short-circuit | | | |
+| Stateless vs stateful intermediate (sorted đọc hết) | | | |
+| Stream single-use (IllegalStateException) | | | |
+| map vs flatMap | | | |
+| Stream.toList() vs Collectors.toList() | | | |
+| parallelStream: khi nào dùng | | | |
+| groupingBy + downstream (counting, reducing) | | | |
+| partitioningBy (luôn 2 key) | | | |
+| toMap: trùng key / merge function / null | | | |
+| Optional: orElse vs orElseGet vs orElseThrow | | | |
+| Comparator.comparing / thenComparing / reversed · type witness | | | |
+
 ## Ngoài lớp
 
 | Keyword | Tự tin | Ôn lần cuối | Ghi chú |
