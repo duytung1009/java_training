@@ -2,7 +2,7 @@
 
 Mỗi buổi, project được **mở rộng hoặc refactor** chứ không làm lại từ đầu. Ví dụ `Product` ở S02 là class thường, đến S03 được refactor thành abstract class. Nhờ vậy khi review sẽ thấy rõ vì sao thiết kế thay đổi.
 
-Backlog chỉ gồm task trong project ecommerce (`src/`). Bài practice ở `playground/` không đưa vào backlog và không tính tiến độ.
+Backlog chỉ gồm task trong project ecommerce (module `domain/` và `app/`). Bài practice ở `playground/` không đưa vào backlog và không tính tiến độ.
 
 Quy trình: tạo nhánh `sXX/...` → code → PR (dùng template) → review T4 → merge → `git tag sXX-done`.
 
@@ -22,7 +22,7 @@ Quy trình: tạo nhánh `sXX/...` → code → PR (dùng template) → review T
 - [x] So sánh chuỗi bằng `equals`, xử lý input `null` / rỗng
 - [x] Unit test cho mỗi method public
 
-**Spec hành vi** (chốt 07/10, test: `src/test/java/com/training/ecommerce/shared/text/TextUtilsTest.java`)
+**Spec hành vi** (chốt 07/10, test: `domain/src/test/java/com/training/ecommerce/shared/text/TextUtilsTest.java`)
 
 API: `public static String toTitleCase(String)`, `public static String slugify(String)` trong `com.training.ecommerce.shared.text.TextUtils` (utility class, constructor `private`).
 
@@ -66,7 +66,7 @@ Ngoài spec: ký tự có dấu không thuộc tiếng Việt (ví dụ `ñ`, `�
 - [ ] Encapsulation đúng, có constructor chaining, tên biến có nghĩa
 - [ ] Bonus: dùng `BigDecimal` cho tiền thay vì `double` (xem S01 Q10). Nếu làm thì ghi rõ trong PR để bàn khi review.
 
-**Spec hành vi** (chốt 20/10, test: `src/test/java/com/training/ecommerce/{domain/catalog/ProductTest, domain/inventory/InventoryManagerTest, domain/order/OrderLineTest, domain/order/OrderTest, interfaces/cli/ReceiptPrinterTest}.java`)
+**Spec hành vi** (chốt 20/10, test: `domain/src/test/java/com/training/ecommerce/domain/{catalog/ProductTest, inventory/InventoryManagerTest, order/OrderLineTest, order/OrderTest}.java`, `app/src/test/java/com/training/ecommerce/interfaces/cli/ReceiptPrinterTest.java`)
 
 API (quyết định 20/10: tiền dùng **`BigDecimal`** ngay từ S02, mọi số tiền trả về có scale 2, làm tròn HALF_UP):
 - `Product(String id, String name, BigDecimal price, int stock)` · `Product(String id, String name, BigDecimal price)` (stock = 0, chaining) · `getId/getName/getPrice/getStock`

@@ -4,6 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- Chỉ dùng để quản lý version (dependencyManagement/pluginManagement), không kéo dependency nào vào module -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -14,7 +15,13 @@
     <groupId>com.training</groupId>
     <artifactId>ecommerce</artifactId>
     <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
     <name>java-training-ecommerce</name>
+
+    <modules>
+        <module>domain</module>
+        <module>app</module>
+    </modules>
 
     <properties>
         <java.version>25</java.version>
@@ -22,63 +29,20 @@
         <springdoc.version>3.1.1</springdoc.version>
     </properties>
 
-    <dependencies>
-        <!-- Spring MVC (Boot 4: spring-boot-starter-webmvc thay cho spring-boot-starter-web) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webmvc</artifactId>
-        </dependency>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.training</groupId>
+                <artifactId>ecommerce-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
-        <!-- Swagger UI + OpenAPI 3: /swagger-ui.html, /v3/api-docs -->
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>${springdoc.version}</version>
-        </dependency>
-
-        <!-- Version do Spring Boot quản lý -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <!-- Gồm JUnit Jupiter, AssertJ, Mockito, Spring Test -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <!-- JDK 23+ không tự chạy annotation processor, phải khai báo Lombok -->
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <!-- KHÔNG khai báo <dependencies> ở đây: mọi dependency ở parent sẽ bị kế thừa xuống module domain -->
 </project>

@@ -1,7 +1,7 @@
 # Progress Tracker – Tùng
 
 **Trạng thái:** `Todo` · `Doing` · `Done` · `Partial` · `–` (không áp dụng)
-**Phạm vi:** chỉ project ecommerce (`src/`) được tính tiến độ. Bài practice, bài tập trên lớp và homework (`playground/`) không tính.
+**Phạm vi:** chỉ project ecommerce (module `domain/` và `app/`) được tính tiến độ. Bài practice, bài tập trên lớp và homework (`playground/`) không tính.
 **Tự tin (0–3):** 0 = chưa hiểu · 1 = hiểu khi đọc lại · 2 = tự giải thích được · 3 = dạy lại người khác được
 
 ## 1. Bảng tổng

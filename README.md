@@ -30,16 +30,20 @@ java_training/
 │       ├── mistakes.md             # nhật ký lỗi & giả định sai (java-quiz, java-explore)
 │       └── gaps.md                 # gap ngoài/sâu hơn lớp học (java-explore tạo khi chạy lần đầu)
 ├── playground/sessionXX/           # code thử kiến thức, chạy bằng `java File.java`
-├── src/main/java/com/training/ecommerce/
-│   ├── shared/          # tiện ích dùng chung (TextUtils…)
-│   ├── domain/          # model thuần Java, không phụ thuộc gì khác
-│   ├── application/     # service / use case (PricingEngine, CheckoutService…)
-│   ├── infrastructure/  # lưu trữ in-memory / JDBC, đọc/ghi file
-│   └── interfaces/cli/  # App.java: menu console để demo
-└── src/test/java/com/training/ecommerce/
+├── pom.xml                         # parent (Spring Boot BOM), modules: domain, app
+├── domain/                         # module Java thuần: KHÔNG có Spring/Lombok trên classpath
+│   └── src/{main,test}/java/com/training/ecommerce/
+│       ├── shared/                 # tiện ích dùng chung (TextUtils…)
+│       └── domain/                 # model thuần Java, không phụ thuộc gì khác
+└── app/                            # module Spring Boot, phụ thuộc domain
+    └── src/{main,test}/java/com/training/ecommerce/
+        ├── EcommerceApplication.java
+        ├── application/            # service / use case (PricingEngine, CheckoutService…)
+        ├── infrastructure/         # lưu trữ in-memory / JDBC, đọc/ghi file
+        └── interfaces/             # cli/ (App, ReceiptPrinter), REST controller
 ```
 
-Dependency rule: `interfaces → application → domain ← infrastructure`. Package `domain` không được import package nào khác trong project.
+Dependency rule: `interfaces → application → domain ← infrastructure`. Package `domain` không được import package nào khác trong project. Rule này được **compiler enforce**: module `domain` không có Spring/Lombok/`app` trên classpath, nên import vào là compile lỗi; thêm dependency đó vào `domain/pom.xml` thì `maven-enforcer-plugin` chặn.
 
 ## Quy ước
 
@@ -51,6 +55,8 @@ Dependency rule: `interfaces → application → domain ← infrastructure`. Pac
 ## Chạy
 
 ```bash
-mvn test                                  # build + test
+./mvnw test                               # build + test toàn bộ
+./mvnw -pl domain test                    # chỉ module domain
+./mvnw -pl app -am spring-boot:run        # chạy app, Swagger: http://localhost:8080/swagger-ui.html
 java playground/session01/IntegerCacheDemo.java   # chạy file demo đơn lẻ
 ```
