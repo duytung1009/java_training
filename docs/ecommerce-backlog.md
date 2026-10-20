@@ -2,6 +2,8 @@
 
 Mỗi buổi, project được **mở rộng hoặc refactor** chứ không làm lại từ đầu. Ví dụ `Product` ở S02 là class thường, đến S03 được refactor thành abstract class. Nhờ vậy khi review sẽ thấy rõ vì sao thiết kế thay đổi.
 
+Backlog chỉ gồm task trong project ecommerce (`src/`). Bài practice ở `playground/` không đưa vào backlog và không tính tiến độ.
+
 Quy trình: tạo nhánh `sXX/...` → code → PR (dùng template) → review T4 → merge → `git tag sXX-done`.
 
 ---
@@ -12,9 +14,8 @@ Quy trình: tạo nhánh `sXX/...` → code → PR (dùng template) → review T
 | # | Task | Package |
 |---|---|---|
 | 1 | `TextUtils.toTitleCase`, `slugify(productName)` (ví dụ "Áo Thun Nam" → "ao-thun-nam", phần bỏ dấu là bonus) | `shared/text` |
-| 2 | `WordCounter`, `TextTransformer` (bài practice) | `playground/session01` |
 
-> Task #2 chưa làm, đang nằm trong mục "Nợ cần trả" ở `docs/progress.md`. Task #1 đã merge (tag `s01-done`).
+> Đã merge (tag `s01-done`).
 
 **Acceptance**
 - [x] Không dùng `+=` với String trong vòng lặp, dùng `StringBuilder`
