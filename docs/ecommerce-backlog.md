@@ -124,13 +124,15 @@ Ngoài spec: cùng product add 2 lần (gộp hay tách line), header receipt, c
 | 8 | `PricingEngine.calculateRevenue(List<Product>)` | `application` | không dùng `instanceof` trong phần tính giá |
 | 9 | `equals`/`hashCode` theo `id`, `toString` | `domain/catalog` | |
 
+> Đã merge (tag `s03-done`).
+
 **Acceptance**
-- [ ] Demo: list có đủ các loại product → in tổng doanh thu
-- [ ] Thêm `BundleProduct` mà **không sửa** `PricingEngine` (chứng minh OCP)
-- [ ] Test: 2 product cùng id → `HashSet.size() == 1`
-- [ ] Mô tả PR có mục "SOLID check": S/O/L/I/D, mỗi nguyên tắc 1 dòng
-- [ ] Không có cây kế thừa sâu quá 3 tầng
-- [ ] Code S02 (`OrderLine`, `InventoryManager`) vẫn chạy với `Product` mới
+- [x] Demo: list có đủ các loại product → in tổng doanh thu
+- [x] Thêm `BundleProduct` mà **không sửa** `PricingEngine` (chứng minh OCP)
+- [x] Test: 2 product cùng id → `HashSet.size() == 1`
+- [ ] Mô tả PR có mục "SOLID check": S/O/L/I/D, mỗi nguyên tắc 1 dòng _(chưa có PR: merge trực tiếp 21/10)_
+- [x] Không có cây kế thừa sâu quá 3 tầng
+- [x] Code S02 (`OrderLine`, `InventoryManager`) vẫn chạy với `Product` mới
 
 **Spec hành vi** (chốt 20/10, test: `domain/src/test/java/com/training/ecommerce/domain/{catalog/PhysicalProductTest, catalog/DigitalProductTest, catalog/SubscriptionProductTest, catalog/BundleProductTest, catalog/ProductIdentityTest, pricing/DiscountCodeTest, customer/AddressTest}.java`, `app/src/test/java/com/training/ecommerce/application/PricingEngineTest.java`; nâng cấp test S02)
 
