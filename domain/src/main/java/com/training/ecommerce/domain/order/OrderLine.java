@@ -1,5 +1,6 @@
 package com.training.ecommerce.domain.order;
 
+import com.training.ecommerce.domain.catalog.OutOfStockException;
 import com.training.ecommerce.domain.catalog.Product;
 
 import java.math.BigDecimal;
@@ -21,8 +22,7 @@ public class OrderLine {
             throw new IllegalArgumentException("quantity phải > 0");
         }
         if (quantity > product.getStock()) {
-            throw new IllegalStateException("Không đủ hàng cho " + product.getId()
-                    + ": còn " + product.getStock() + ", cần " + quantity);
+            throw new OutOfStockException(product.getId(), quantity, product.getStock());
         }
         this.product = product;
         this.quantity = quantity;

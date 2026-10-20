@@ -47,14 +47,14 @@ public abstract class Product implements Identifiable<String> {
      * Giảm tồn kho. Chỉ InventoryManager nên gọi method này.
      *
      * @throws IllegalArgumentException khi quantity &lt;= 0
-     * @throws IllegalStateException    khi quantity lớn hơn tồn kho hiện tại
+     * @throws OutOfStockException      khi quantity lớn hơn tồn kho hiện tại
      */
     public void decreaseStock(int quantity) {
         if (quantity <= 0) {
             throw new IllegalArgumentException("quantity phải > 0");
         }
         if (quantity > stock) {
-            throw new IllegalStateException("Không đủ hàng cho " + id + ": còn " + stock + ", cần " + quantity);
+            throw new OutOfStockException(id, quantity, stock);
         }
         stock -= quantity;
     }

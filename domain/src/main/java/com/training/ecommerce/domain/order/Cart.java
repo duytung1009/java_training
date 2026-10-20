@@ -1,53 +1,75 @@
 package com.training.ecommerce.domain.order;
 
+import com.training.ecommerce.domain.catalog.OutOfStockException;
 import com.training.ecommerce.domain.catalog.Product;
+import com.training.ecommerce.domain.catalog.ProductNotFoundException;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Giỏ hàng: product → số lượng, giữ thứ tự thêm. Không trừ kho.
+ * Giỏ hàng: product → số lượng, giữ thứ tự thêm. Không trừ kho (việc của InventoryManager).
  */
 public class Cart {
+    private final Map<Product, Integer> items = new LinkedHashMap<>();
 
     /**
      * Thêm (cộng dồn nếu đã có).
      *
      * @throws IllegalArgumentException khi product null hoặc quantity &lt;= 0
-     * @throws com.training.ecommerce.domain.catalog.OutOfStockException khi tổng số lượng trong giỏ vượt tồn kho (giỏ giữ nguyên)
+     * @throws OutOfStockException      khi tổng số lượng trong giỏ vượt tồn kho (giỏ giữ nguyên)
      */
     public void add(Product product, int quantity) {
-        throw new UnsupportedOperationException("TODO S04");
+        requireProduct(product);
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("quantity phải > 0");
+        }
+        ensureInStock(product, getQuantity(product) + quantity);
+        items.merge(product, quantity, Integer::sum);
     }
 
     /**
      * Đặt lại số lượng; 0 thì bỏ khỏi giỏ.
      *
      * @throws IllegalArgumentException khi product null hoặc quantity &lt; 0
-     * @throws com.training.ecommerce.domain.catalog.ProductNotFoundException khi product chưa có trong giỏ
-     * @throws com.training.ecommerce.domain.catalog.OutOfStockException khi quantity vượt tồn kho (giỏ giữ nguyên)
+     * @throws ProductNotFoundException khi product chưa có trong giỏ
+     * @throws OutOfStockException      khi quantity vượt tồn kho (giỏ giữ nguyên)
      */
     public void changeQuantity(Product product, int quantity) {
-        throw new UnsupportedOperationException("TODO S04");
+        requireProduct(product);
+        if (quantity < 0) {
+            throw new IllegalArgumentException("quantity phải >= 0");
+        }
+        if (!items.containsKey(product)) {
+            throw new ProductNotFoundException(product.getId());
+        }
+        if (quantity == 0) {
+            items.remove(product);
+            return;
+        }
+        ensureInStock(product, quantity);
+        items.put(product, quantity);
     }
 
     /** Bỏ product khỏi giỏ; chưa có thì không làm gì. */
     public void remove(Product product) {
-        throw new UnsupportedOperationException("TODO S04");
+        items.remove(product);
     }
 
     /** @return số lượng trong giỏ, 0 nếu chưa có */
     public int getQuantity(Product product) {
-        throw new UnsupportedOperationException("TODO S04");
+        return items.getOrDefault(product, 0);
     }
 
-    /** @return product → số lượng theo thứ tự thêm; map không sửa được */
+    /** @return product → số lượng theo thứ tự thêm; view không sửa được */
     public Map<Product, Integer> getItems() {
-        throw new UnsupportedOperationException("TODO S04");
+        return Collections.unmodifiableMap(items);
     }
 
     public boolean isEmpty() {
-        throw new UnsupportedOperationException("TODO S04");
+        return items.isEmpty();
     }
 
     /**
@@ -56,6 +78,25 @@ public class Cart {
      * @throws IllegalStateException khi giỏ rỗng
      */
     public Order toOrder(BigDecimal discountRate, BigDecimal taxRate) {
-        throw new UnsupportedOperationException("TODO S04");
+        if (items.isEmpty()) {
+            throw new IllegalStateException("Giỏ hàng rỗng");
+        }
+        Order order = new Order(discountRate, taxRate);
+        for (Map.Entry<Product, Integer> item : items.entrySet()) {
+            order.addLine(new OrderLine(item.getKey(), item.getValue()));
+        }
+        return order;
+    }
+
+    private static void requireProduct(Product product) {
+        if (product == null) {
+            throw new IllegalArgumentException("product không được null");
+        }
+    }
+
+    private static void ensureInStock(Product product, int totalQuantity) {
+        if (totalQuantity > product.getStock()) {
+            throw new OutOfStockException(product.getId(), totalQuantity, product.getStock());
+        }
     }
 }

@@ -4,20 +4,26 @@ package com.training.ecommerce.domain.catalog;
  * Không đủ hàng tồn kho. Kế thừa IllegalStateException để tương thích code cũ.
  */
 public class OutOfStockException extends IllegalStateException {
+    private final String productId;
+    private final int requested;
+    private final int available;
 
     public OutOfStockException(String productId, int requested, int available) {
-        super("TODO S04"); // TODO S04: message có productId, requested, available; lưu các giá trị
+        super("Không đủ hàng cho " + productId + ": còn " + available + ", cần " + requested);
+        this.productId = productId;
+        this.requested = requested;
+        this.available = available;
     }
 
     public String getProductId() {
-        throw new UnsupportedOperationException("TODO S04");
+        return productId;
     }
 
     public int getRequested() {
-        throw new UnsupportedOperationException("TODO S04");
+        return requested;
     }
 
     public int getAvailable() {
-        throw new UnsupportedOperationException("TODO S04");
+        return available;
     }
 }

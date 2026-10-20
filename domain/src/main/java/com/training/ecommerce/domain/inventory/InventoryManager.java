@@ -1,81 +1,69 @@
 package com.training.ecommerce.domain.inventory;
 
+import com.training.ecommerce.domain.catalog.OutOfStockException;
 import com.training.ecommerce.domain.catalog.Product;
+import com.training.ecommerce.domain.catalog.ProductNotFoundException;
 import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.domain.order.OrderLine;
 
-import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
- * Quản lý catalog và tồn kho. Catalog lưu bằng {@code Product[]}, tự nới khi đầy.
+ * Quản lý catalog và tồn kho. Catalog lưu bằng {@code Map<id, Product>} (giữ thứ tự thêm), tra theo id O(1).
  */
 public class InventoryManager {
-    private static final int INITIAL_CAPACITY = 10;
+    private final Map<String, Product> catalog = new LinkedHashMap<>();
 
-    private Product[] catalog = new Product[INITIAL_CAPACITY];
-    private int count = 0;
-
+    /**
+     * @throws IllegalArgumentException khi product null hoặc trùng id với product đã có
+     */
     public void addProduct(Product product) {
         if (product == null) {
             throw new IllegalArgumentException("product không được null");
         }
-        if (indexOf(product.getId()) >= 0) {
+        if (catalog.containsKey(product.getId())) {
             throw new IllegalArgumentException("Trùng id: " + product.getId());
         }
-        if (count == catalog.length) {
-            catalog = Arrays.copyOf(catalog, catalog.length * 2);
-        }
-        catalog[count++] = product;
+        catalog.put(product.getId(), product);
     }
 
     /** @return product có id tương ứng, hoặc {@code null} nếu không có. */
     public Product findById(String id) {
-        int index = indexOf(id);
-        return index >= 0 ? catalog[index] : null;
+        if (id == null) {
+            return null;
+        }
+        return catalog.get(id);
     }
 
     /**
-     * Trừ kho cho toàn bộ order theo kiểu all-or-nothing: kiểm tra đủ hàng cho mọi line
-     * (cộng dồn các line cùng product) rồi mới trừ.
+     * Trừ kho cho toàn bộ order theo kiểu all-or-nothing: cộng dồn số lượng theo product,
+     * kiểm tra đủ hàng cho mọi product rồi mới trừ.
      *
-     * @throws IllegalArgumentException khi order null hoặc có product không nằm trong kho
-     * @throws IllegalStateException    khi không đủ hàng; kho giữ nguyên
+     * @throws IllegalArgumentException khi order null
+     * @throws ProductNotFoundException khi order có product không nằm trong kho
+     * @throws OutOfStockException      khi không đủ hàng; kho giữ nguyên
      */
     public void decreaseStock(Order order) {
         if (order == null) {
             throw new IllegalArgumentException("order không được null");
         }
-        int[] required = new int[count];
+        Map<Product, Integer> required = new LinkedHashMap<>();
         for (OrderLine line : order.getLines()) {
-            String productId = line.getProduct().getId();
-            int index = indexOf(productId);
-            if (index < 0) {
-                throw new IllegalArgumentException("Product không có trong kho: " + productId);
+            Product stored = catalog.get(line.getProduct().getId());
+            if (stored == null) {
+                throw new ProductNotFoundException(line.getProduct().getId());
             }
-            required[index] += line.getQuantity();
+            required.merge(stored, line.getQuantity(), Integer::sum);
         }
-        for (int i = 0; i < count; i++) {
-            if (required[i] > catalog[i].getStock()) {
-                throw new IllegalStateException("Không đủ hàng cho " + catalog[i].getId()
-                        + ": còn " + catalog[i].getStock() + ", cần " + required[i]);
-            }
-        }
-        for (int i = 0; i < count; i++) {
-            if (required[i] > 0) {
-                catalog[i].decreaseStock(required[i]);
+        for (Map.Entry<Product, Integer> entry : required.entrySet()) {
+            Product product = entry.getKey();
+            if (entry.getValue() > product.getStock()) {
+                throw new OutOfStockException(product.getId(), entry.getValue(), product.getStock());
             }
         }
-    }
-
-    private int indexOf(String id) {
-        if (id == null) {
-            return -1;
+        for (Map.Entry<Product, Integer> entry : required.entrySet()) {
+            entry.getKey().decreaseStock(entry.getValue());
         }
-        for (int i = 0; i < count; i++) {
-            if (catalog[i].getId().equals(id)) {
-                return i;
-            }
-        }
-        return -1;
     }
 }
