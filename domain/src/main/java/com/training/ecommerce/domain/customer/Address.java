@@ -1,11 +1,23 @@
 package com.training.ecommerce.domain.customer;
 
-public class Address {
-    public final String address;
-    public final double shippingPrice;
+/**
+ * Địa chỉ giao hàng (value object).
+ */
+public final class Address {
+    private final String street;
+    private final String city;
 
-    public Address(String address, double shippingPrice) {
-        this.address = address;
-        this.shippingPrice = shippingPrice;
+    public Address(String street, String city) {
+        if (street == null || street.isBlank()) {
+            throw new IllegalArgumentException("street không được rỗng");
+        }
+        if (city == null || city.isBlank()) {
+            throw new IllegalArgumentException("city không được rỗng");
+        }
+        this.street = street;
+        this.city = city;
     }
+
+    public String getStreet() { return street; }
+    public String getCity() { return city; }
 }

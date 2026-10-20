@@ -2,14 +2,26 @@ package com.training.ecommerce.application;
 
 import com.training.ecommerce.domain.catalog.Product;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
+/**
+ * Tính doanh thu từ danh sách product. Không dùng instanceof: dựa vào polymorphism của calculateFinalPrice().
+ */
 public class PricingEngine {
-    public static double calculateRevenue(List<Product> products) {
-        double revenue = 0;
-        for (Product p : products) {
-            revenue += p.calculateFinalPrice();
+
+    public BigDecimal calculateRevenue(List<Product> products) {
+        if (products == null) {
+            throw new IllegalArgumentException("products không được null");
         }
-        return revenue;
+        BigDecimal revenue = BigDecimal.ZERO;
+        for (Product product : products) {
+            if (product == null) {
+                throw new IllegalArgumentException("products không được chứa null");
+            }
+            revenue = revenue.add(product.calculateFinalPrice());
+        }
+        return revenue.setScale(2, RoundingMode.HALF_UP);
     }
 }

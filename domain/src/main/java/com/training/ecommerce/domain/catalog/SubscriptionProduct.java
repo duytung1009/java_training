@@ -1,22 +1,28 @@
 package com.training.ecommerce.domain.catalog;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+/**
+ * Gói thuê bao: giá theo tháng × số tháng. getBasePrice() là monthlyPrice.
+ */
 public class SubscriptionProduct extends Product {
-    public SubscriptionProduct(String id, String name, double basePrice) {
-        super(id, name, basePrice);
+    private final int months;
+
+    public SubscriptionProduct(String id, String name, BigDecimal monthlyPrice, int months, int stock) {
+        super(id, name, monthlyPrice, stock);
+        if (months < 1) {
+            throw new IllegalArgumentException("months phải >= 1");
+        }
+        this.months = months;
+    }
+
+    public int getMonths() {
+        return months;
     }
 
     @Override
-    public double calculateFinalPrice() {
-        return this.getBasePrice();
-    }
-
-    @Override
-    public String info() {
-        return String.format("%-20s %-2s - %-20s %12.0fđ", "SubscriptionProduct", id, name, basePrice);
-    }
-
-    @Override
-    public String calculateFinalPriceStep() {
-        return String.format("%-20sđ = %12.0fđ", basePrice, calculateFinalPrice());
+    public BigDecimal calculateFinalPrice() {
+        return getBasePrice().multiply(BigDecimal.valueOf(months)).setScale(MONEY_SCALE, RoundingMode.HALF_UP);
     }
 }

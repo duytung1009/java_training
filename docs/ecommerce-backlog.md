@@ -56,7 +56,7 @@ Ngoài spec: ký tự có dấu không thuộc tiếng Việt (ví dụ `ñ`, `�
 | 3 | `OrderLine` (product, quantity) | `domain/order` | `lineTotal()` |
 | 4 | `Order` | `domain/order` | `subtotal → discount → tax → finalAmount` |
 | 5 | `ReceiptPrinter` | `interfaces/cli` | StringBuilder + `String.format("%-20s%5d%12.2f")` |
-| 6 | `App` | `interfaces/cli` | demo: tạo catalog, đặt hàng, in receipt |
+| 6 | `S02Demo` | `demo` | demo: tạo catalog, đặt hàng, in receipt |
 
 > Đã merge (tag `s02-done`).
 
@@ -107,7 +107,7 @@ API (quyết định 20/10: tiền dùng **`BigDecimal`** ngay từ S02, mọi s
 
 Ngoài spec: cùng product add 2 lần (gộp hay tách line), header receipt, cách hiển thị dấu của Discount, tax > 100%.
 
-**Kiểm khi review:** catalog dùng `Product[]` (không `ArrayList`); field `private`; `Product` 3 tham số gọi `this(...)`; tên biến có nghĩa; `ReceiptPrinter` dùng `StringBuilder`; `Product` không mở setter tùy tiện cho stock (giảm có kiểm tra); `App` demo chạy được.
+**Kiểm khi review:** catalog dùng `Product[]` (không `ArrayList`); field `private`; `Product` 3 tham số gọi `this(...)`; tên biến có nghĩa; `ReceiptPrinter` dùng `StringBuilder`; `Product` không mở setter tùy tiện cho stock (giảm có kiểm tra); `S02Demo` chạy được.
 
 ## S03 – Case Study 2: Product Pricing (refactor Product)
 **Nhánh:** `s03/product-pricing`
@@ -164,7 +164,7 @@ API (quyết định 20/10, theo khuyến nghị):
 
 Ngoài spec: `getBasePrice()` của BundleProduct, so sánh city không phân biệt hoa thường/dấu, hạn dùng mã giảm giá, giảm giá cho gói dài hạn.
 
-**Kiểm khi review:** không dùng `instanceof` trong phần tính giá (`PricingEngine`, `BundleProduct`); `Product` là abstract, constructor `protected`; `DigitalProduct` không implement `Shippable` (ISP); cây kế thừa không quá 3 tầng; field `private`, không có setter thừa; mô tả PR có mục "SOLID check" (S/O/L/I/D mỗi nguyên tắc 1 dòng); `App` demo in tổng doanh thu cho list đủ các loại product.
+**Kiểm khi review:** không dùng `instanceof` trong phần tính giá (`PricingEngine`, `BundleProduct`); `Product` là abstract, constructor `protected`; `DigitalProduct` không implement `Shippable` (ISP); cây kế thừa không quá 3 tầng; field `private`, không có setter thừa; mô tả PR có mục "SOLID check" (S/O/L/I/D mỗi nguyên tắc 1 dòng); `S03Demo` in tổng doanh thu cho list đủ các loại product.
 
 ## S04 – Generics & Collections: List
 _Chờ buổi học. Dự kiến: thay `Product[]` bằng `List<Product>`, có thể tạo generic `Repository<T, ID>` ở `infrastructure/persistence/inmemory`._

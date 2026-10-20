@@ -1,22 +1,24 @@
-package com.training.ecommerce.interfaces.cli;
+package com.training.ecommerce.demo;
 
+import com.training.ecommerce.domain.catalog.PhysicalProduct;
 import com.training.ecommerce.domain.catalog.Product;
 import com.training.ecommerce.domain.inventory.InventoryManager;
 import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.domain.order.OrderLine;
+import com.training.ecommerce.interfaces.cli.ReceiptPrinter;
 
 import java.math.BigDecimal;
 
 /**
  * Demo console S02: tạo catalog, đặt hàng, trừ kho, in hóa đơn, và các trường hợp lỗi.
  */
-public class App {
+public class S02Demo {
 
     public static void main(String[] args) {
         InventoryManager inventory = new InventoryManager();
-        inventory.addProduct(new Product("P01", "Bánh mì lúa mạch", new BigDecimal("35000"), 50));
-        inventory.addProduct(new Product("P02", "Sữa chua không đường", new BigDecimal("12000"), 100));
-        inventory.addProduct(new Product("P03", "Ức gà phi lê", new BigDecimal("85000"), 20));
+        inventory.addProduct(new PhysicalProduct("P01", "Bánh mì lúa mạch", new BigDecimal("35000"), 50, new BigDecimal("0.5")));
+        inventory.addProduct(new PhysicalProduct("P02", "Sữa chua không đường", new BigDecimal("12000"), 100, new BigDecimal("0.5")));
+        inventory.addProduct(new PhysicalProduct("P03", "Ức gà phi lê", new BigDecimal("85000"), 20, new BigDecimal("0.5")));
 
         ReceiptPrinter printer = new ReceiptPrinter();
 
