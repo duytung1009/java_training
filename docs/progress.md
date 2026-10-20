@@ -12,7 +12,7 @@
 | S02 – Control flow, Arrays, Classes | 19/09 | Done | Done | – | – | ?/3 | ?/12 |
 | S03 – OOP, SOLID | 26/09 | Done | Done | – | – | 1.9/3 | 7/8 (biến tấu, 28/09) |
 | S04 – Generics, Collections & Exception | 03/10 | Todo | Doing | – | – | ?/3 | ?/15 |
-| S05 – FP, Lambda & Stream | 17/10 | Todo | Todo | – | – | ?/3 | ?/15 |
+| S05 – FP, Lambda & Stream | 17/10 | Todo | Doing | – | – | ?/3 | ?/15 |
 
 - **Quiz:** số câu trả lời đúng khi *chưa mở* đáp án (phần quiz trong `sessions/session-XX.md`).
 - **Tự tin:** trung bình mức tự tin các keyword của buổi đó trong `review/keywords.md`.
