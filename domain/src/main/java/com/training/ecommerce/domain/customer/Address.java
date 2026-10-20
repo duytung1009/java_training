@@ -1,22 +1,11 @@
 package com.training.ecommerce.domain.customer;
 
-/**
- * Địa chỉ giao hàng (value object).
- */
 public class Address {
+    public final String address;
+    public final double shippingPrice;
 
-    /**
-     * @throws IllegalArgumentException khi street hoặc city null/blank
-     */
-    public Address(String street, String city) {
-        throw new UnsupportedOperationException("TODO S03");
-    }
-
-    public String getStreet() {
-        throw new UnsupportedOperationException("TODO S03");
-    }
-
-    public String getCity() {
-        throw new UnsupportedOperationException("TODO S03");
+    public Address(String address, double shippingPrice) {
+        this.address = address;
+        this.shippingPrice = shippingPrice;
     }
 }

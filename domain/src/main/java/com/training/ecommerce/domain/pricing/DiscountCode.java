@@ -1,24 +1,16 @@
 package com.training.ecommerce.domain.pricing;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
 
-/**
- * Mã giảm giá (value object): mã và tỉ lệ giảm trong (0, 1].
- */
+// Value object
 public class DiscountCode {
+    public final String code;
+    public final double discountRate;
+    public final LocalDate expiredAt;
 
-    /**
-     * @throws IllegalArgumentException khi code null/blank, rate null hoặc ngoài (0, 1]
-     */
-    public DiscountCode(String code, BigDecimal rate) {
-        throw new UnsupportedOperationException("TODO S03");
-    }
-
-    public String getCode() {
-        throw new UnsupportedOperationException("TODO S03");
-    }
-
-    public BigDecimal getRate() {
-        throw new UnsupportedOperationException("TODO S03");
+    public DiscountCode(String code, double discountRate, LocalDate expiredAt) {
+        this.code = code;
+        this.discountRate = discountRate;
+        this.expiredAt = expiredAt;
     }
 }
