@@ -2,42 +2,33 @@ package com.training.ecommerce.domain.catalog;
 
 import java.math.BigDecimal;
 
-/**
- * Sản phẩm trong catalog: id, tên, đơn giá và số lượng tồn kho.
- */
 public class Product {
+    private final String id;
+    private final String name;
+    private final int stock;
+    private final BigDecimal price;
 
-    /**
-     * Tạo product với đầy đủ thông tin.
-     *
-     * @throws IllegalArgumentException khi id/name null hoặc blank, price null hoặc âm, stock âm
-     */
-    public Product(String id, String name, BigDecimal price, int stock) {
-        throw new UnsupportedOperationException("TODO S02");
+    public Product(String id) {
+        this(id, "");
     }
 
-    /**
-     * Tạo product chưa có hàng tồn (stock = 0). Phải dùng constructor chaining.
-     *
-     * @throws IllegalArgumentException cùng quy tắc như constructor đầy đủ
-     */
-    public Product(String id, String name, BigDecimal price) {
-        throw new UnsupportedOperationException("TODO S02");
+    public Product(String id, String name) {
+        this(id, name, 0);
     }
 
-    public String getId() {
-        throw new UnsupportedOperationException("TODO S02");
+    public Product(String id, String name, int stock) {
+        this(id, name, stock, BigDecimal.ZERO);
     }
 
-    public String getName() {
-        throw new UnsupportedOperationException("TODO S02");
+    public Product(String id, String name, int stock, BigDecimal price) {
+        this.id = id;
+        this.name = name;
+        this.stock = stock;
+        this.price = price;
     }
 
-    public BigDecimal getPrice() {
-        throw new UnsupportedOperationException("TODO S02");
-    }
-
-    public int getStock() {
-        throw new UnsupportedOperationException("TODO S02");
-    }
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public int getStock() { return stock; }
+    public BigDecimal getPrice() { return price; }
 }

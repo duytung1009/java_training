@@ -1,52 +1,56 @@
 package com.training.ecommerce.domain.order;
 
+import com.training.ecommerce.domain.catalog.Product;
 import java.math.BigDecimal;
+import java.util.Arrays;
 
-/**
- * Đơn hàng: subtotal → discount → tax → finalAmount. Mọi số tiền trả về có scale 2, làm tròn HALF_UP.
- */
 public class Order {
+    private final String id;
+    private final double discountRate;
+    private final double taxRate;
+    private OrderLine[] items = new OrderLine[]{};
 
-    /**
-     * @param discountRate tỉ lệ giảm giá trong [0, 1], ví dụ 0.10 = 10%
-     * @param taxRate      tỉ lệ thuế &gt;= 0, ví dụ 0.08 = 8%
-     * @throws IllegalArgumentException khi rate null hoặc ngoài khoảng cho phép
-     */
-    public Order(BigDecimal discountRate, BigDecimal taxRate) {
-        throw new UnsupportedOperationException("TODO S02");
+    public Order(String id, double discountRate, double taxRate) {
+        this.id = id;
+        this.discountRate = discountRate;
+        this.taxRate = taxRate;
     }
 
-    /**
-     * @throws IllegalArgumentException khi line null
-     */
-    public void addLine(OrderLine line) {
-        throw new UnsupportedOperationException("TODO S02");
+    public void addItem(Product product, int quantity) throws Exception {
+        if (product == null || quantity < 0) {
+            throw new Exception("Invalid value");
+        }
+        int itemsLength = this.items.length;
+        this.items = Arrays.copyOf(this.items, itemsLength + 1);
+        this.items[itemsLength] = new OrderLine(product, quantity);
     }
 
-    /**
-     * @return bản copy các line theo thứ tự add; sửa mảng trả về không ảnh hưởng Order
-     */
-    public OrderLine[] getLines() {
-        throw new UnsupportedOperationException("TODO S02");
+    public BigDecimal getRawTotal() {
+        BigDecimal total = BigDecimal.ZERO;
+        for (OrderLine line : items) {
+            total = total.add(line.getSubtotal());
+        }
+        return total;
     }
 
-    /** Σ lineTotal. */
-    public BigDecimal subtotal() {
-        throw new UnsupportedOperationException("TODO S02");
+    public BigDecimal getDiscountAmount() {
+        return getRawTotal().multiply(BigDecimal.valueOf(discountRate));
     }
 
-    /** subtotal × discountRate. */
-    public BigDecimal discountAmount() {
-        throw new UnsupportedOperationException("TODO S02");
+    public BigDecimal getTaxableTotal() {
+        return getRawTotal().subtract(getDiscountAmount());
     }
 
-    /** (subtotal − discountAmount) × taxRate. */
-    public BigDecimal taxAmount() {
-        throw new UnsupportedOperationException("TODO S02");
+    public BigDecimal getTaxAmount() {
+        return getTaxableTotal().multiply(BigDecimal.valueOf(taxRate));
     }
 
-    /** subtotal − discountAmount + taxAmount. */
-    public BigDecimal finalAmount() {
-        throw new UnsupportedOperationException("TODO S02");
+    public BigDecimal getFinalTotal() {
+        return getTaxableTotal().add(getTaxAmount());
     }
+
+    public String getId() { return id; }
+    public OrderLine[] getItems() { return items; }
+    public double getDiscountRate() { return discountRate; }
+    public double getTaxRate() { return taxRate; }
 }

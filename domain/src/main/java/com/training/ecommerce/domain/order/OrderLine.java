@@ -1,34 +1,28 @@
 package com.training.ecommerce.domain.order;
 
 import com.training.ecommerce.domain.catalog.Product;
-
 import java.math.BigDecimal;
 
-/**
- * Một dòng trong đơn hàng: product và số lượng.
- */
 public class OrderLine {
+    private final Product product;
+    private final int quantity;
+    private final BigDecimal unitPrice; // Snapshot giá tại thời điểm tạo đơn
 
-    /**
-     * @throws IllegalArgumentException khi product null hoặc quantity &lt;= 0
-     * @throws IllegalStateException    khi quantity lớn hơn tồn kho hiện tại của product
-     */
+    public OrderLine(Product product) {
+        this(product, 0);
+    }
+
     public OrderLine(Product product, int quantity) {
-        throw new UnsupportedOperationException("TODO S02");
+        this.product = product;
+        this.quantity = quantity;
+        this.unitPrice = product.getPrice();
     }
 
-    public Product getProduct() {
-        throw new UnsupportedOperationException("TODO S02");
+    public BigDecimal getSubtotal() {
+        return unitPrice.multiply(BigDecimal.valueOf(quantity));
     }
 
-    public int getQuantity() {
-        throw new UnsupportedOperationException("TODO S02");
-    }
-
-    /**
-     * @return price × quantity, scale 2, làm tròn HALF_UP
-     */
-    public BigDecimal lineTotal() {
-        throw new UnsupportedOperationException("TODO S02");
-    }
+    public Product getProduct() { return product; }
+    public int getQuantity() { return quantity; }
+    public BigDecimal getUnitPrice() { return unitPrice; }
 }

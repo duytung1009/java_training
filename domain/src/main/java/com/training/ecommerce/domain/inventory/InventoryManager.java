@@ -1,41 +1,53 @@
 package com.training.ecommerce.domain.inventory;
 
-import com.training.ecommerce.domain.catalog.Product;
+import com.training.ecommerce.domain.order.Order;
+import com.training.ecommerce.domain.order.OrderLine;
 
-/**
- * Quản lý catalog và tồn kho. Catalog lưu bằng {@code Product[]} (không dùng ArrayList).
- */
 public class InventoryManager {
+    private final String[] productIds;
+    private final int[] quantities;
+    private int count = 0;
 
-    public InventoryManager() {
-        throw new UnsupportedOperationException("TODO S02");
+    public InventoryManager(int capacity) {
+        productIds = new String[capacity];
+        quantities = new int[capacity];
     }
 
-    /**
-     * Thêm product vào catalog; mảng tự nới khi đầy.
-     *
-     * @throws IllegalArgumentException khi product null hoặc trùng id với product đã có
-     */
-    public void addProduct(Product product) {
-        throw new UnsupportedOperationException("TODO S02");
+    public void setStock(String productId, int quantity) throws Exception {
+        if (quantity < 0) {
+            throw new Exception("Invalid value");
+        }
+        for (int i = 0; i < count; i++) {
+            if (productIds[i].equals(productId)) {
+                quantities[i] = quantity;
+                return;
+            }
+        }
+        productIds[count] = productId;
+        quantities[count] = quantity;
+        count++;
     }
 
-    /**
-     * Tìm product theo id.
-     *
-     * @return đúng instance đã add, hoặc {@code null} nếu không có (kể cả khi id null)
-     */
-    public Product findById(String id) {
-        throw new UnsupportedOperationException("TODO S02");
+    public boolean canFulfill(Order order) {
+        for (OrderLine line : order.getItems()) {
+            if (line.getProduct().getStock() < line.getQuantity()) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    /**
-     * Giảm tồn kho của product.
-     *
-     * @throws IllegalArgumentException khi id không tồn tại/null hoặc quantity &lt;= 0
-     * @throws IllegalStateException    khi quantity lớn hơn tồn kho hiện tại (stock giữ nguyên)
-     */
-    public void decreaseStock(String productId, int quantity) {
-        throw new UnsupportedOperationException("TODO S02");
+    public void deductStock(Order order) throws Exception {
+        if (!canFulfill(order)) {
+            throw new Exception("Not enough stock");
+        }
+        for (OrderLine line : order.getItems()) {
+            String pId = line.getProduct().getId();
+            for (int i = 0; i < count; i++) {
+                if (productIds[i].equals(pId)) {
+                    quantities[i] -= line.getQuantity();
+                }
+            }
+        }
     }
 }
