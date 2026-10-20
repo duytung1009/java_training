@@ -10,7 +10,7 @@
 |---|---|---|---|---|---|---|---|
 | S01 – JVM, Data & String | dd/mm | Done | Done | – | – | ?/3 | ?/12 |
 | S02 – Control flow, Arrays, Classes | dd/mm | Done | Done | – | – | ?/3 | ?/12 |
-| S03 – OOP, SOLID | dd/mm | Done | Todo | – | – | 1.9/3 | 7/8 (biến tấu, 28/09) |
+| S03 – OOP, SOLID | dd/mm | Done | Doing | – | – | 1.9/3 | 7/8 (biến tấu, 28/09) |
 | S04 – Generics & List | dd/mm | Todo | Todo | – | – | ?/3 | – |
 
 - **Quiz:** số câu trả lời đúng khi *chưa mở* đáp án (phần quiz trong `sessions/session-XX.md`).
