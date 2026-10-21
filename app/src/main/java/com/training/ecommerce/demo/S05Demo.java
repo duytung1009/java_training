@@ -30,7 +30,9 @@ public class S05Demo {
         Product claudePro = new SubscriptionProduct("S001", "Gói Claude Pro", new BigDecimal("499000"), 12, 100, Category.SUBSCRIPTION);
 
         InventoryManager inventory = new InventoryManager();
-        List.of(tshirt, jeans, mouse, office, claudePro).forEach(inventory::addProduct);
+        for (Product product : List.of(tshirt, jeans, mouse, office, claudePro)) {
+            inventory.addProduct(product);                   // side effect: vòng for cho rõ ý
+        }
 
         // 1. Optional thay cho null
         System.out.println(">>> Tìm P001: " + inventory.findById("P001").map(Product::getName).orElse("không tồn tại"));
@@ -39,8 +41,8 @@ public class S05Demo {
         // 2. Predicate: ghép điều kiện bằng and / negate
         Predicate<Product> inStock = p -> p.getStock() > 0;
         Predicate<Product> fashion = p -> p.getCategory() == Category.FASHION;
-        System.out.println(">>> Thời trang còn hàng: " + names(inventory.search(fashion.and(inStock))));
-        System.out.println(">>> Hết hàng: " + names(inventory.search(inStock.negate())));
+        System.out.println(">>> Thời trang còn hàng: " + getNames(inventory.search(fashion.and(inStock))));
+        System.out.println(">>> Hết hàng: " + getNames(inventory.search(inStock.negate())));
 
         // 3. PricingRule: mỗi quy tắc là một hàm, ghép theo thứ tự
         PricingRule member = PricingRule.percentOff(new BigDecimal("0.05"));     // thành viên −5%
@@ -73,14 +75,14 @@ public class S05Demo {
         System.out.println(">>> Doanh thu theo category:");
         report.revenueByCategory(orders).forEach((category, revenue) -> System.out.println("    " + category + ": " + revenue));
 
-        System.out.println(">>> Top 2 bán chạy: " + names(report.topSellingProducts(orders, 2)));
+        System.out.println(">>> Top 2 bán chạy: " + getNames(report.topSellingProducts(orders, 2)));
 
         Map<Boolean, List<Order>> bySize = report.partitionByFinalAmount(orders, new BigDecimal("1000000"));
         System.out.println(">>> Đơn ≥ 1.000.000: " + bySize.get(true).stream().map(Order::finalAmount).toList()
                 + " | đơn nhỏ: " + bySize.get(false).stream().map(Order::finalAmount).toList());
     }
 
-    private static List<String> names(List<Product> products) {
+    private static List<String> getNames(List<Product> products) {
         return products.stream().map(Product::getName).toList();
     }
 }

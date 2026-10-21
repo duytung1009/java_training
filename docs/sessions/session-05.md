@@ -125,6 +125,12 @@ Xem `docs/ecommerce-backlog.md` → **S05**. Đây là bài tập cuối slide: 
 - **Slide q5 (speaker notes):** "`Stream.of(...).map(...).count()` có thể không in gì". Đúng với Java 9+: `count()` bỏ qua cả pipeline khi biết trước kích thước (SIZED) và không có `filter`. Nhưng đây là tối ưu của implementation chứ không phải hành vi được spec đảm bảo, nên tránh đặt logic quan trọng trong `peek`/`map`.
 - **Slide fi-more:** ghi "~40 interface" trong `java.util.function`. Con số thực tế là 43, nên giữ chữ "khoảng".
 - **Format mới (từ S04):** tự nghiên cứu và tự trình bày. Hỏi mentor xem buổi T4 vẫn review code ecommerce như trước, hay review cả slide.
+- **Câu hỏi T4 (từ self-review 21/10, chi tiết: `docs/reviews/s05-self-review.md`):**
+  - `forEach` có side effect (trừ tồn kho, add vào inventory): mình đã chốt dùng vòng `for` cho rõ ý. Mentor thấy sao?
+  - Ném exception trong `ifPresent(e -> { throw ... })` so với `anyMatch` + `if` cho bước kiểm all-or-nothing.
+  - `PricingRule` riêng hay `extends UnaryOperator<BigDecimal>`? (`andThen(lambda)` bị ambiguous với `Function.andThen`.)
+  - `PricingRule.identity()` có nên chuẩn hóa scale 2 không?
+  - `EnumMap` hay `HashMap` cho báo cáo; thứ tự key có nên nằm trong spec?
 
 ## 7. Feedback review T4
 - 

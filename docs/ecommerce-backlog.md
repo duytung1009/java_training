@@ -234,7 +234,7 @@ Ngoài spec: `Repository.saveAll(null)`, `Cart.changeQuantity(null, …)` trả 
 | 7 | `S05Demo` | `demo` | in giá sau chuỗi rule + 3 báo cáo |
 
 **Acceptance**
-- [ ] Không còn vòng `for`/`while` trong `InventoryManager`, `Order`, `PricingEngine`, `ReportService`; dùng Stream, method reference khi làm code dễ đọc hơn
+- [ ] Không còn vòng `for`/`while` trong `InventoryManager`, `Order`, `PricingEngine`, `ReportService`; dùng Stream, method reference khi làm code dễ đọc hơn. Ngoại lệ (chốt 21/10): bước có side effect (trừ tồn kho trong `decreaseStock`) dùng vòng `for` cho rõ ý, không dùng `forEach`
 - [ ] Mỗi quy tắc giá là một hàm; ghép bằng `andThen` / `reduce(identity, andThen)`; thêm rule mới không sửa engine (OCP)
 - [ ] Báo cáo dùng `groupingBy` + `reducing` cho `BigDecimal`, `partitioningBy`, top N bằng `sorted` + `limit`; key trùng không ném exception (merge function hoặc `groupingBy`)
 - [ ] Logic tính toán pure: không sửa list / `Order` đầu vào, không đọc giờ hệ thống; test không cần mock

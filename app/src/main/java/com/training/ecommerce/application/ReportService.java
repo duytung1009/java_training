@@ -23,7 +23,7 @@ public class ReportService {
      * @throws IllegalArgumentException khi orders null
      */
     public Map<Category, BigDecimal> revenueByCategory(List<Order> orders) {
-        requireNonNull(orders, "orders");
+        checkNotNull(orders, "orders");
         return lines(orders).collect(Collectors.groupingBy(
                 line -> line.getProduct().getCategory(),
                 () -> new EnumMap<>(Category.class),          // key là enum: EnumMap, thứ tự theo khai báo
@@ -35,7 +35,7 @@ public class ReportService {
      * @throws IllegalArgumentException khi orders null hoặc n &lt;= 0
      */
     public List<Product> topSellingProducts(List<Order> orders, int n) {
-        requireNonNull(orders, "orders");
+        checkNotNull(orders, "orders");
         if (n <= 0) {
             throw new IllegalArgumentException("n phải > 0");
         }
@@ -55,8 +55,8 @@ public class ReportService {
      * @throws IllegalArgumentException khi orders hoặc threshold null
      */
     public Map<Boolean, List<Order>> partitionByFinalAmount(List<Order> orders, BigDecimal threshold) {
-        requireNonNull(orders, "orders");
-        requireNonNull(threshold, "threshold");
+        checkNotNull(orders, "orders");
+        checkNotNull(threshold, "threshold");
         // partitioningBy luôn có đủ 2 key; so BigDecimal bằng compareTo, không dùng equals (D5)
         return orders.stream().collect(Collectors.partitioningBy(
                 order -> order.finalAmount().compareTo(threshold) >= 0));
@@ -66,7 +66,7 @@ public class ReportService {
         return orders.stream().flatMap(order -> Arrays.stream(order.getLines()));
     }
 
-    private static void requireNonNull(Object value, String name) {
+    private static void checkNotNull(Object value, String name) {
         if (value == null) {
             throw new IllegalArgumentException(name + " không được null");
         }

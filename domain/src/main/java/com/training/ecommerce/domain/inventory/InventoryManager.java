@@ -79,8 +79,10 @@ public class InventoryManager {
                 .ifPresent(entry -> {
                     throw new OutOfStockException(entry.getKey().getId(), entry.getValue(), entry.getKey().getStock());
                 });
-        // Bước 3: đủ hàng mới trừ. forEach ở đây là side effect lên product, không add ra collection ngoài
-        required.forEach(Product::decreaseStock);
+        // Bước 3: đủ hàng mới trừ. Đây là side effect (sửa tồn kho) nên dùng vòng for cho rõ ý, không dùng forEach
+        for (Map.Entry<Product, Integer> entry : required.entrySet()) {
+            entry.getKey().decreaseStock(entry.getValue());
+        }
     }
 
     private Product findStored(String id) {
