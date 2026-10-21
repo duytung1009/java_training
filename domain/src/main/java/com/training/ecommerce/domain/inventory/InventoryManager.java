@@ -6,11 +6,13 @@ import com.training.ecommerce.domain.catalog.ProductNotFoundException;
 import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.domain.order.OrderLine;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Quản lý catalog và tồn kho. Catalog lưu bằng {@code Map<id, Product>} (giữ thứ tự thêm), tra theo id O(1).
@@ -33,7 +35,8 @@ public class InventoryManager {
 
     /** S05: product có id tương ứng; không có (kể cả id null) → {@code Optional.empty()}. */
     public Optional<Product> findById(String id) {
-        throw new UnsupportedOperationException("TODO S05");
+        // Map.get(null) của LinkedHashMap trả null, nhưng chặn rõ để không phụ thuộc kiểu Map
+        return id == null ? Optional.empty() : Optional.ofNullable(catalog.get(id));
     }
 
     /**
@@ -42,7 +45,12 @@ public class InventoryManager {
      * @throws IllegalArgumentException khi criteria null
      */
     public List<Product> search(Predicate<Product> criteria) {
-        throw new UnsupportedOperationException("TODO S05");
+        if (criteria == null) {
+            throw new IllegalArgumentException("criteria không được null");
+        }
+        return catalog.values().stream()
+                .filter(criteria)
+                .toList();                                   // Java 16+: list mới, không sửa được
     }
 
     /**
@@ -57,22 +65,25 @@ public class InventoryManager {
         if (order == null) {
             throw new IllegalArgumentException("order không được null");
         }
-        Map<Product, Integer> required = new LinkedHashMap<>();
-        for (OrderLine line : order.getLines()) {
-            Product stored = catalog.get(line.getProduct().getId());
-            if (stored == null) {
-                throw new ProductNotFoundException(line.getProduct().getId());
-            }
-            required.merge(stored, line.getQuantity(), Integer::sum);
-        }
-        for (Map.Entry<Product, Integer> entry : required.entrySet()) {
-            Product product = entry.getKey();
-            if (entry.getValue() > product.getStock()) {
-                throw new OutOfStockException(product.getId(), entry.getValue(), product.getStock());
-            }
-        }
-        for (Map.Entry<Product, Integer> entry : required.entrySet()) {
-            entry.getKey().decreaseStock(entry.getValue());
-        }
+        // Bước 1: cộng dồn số lượng theo product trong kho (toMap có merge Integer::sum, giữ thứ tự)
+        Map<Product, Integer> required = Arrays.stream(order.getLines())
+                .collect(Collectors.toMap(
+                        line -> findStored(line.getProduct().getId()),
+                        OrderLine::getQuantity,
+                        Integer::sum,
+                        LinkedHashMap::new));
+        // Bước 2: kiểm tra hết trước khi trừ (all-or-nothing)
+        required.entrySet().stream()
+                .filter(entry -> entry.getValue() > entry.getKey().getStock())
+                .findFirst()
+                .ifPresent(entry -> {
+                    throw new OutOfStockException(entry.getKey().getId(), entry.getValue(), entry.getKey().getStock());
+                });
+        // Bước 3: đủ hàng mới trừ. forEach ở đây là side effect lên product, không add ra collection ngoài
+        required.forEach(Product::decreaseStock);
+    }
+
+    private Product findStored(String id) {
+        return findById(id).orElseThrow(() -> new ProductNotFoundException(id));
     }
 }

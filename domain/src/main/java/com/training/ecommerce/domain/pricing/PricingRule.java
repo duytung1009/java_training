@@ -1,7 +1,9 @@
 package com.training.ecommerce.domain.pricing;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Một quy tắc giá: nhận giá, trả về giá mới. Ghép nhiều quy tắc bằng {@link #andThen} hoặc {@link #chain}.
@@ -16,12 +18,18 @@ public interface PricingRule {
      * @throws IllegalArgumentException khi next null
      */
     default PricingRule andThen(PricingRule next) {
-        throw new UnsupportedOperationException("TODO S05");
+        // 1. Validate
+        if (next == null) {
+            throw new IllegalArgumentException("next không được null");
+        }
+        // 2. Trả về rule mới: lambda capture cả this lẫn next. Chưa tính gì ở đây (lazy),
+        //    chỉ khi gọi apply(price) mới chạy this trước, lấy kết quả đưa vào next.
+        return price -> next.apply(this.apply(price));
     }
 
     /** @return rule trả nguyên giá */
     static PricingRule identity() {
-        throw new UnsupportedOperationException("TODO S05");
+        return price -> price;
     }
 
     /**
@@ -30,7 +38,13 @@ public interface PricingRule {
      * @throws IllegalArgumentException khi rate null hoặc ngoài (0, 1]
      */
     static PricingRule percentOff(BigDecimal rate) {
-        throw new UnsupportedOperationException("TODO S05");
+        // 1. Validate
+        if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0 || rate.compareTo(BigDecimal.ONE) > 0) {
+            throw new IllegalArgumentException("rate phải trong khoảng (0, 1], nhận: " + rate);
+        }
+        // 2. Trả về một lambda
+        return price -> price.multiply(BigDecimal.ONE.subtract(rate))
+                .setScale(2, RoundingMode.HALF_UP);        // tiền: scale 2
     }
 
     /**
@@ -39,7 +53,14 @@ public interface PricingRule {
      * @throws IllegalArgumentException khi amount null hoặc âm
      */
     static PricingRule amountOff(BigDecimal amount) {
-        throw new UnsupportedOperationException("TODO S05");
+        // 1. Validate ngay khi tạo rule (fail fast), không đợi tới lúc apply
+        if (amount == null || amount.signum() < 0) {
+            throw new IllegalArgumentException("amount phải >= 0, nhận: " + amount);
+        }
+        // 2. Trả về một lambda: nó "nhớ" amount (biến effectively final được capture)
+        return price -> price.subtract(amount)
+                .max(BigDecimal.ZERO)                               // không bao giờ âm (D6)
+                .setScale(2, RoundingMode.HALF_UP);        // tiền: scale 2
     }
 
     /**
@@ -48,6 +69,11 @@ public interface PricingRule {
      * @throws IllegalArgumentException khi rules null hoặc chứa null
      */
     static PricingRule chain(List<PricingRule> rules) {
-        throw new UnsupportedOperationException("TODO S05");
+        // 1. Validate
+        if (rules == null || rules.stream().anyMatch(Objects::isNull)) {
+            throw new IllegalArgumentException("rules không được phép null hoặc chứa null");
+        }
+        // 2. Gộp danh sách
+        return rules.stream().reduce(identity(), PricingRule::andThen);
     }
 }

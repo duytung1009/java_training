@@ -46,10 +46,9 @@ public class Order {
     }
 
     public BigDecimal subtotal() {
-        BigDecimal total = BigDecimal.ZERO;
-        for (int i = 0; i < lineCount; i++) {
-            total = total.add(lines[i].lineTotal());
-        }
+        BigDecimal total = Arrays.stream(lines, 0, lineCount)
+                .map(OrderLine::lineTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         return money(total);
     }
 

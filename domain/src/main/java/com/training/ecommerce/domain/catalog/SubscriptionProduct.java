@@ -10,18 +10,16 @@ public class SubscriptionProduct extends Product {
     private final int months;
 
     public SubscriptionProduct(String id, String name, BigDecimal monthlyPrice, int months, int stock) {
-        super(id, name, monthlyPrice, stock);
-        if (months < 1) {
-            throw new IllegalArgumentException("months phải >= 1");
-        }
-        this.months = months;
+        this(id, name, monthlyPrice, months, stock, Category.OTHER);
     }
 
     /** S05: kèm category. */
     public SubscriptionProduct(String id, String name, BigDecimal monthlyPrice, int months, int stock, Category category) {
-        this(id, name, monthlyPrice, months, stock);
-        // TODO S05: constructor này chưa truyền được category lên Product (đang gọi this(...) bản cũ).
-        //  Gợi ý: cho constructor cũ gọi this(..., Category.OTHER), còn constructor này gọi super(..., category).
+        super(id, name, monthlyPrice, stock, category);
+        if (months < 1) {
+            throw new IllegalArgumentException("months phải >= 1");
+        }
+        this.months = months;
     }
 
     public int getMonths() {

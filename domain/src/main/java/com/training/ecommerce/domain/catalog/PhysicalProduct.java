@@ -15,18 +15,16 @@ public class PhysicalProduct extends Product implements Shippable, Discountable 
     private final BigDecimal weightKg;
 
     public PhysicalProduct(String id, String name, BigDecimal basePrice, int stock, BigDecimal weightKg) {
-        super(id, name, basePrice, stock);
-        if (weightKg == null || weightKg.signum() <= 0) {
-            throw new IllegalArgumentException("weightKg phải > 0");
-        }
-        this.weightKg = weightKg;
+        this(id, name, basePrice, stock, weightKg, Category.OTHER);
     }
 
     /** S05: kèm category. */
     public PhysicalProduct(String id, String name, BigDecimal basePrice, int stock, BigDecimal weightKg, Category category) {
-        this(id, name, basePrice, stock, weightKg);
-        // TODO S05: constructor này chưa truyền được category lên Product (đang gọi this(...) bản cũ).
-        //  Gợi ý: cho constructor cũ gọi this(..., Category.OTHER), còn constructor này gọi super(..., category).
+        super(id, name, basePrice, stock, category);
+        if (weightKg == null || weightKg.signum() <= 0) {
+            throw new IllegalArgumentException("weightKg phải > 0");
+        }
+        this.weightKg = weightKg;
     }
 
     public BigDecimal getWeightKg() {

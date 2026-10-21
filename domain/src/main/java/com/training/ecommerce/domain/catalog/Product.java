@@ -16,12 +16,22 @@ public abstract class Product implements Identifiable<String> {
     private final String name;
     private final BigDecimal basePrice;
     private int stock;
+    private final Category category;
 
     protected Product(String id, String name, BigDecimal basePrice) {
         this(id, name, basePrice, 0);
     }
 
     protected Product(String id, String name, BigDecimal basePrice, int stock) {
+        this(id, name, basePrice, stock, Category.OTHER);
+    }
+
+    /**
+     * S05: như constructor 4 tham số, kèm category (constructor cũ mặc định {@link Category#OTHER}).
+     *
+     * @throws IllegalArgumentException khi category null
+     */
+    protected Product(String id, String name, BigDecimal basePrice, int stock, Category category) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("id không được rỗng");
         }
@@ -34,25 +44,14 @@ public abstract class Product implements Identifiable<String> {
         if (stock < 0) {
             throw new IllegalArgumentException("stock phải >= 0");
         }
+        if (category == null) {
+            throw new IllegalArgumentException("Category không được null");
+        }
         this.id = id;
         this.name = name;
         this.basePrice = basePrice;
         this.stock = stock;
-    }
-
-    /**
-     * S05: như constructor 4 tham số, kèm category (constructor cũ mặc định {@link Category#OTHER}).
-     *
-     * @throws IllegalArgumentException khi category null
-     */
-    protected Product(String id, String name, BigDecimal basePrice, int stock, Category category) {
-        this(id, name, basePrice, stock);
-        // TODO S05: kiểm tra và lưu category
-    }
-
-    /** S05: danh mục; constructor không có category thì là OTHER. */
-    public Category getCategory() {
-        throw new UnsupportedOperationException("TODO S05");
+        this.category = category;
     }
 
     /** Giá bán theo loại sản phẩm, chưa gồm giảm giá và phí ship; scale 2, HALF_UP. */
@@ -79,6 +78,7 @@ public abstract class Product implements Identifiable<String> {
     public String getName() { return name; }
     public BigDecimal getBasePrice() { return basePrice; }
     public int getStock() { return stock; }
+    public Category getCategory() { return category; }
 
     @Override
     public final boolean equals(Object other) {

@@ -16,19 +16,17 @@ public class BundleProduct extends Product {
      * basePrice của bundle = tổng giá bán của các item (trước khi giảm giá combo).
      */
     public BundleProduct(String id, String name, int stock, BigDecimal discountRate, Product... items) {
-        super(id, name, totalFinalPrice(items), stock);
+        this(id, name, stock, discountRate, Category.OTHER, items);
+    }
+
+    /** S05: kèm category (đứng trước varargs items). */
+    public BundleProduct(String id, String name, int stock, BigDecimal discountRate, Category category, Product... items) {
+        super(id, name, totalFinalPrice(items), stock, category);
         if (discountRate == null || discountRate.signum() < 0 || discountRate.compareTo(BigDecimal.ONE) > 0) {
             throw new IllegalArgumentException("discountRate phải trong [0, 1]");
         }
         this.items = Arrays.copyOf(items, items.length);
         this.discountRate = discountRate;
-    }
-
-    /** S05: kèm category (đứng trước varargs items). */
-    public BundleProduct(String id, String name, int stock, BigDecimal discountRate, Category category, Product... items) {
-        this(id, name, stock, discountRate, items);
-        // TODO S05: constructor này chưa truyền được category lên Product (đang gọi this(...) bản cũ).
-        //  Gợi ý: cho constructor cũ gọi this(..., Category.OTHER), còn constructor này gọi super(..., category).
     }
 
     @Override

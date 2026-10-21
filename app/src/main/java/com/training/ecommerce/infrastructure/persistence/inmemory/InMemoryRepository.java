@@ -36,7 +36,7 @@ public class InMemoryRepository<T extends Identifiable<ID>, ID> implements Repos
 
     @Override
     public Optional<T> findById(ID id) {
-        throw new UnsupportedOperationException("TODO S05");
+        return id == null ? Optional.empty() : Optional.ofNullable(store.get(id));
     }
 
     @Override
