@@ -7,6 +7,8 @@ package com.training.ecommerce.application;
  */
 public record ShipmentInfo(String carrier, String status) {
     public ShipmentInfo {
-        throw new UnsupportedOperationException("TODO S06");
+        if (carrier == null || status == null) {
+            throw new IllegalArgumentException("carrier, status không được null");
+        }
     }
 }

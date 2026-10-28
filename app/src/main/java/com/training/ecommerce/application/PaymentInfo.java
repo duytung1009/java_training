@@ -9,6 +9,8 @@ import java.math.BigDecimal;
  */
 public record PaymentInfo(String status, BigDecimal amount) {
     public PaymentInfo {
-        throw new UnsupportedOperationException("TODO S06");
+        if (status == null || amount == null) {
+            throw new IllegalArgumentException("status, amount không được null");
+        }
     }
 }

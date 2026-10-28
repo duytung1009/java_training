@@ -16,6 +16,18 @@ import java.util.stream.Collectors;
 
 /**
  * Quản lý catalog và tồn kho. Catalog lưu bằng {@code Map<id, Product>} (giữ thứ tự thêm), tra theo id O(1).
+ *
+ * <p>S06: an toàn khi nhiều thread cùng gọi. Mọi method public đều {@code synchronized} trên chính object này
+ * (một lock chung), nên:
+ * <ul>
+ *   <li>{@code decreaseStock}: bước kiểm tra đủ hàng và bước trừ nằm trong cùng một lock → không oversell,
+ *       all-or-nothing vẫn đúng khi nhiều đơn chạy song song;</li>
+ *   <li>{@code addProduct}: kiểm tra trùng id rồi {@code put} là một bước, không thread nào chen vào giữa;</li>
+ *   <li>{@code search} / {@code findById}: đọc trong lock nên không gặp {@code ConcurrentModificationException}
+ *       khi thread khác đang thêm product, và luôn thấy giá trị mới nhất (visibility).</li>
+ * </ul>
+ * Đánh đổi: mọi checkout xếp hàng nối tiếp, kể cả các đơn không liên quan. Đủ đúng cho domain in-memory;
+ * cần nhanh hơn thì đo trước, rồi mới cân nhắc lock theo từng product (phải khóa theo thứ tự id để tránh deadlock).
  */
 public class InventoryManager {
     private final Map<String, Product> catalog = new LinkedHashMap<>();
@@ -23,7 +35,7 @@ public class InventoryManager {
     /**
      * @throws IllegalArgumentException khi product null hoặc trùng id với product đã có
      */
-    public void addProduct(Product product) {
+    public synchronized void addProduct(Product product) {
         if (product == null) {
             throw new IllegalArgumentException("product không được null");
         }
@@ -34,7 +46,7 @@ public class InventoryManager {
     }
 
     /** S05: product có id tương ứng; không có (kể cả id null) → {@code Optional.empty()}. */
-    public Optional<Product> findById(String id) {
+    public synchronized Optional<Product> findById(String id) {
         // Map.get(null) của LinkedHashMap trả null, nhưng chặn rõ để không phụ thuộc kiểu Map
         return id == null ? Optional.empty() : Optional.ofNullable(catalog.get(id));
     }
@@ -44,7 +56,7 @@ public class InventoryManager {
      *
      * @throws IllegalArgumentException khi criteria null
      */
-    public List<Product> search(Predicate<Product> criteria) {
+    public synchronized List<Product> search(Predicate<Product> criteria) {
         if (criteria == null) {
             throw new IllegalArgumentException("criteria không được null");
         }
@@ -61,7 +73,7 @@ public class InventoryManager {
      * @throws ProductNotFoundException khi order có product không nằm trong kho
      * @throws OutOfStockException      khi không đủ hàng; kho giữ nguyên
      */
-    public void decreaseStock(Order order) {
+    public synchronized void decreaseStock(Order order) {
         if (order == null) {
             throw new IllegalArgumentException("order không được null");
         }

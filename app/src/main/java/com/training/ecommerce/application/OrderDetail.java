@@ -11,6 +11,9 @@ import java.util.List;
  */
 public record OrderDetail(String orderId, PaymentInfo payment, ShipmentInfo shipment, List<OrderLine> lines) {
     public OrderDetail {
-        throw new UnsupportedOperationException("TODO S06");
+        if (orderId == null || payment == null || shipment == null || lines == null) {
+            throw new IllegalArgumentException("orderId, payment, shipment, lines không được null");
+        }
+        lines = List.copyOf(lines);     // copy phòng thủ: sửa list gốc không ảnh hưởng record (immutability, S05)
     }
 }
