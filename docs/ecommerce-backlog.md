@@ -304,3 +304,43 @@ Ngoài spec: list trả về của `search` / `topSellingProducts` có sửa đ�
 - [ ] Module `domain/` vẫn là Java thuần; test S02–S05 vẫn xanh
 
 Ngoài phạm vi: transaction / optimistic lock ở DB (để buổi JDBC), structured concurrency (preview), jcstress.
+
+**Spec hành vi** (chốt 28/10, test: `domain/src/test/java/com/training/ecommerce/domain/inventory/{InventoryManagerConcurrencyTest, WarehouseTest, WarehouseTransferServiceTest}.java` (+ helper `Concurrently`), `app/src/test/java/com/training/ecommerce/application/OrderDetailServiceTest.java`; test S02–S05 giữ nguyên)
+
+API (quyết định 28/10):
+- **D1** Không thêm `reserve`: flash sale dùng luôn `InventoryManager.decreaseStock(Order)`. Mọi method public của `InventoryManager` an toàn khi nhiều thread cùng gọi; cách khóa do Tùng chọn (test chỉ kiểm hành vi).
+- `Warehouse(String id)` ở `domain/inventory`: `getId()`, `stockOf(productId)` (chưa có → 0), `add(productId, quantity)`, `remove(productId, quantity)` (thiếu → `OutOfStockException`). Tự thân an toàn khi nhiều thread cùng gọi.
+- `WarehouseTransferService.transfer(from, to, productId, quantity)` ở `domain/inventory`. **D2** `from == to` hoặc hai kho trùng id → IAE.
+- `application`: `PaymentGateway.findPayment`, `ShipmentTracker.track`, `OrderLineSource.findLines` (functional interface); record `PaymentInfo(status, amount)`, `ShipmentInfo(carrier, status)`, `OrderDetail(orderId, payment, shipment, lines)` (field null → IAE, `lines` là bản copy không sửa được); `OrderDetailService(payments, shipments, lines, executor)` + `loadDetail(orderId)`.
+- **D3** Một nguồn lỗi → `OrderDetailLoadException` (unchecked, mới, ở `application`), `getCause()` là exception gốc. Thread gọi bị interrupt → cũng `OrderDetailLoadException`, cờ interrupt vẫn bật.
+- **D4** Nguồn lỗi thì cancel các task còn lại: test `@Tag("bonus")`.
+- Tham số `null` / quantity ≤ 0 / id rỗng → IAE ở mọi method mới.
+
+| Method | Input | Kết quả mong đợi | Test |
+|---|---|---|---|
+| `decreaseStock` | 100 thread cùng mua áo còn 1 (×20 lần) | đúng 1 thành công, 99 `OutOfStockException`, stock 0 | `lastItem_exactlyOneBuyerWins` |
+| `decreaseStock` | kho 10.000 áo, 100 thread × 100 đơn 1 áo (×10) | mọi đơn thành công, stock đúng 0 (không mất lần trừ) | `manyOrders_noLostUpdate` |
+| `decreaseStock` | áo 30, quần 30; 30 đơn (2 áo + 1 quần), 30 đơn (2 quần) song song (×20) | tồn khớp số đơn thành công, không âm, không đơn nào trừ một phần | `multiLineOrders_allOrNothingUnderConcurrency` |
+| `addProduct` | 100 thread × 100 id khác nhau; 50 thread cùng 1 id (×10) | đủ 100, tìm được từng cái; đúng 1 thành công, 49 IAE | `addDistinctIds_noneLost`, `addSameId_exactlyOneWins` |
+| `search` | 4 thread `search` trong lúc 1 thread thêm 3000 product | không exception, cuối cùng đủ 3000 | `searchWhileAdding_noException` |
+| `Warehouse` | id `null` / `""` / `"   "` | IAE | `rejectsBlankId` |
+| `stockOf` / `add` | chưa có; add 30 + 20, quần 5; quantity 0 / −1 / −100; productId `null` | 0; 50, 5; IAE, tồn giữ nguyên; IAE | `unknownProductHasZeroStock`, `addAccumulatesPerProduct`, `addRejectsNonPositiveQuantity`, `rejectsNullProductId` |
+| `remove` | 50 − 20, rồi − 30; − 51; product chưa có; quantity 0 / −5; `null` | 30, 0; `OutOfStockException` (productId, requested 51, available 50), tồn giữ nguyên; `OutOfStockException` available 0; IAE; IAE | `removesQuantity`, `removeMoreThanStock`, `removeUnknownProduct`, `rejectsNonPositiveQuantity`, `rejectsNullProductId` |
+| `Warehouse` song song | 100 thread add 10 (×10); tồn 50, 100 thread remove 1 (×10) | 1000; đúng 50 thành công, tồn 0 | `concurrentAdds`, `concurrentRemoves` |
+| `transfer` | HN 100 → HCM 30; HCM đã có 5 | HN 70, HCM 30; HCM 35 | `movesStock`, `addsToExistingStock` |
+| `transfer` | HN 10 chuyển 11; HN chưa có product | `OutOfStockException`, hai kho giữ nguyên | `notEnoughStock`, `unknownProductInSource` |
+| `transfer` | `null` (from / to / productId); quantity 0 / −5; `from == to`; hai kho cùng id `HN` | IAE, tồn giữ nguyên (**D2**) | `rejectsNulls`, `rejectsNonPositiveQuantity`, `rejectsSameWarehouse`, `rejectsSameId` |
+| `transfer` song song | HN→HCM và HCM→HN mỗi chiều 10.000 lần (×5) | xong trong 10 giây (không deadlock), tổng 2000 | `opposingTransfers_noDeadlock` |
+| `transfer` song song | transfer + `add` HN + `remove` HCM trực tiếp, mỗi luồng 5000 lần (×5) | tổng = 2000 + 5000 − số lần remove thành công | `transferWithDirectAddRemove` |
+| Records | giá trị hợp lệ; field `null`; sửa list gốc / list của `OrderDetail` | giữ đúng; IAE; không ảnh hưởng / `UnsupportedOperationException` | `keepValues`, `rejectNulls`, `orderDetailCopiesLines` |
+| `loadDetail` | 3 nguồn trả dữ liệu | gộp đủ 3 phần, mỗi nguồn nhận đúng orderId | `combinesThreeSources` |
+| `loadDetail` | 3 nguồn chờ nhau bằng `CountDownLatch(3)`, với `newFixedThreadPool(3)` và `newVirtualThreadPerTaskExecutor()` | chạy xong (gọi tuần tự → nguồn ném "không chạy song song") | `callsSourcesInParallel` |
+| `loadDetail` | gọi 2 lần trên cùng executor | executor không bị shutdown, lần 2 vẫn chạy | `doesNotShutDownInjectedExecutor` |
+| `loadDetail` | constructor nhận `null`; orderId `null` / `""` / `"   "` | IAE; IAE và không gọi nguồn nào | `constructorRejectsNulls`, `rejectsBlankOrderId` |
+| `loadDetail` | payment / shipment / lines ném `IllegalStateException` | `OrderDetailLoadException`, `getCause()` là đúng exception đó (**D3**) | `sourceFailureIsWrapped` |
+| `loadDetail` | thread gọi bị interrupt khi 3 nguồn đang chờ | ném `OrderDetailLoadException` trong 5 giây, cờ interrupt vẫn bật | `interruptIsNotSwallowed` |
+| `loadDetail` (bonus) | payment lỗi ngay, 2 nguồn kia chậm 5 giây | ném trong < 2 giây, 2 task còn lại bị cancel (không chạy hết) (**D4**) | `failureCancelsRemainingTasks` |
+
+Ngoài spec: đo thời gian chạy (để `S06Demo` so sánh), fairness, hiệu năng của từng cách khóa, nguồn trả `null`, `OrderDetail.lines` chứa phần tử `null`, structured concurrency. Test concurrency xanh không chứng minh hết race; đã kiểm rằng bản `InventoryManager` chưa khóa đỏ ổn định (lost update 10/10, search khi add), bản khóa from → to bị bắt deadlock, gọi tuần tự / nuốt interrupt / shutdown executor đều bị bắt.
+
+**Kiểm khi review:** check và trừ nằm trong cùng một lock (không check-then-act ngoài lock); không gọi IO / `sleep` khi giữ lock; transfer khóa theo thứ tự id cố định và khóa đúng object mà `Warehouse` dùng (hoặc lý do nếu khác); `InventoryManager` không bọc riêng từng method mà để hở bước giữa (ví dụ khóa `findById` nhưng `decreaseStock` thì không); service không tự `new Thread()` hay tạo pool; không `volatile` cho đọc-sửa-ghi; `unlock()` trong `finally` nếu dùng `ReentrantLock`; catch `InterruptedException` thì bật lại cờ; `S06Demo` chạy được và so thời gian tuần tự / fixed pool / virtual thread; `domain/` vẫn Java thuần.
