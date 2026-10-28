@@ -18,6 +18,30 @@ public class WarehouseTransferService {
      * @throws OutOfStockException      khi kho from không đủ hàng; cả hai kho giữ nguyên
      */
     public void transfer(Warehouse from, Warehouse to, String productId, int quantity) {
+        validate(from, to, productId, quantity);
+        lockInOrder(from, to, () -> {
+            from.remove(productId, quantity);   // thiếu hàng thì ném ở đây, chưa có gì thay đổi
+            to.add(productId, quantity);        // quantity > 0 đã kiểm, bước này không thể lỗi
+        });
+    }
+
+    /**
+     * Khóa cả hai kho theo thứ tự id (id nhỏ trước, bất kể thứ tự tham số) rồi chạy action.
+     * Lock ordering chỉ nằm ở đúng chỗ này; method nào cần khóa 2 kho thì gọi qua đây.
+     * Exception (unchecked) của action bay thẳng ra caller; lock tự nhả khi ra khỏi khối synchronized.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter") // first/second trỏ tới Warehouse dùng chung
+    private static void lockInOrder(Warehouse a, Warehouse b, Runnable action) {
+        Warehouse first = a.getId().compareTo(b.getId()) < 0 ? a : b;
+        Warehouse second = first == a ? b : a;
+        synchronized (first) {
+            synchronized (second) {
+                action.run();
+            }
+        }
+    }
+
+    private static void validate(Warehouse from, Warehouse to, String productId, int quantity) {
         if (from == null || to == null || productId == null) {
             throw new IllegalArgumentException("from, to, productId không được null");
         }
@@ -27,15 +51,6 @@ public class WarehouseTransferService {
         // Cùng id thì không xác định được thứ tự khóa; chuyển cho chính mình cũng là bug của caller
         if (from.getId().equals(to.getId())) {
             throw new IllegalArgumentException("Không chuyển hàng trong cùng một kho: " + from.getId());
-        }
-
-        Warehouse first = from.getId().compareTo(to.getId()) < 0 ? from : to;
-        Warehouse second = first == from ? to : from;
-        synchronized (first) {
-            synchronized (second) {
-                from.remove(productId, quantity);   // thiếu hàng thì ném ở đây, chưa có gì thay đổi
-                to.add(productId, quantity);        // quantity > 0 đã kiểm, bước này không thể lỗi
-            }
         }
     }
 }
