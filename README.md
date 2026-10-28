@@ -58,8 +58,23 @@ Dependency rule: `interfaces → application → domain ← infrastructure`. Mod
 ## Chạy
 
 ```bash
-./mvnw test                               # build + test toàn bộ
+./mvnw test                               # build + test toàn bộ (test @Tag("docker") cần Docker cho Testcontainers)
+./mvnw test -DexcludedGroups=docker       # bỏ qua test cần Docker
 ./mvnw -pl domain test                    # chỉ module domain
-./mvnw -pl app -am spring-boot:run        # chạy app, Swagger: http://localhost:8080/swagger-ui.html
+./mvnw -pl app -am spring-boot:run        # profile local (mặc định): in-memory, không cần DB
 java playground/session01/IntegerCacheDemo.java   # chạy file demo đơn lẻ
 ```
+
+Swagger UI: http://localhost:8080/swagger-ui.html · OpenAPI JSON: http://localhost:8080/v3/api-docs
+
+### Profile
+
+| Profile | Backend | DB | Chạy |
+|---|---|---|---|
+| `local` (mặc định) | IDE / Maven | `InMemoryRepository` + dữ liệu mẫu, mất khi tắt app | `./mvnw -pl app -am spring-boot:run` |
+| `dev` | Docker | PostgreSQL 17 trong Docker, schema + seed từ `schema.sql` / `data.sql` | `docker compose up --build` |
+| `dev` (BE trên IDE) | IDE / Maven | PostgreSQL trong Docker | `docker compose up -d db` rồi `./mvnw -pl app -am spring-boot:run -Dspring-boot.run.profiles=dev` |
+
+Dữ liệu PostgreSQL nằm ở volume `pgdata`: `docker compose down` giữ dữ liệu, `docker compose down -v` xóa sạch. User/password DB đọc từ biến môi trường (`POSTGRES_USER`, `POSTGRES_PASSWORD`, mặc định `ecommerce`).
+
+Testcontainers không đọc Docker context: với OrbStack / Colima cần trỏ socket, ví dụ thêm `docker.host=unix:///Users/<user>/.orbstack/run/docker.sock` vào `~/.testcontainers.properties`.

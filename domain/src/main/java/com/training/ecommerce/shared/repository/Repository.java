@@ -20,8 +20,19 @@ public interface Repository<T extends Identifiable<ID>, ID> {
      */
     T save(T entity);
 
-    /** Lưu lần lượt từng entity (wildcard: nhận cả collection của subtype). */
-    void saveAll(Collection<? extends T> entities);
+    /**
+     * Lưu lần lượt từng entity (wildcard: nhận cả collection của subtype).
+     *
+     * @throws IllegalArgumentException khi entities null, hoặc một entity không hợp lệ (xem {@link #save})
+     */
+    default void saveAll(Collection<? extends T> entities) {
+        if (entities == null) {
+            throw new IllegalArgumentException("entities không được null");
+        }
+        for (T entity : entities) {
+            save(entity);
+        }
+    }
 
     /** S05: entity có id tương ứng; không có (kể cả id null) → {@code Optional.empty()}. */
     Optional<T> findById(ID id);

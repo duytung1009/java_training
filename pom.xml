@@ -27,6 +27,8 @@
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <springdoc.version>3.1.1</springdoc.version>
+        <!-- Parent (pom) và domain không có main class: bỏ qua spring-boot:run, chỉ module app bật lại -->
+        <spring-boot.run.skip>true</spring-boot.run.skip>
     </properties>
 
     <dependencyManagement>

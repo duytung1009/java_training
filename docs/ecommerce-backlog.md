@@ -344,3 +344,30 @@ API (quyết định 28/10):
 Ngoài spec: đo thời gian chạy (để `S06Demo` so sánh), fairness, hiệu năng của từng cách khóa, nguồn trả `null`, `OrderDetail.lines` chứa phần tử `null`, structured concurrency. Test concurrency xanh không chứng minh hết race; đã kiểm rằng bản `InventoryManager` chưa khóa đỏ ổn định (lost update 10/10, search khi add), bản khóa from → to bị bắt deadlock, gọi tuần tự / nuốt interrupt / shutdown executor đều bị bắt.
 
 **Kiểm khi review:** check và trừ nằm trong cùng một lock (không check-then-act ngoài lock); không gọi IO / `sleep` khi giữ lock; transfer khóa theo thứ tự id cố định và khóa đúng object mà `Warehouse` dùng (hoặc lý do nếu khác); `InventoryManager` không bọc riêng từng method mà để hở bước giữa (ví dụ khóa `findById` nhưng `decreaseStock` thì không); service không tự `new Thread()` hay tạo pool; không `volatile` cho đọc-sửa-ghi; `unlock()` trong `finally` nếu dùng `ReentrantLock`; catch `InterruptedException` thì bật lại cờ; `S06Demo` chạy được và so thời gian tuần tự / fixed pool / virtual thread; `domain/` vẫn Java thuần.
+
+---
+
+## S07 – JDBC, PostgreSQL & Docker: lưu Product/Order, REST API, profile
+**Nhánh:** `s07/jdbc-docker` · làm trọn (không theo luồng spec đỏ), chốt 28/10
+
+| # | Class/Task | Package | Ghi chú |
+|---|---|---|---|
+| 1 | `Order` có id (`Identifiable<String>`), `OrderLine` có constructor khôi phục giá snapshot | `domain/order` | constructor cũ giữ nguyên, sinh id bằng UUID |
+| 2 | Port `StockStore.decreaseStock(Order)` (all-or-nothing), `ProductService`, `OrderService.placeOrder` (`@Transactional`) | `application/{inventory, catalog, order}` | mới |
+| 3 | `JdbcProductRepository`, `JdbcOrderRepository`, `JdbcStockStore` bằng `JdbcClient`; `schema.sql` + `data.sql` | `infrastructure/persistence/jdbc` | product lưu một bảng + cột `type`; bundle có bảng `bundle_items`. Trừ kho bằng `UPDATE … WHERE stock >= ?`, không đọc-sửa-ghi |
+| 4 | `InMemoryStockStore` + config theo profile | `infrastructure/{persistence/inmemory, config}` | `local`: `InMemoryRepository`, không cần DB; `dev`: PostgreSQL |
+| 5 | REST `/api/products`, `/api/orders` + `RestExceptionHandler` + OpenAPI | `interfaces/rest` | request/response là record; 404 / 409 / 400 bằng `ProblemDetail` |
+| 6 | `Dockerfile` + `compose.yaml` (PostgreSQL + backend) | root | profile `dev` chạy hoàn toàn trên Docker |
+
+**Acceptance**
+- [ ] Profile `local` (mặc định): BE chạy trên IDE, không cần DB, có sẵn dữ liệu mẫu
+- [ ] Profile `dev`: `docker compose up --build` chạy cả DB lẫn BE; dữ liệu còn sau `docker compose down` / `up`
+- [ ] Đặt đơn nhiều dòng là all-or-nothing trong DB: một dòng thiếu hàng thì không dòng nào bị trừ (rollback)
+- [ ] Nhiều request cùng mua sản phẩm cuối: đúng một đơn thành công, stock không âm
+- [ ] Đơn đọc lại từ DB giữ giá snapshot lúc đặt, kể cả khi giá sản phẩm đổi sau đó
+- [ ] Swagger UI ở `/swagger-ui.html` có đủ API product và order
+- [ ] Module `domain/` vẫn Java thuần; test S02–S06 vẫn xanh
+
+Ngoài phạm vi: JPA / Spring Data, Flyway, optimistic lock bằng cột version, phân trang, auth.
+
+**Kiểm khi review:** SQL dùng tham số (không nối chuỗi); trừ kho là một câu `UPDATE` có điều kiện; transaction bao cả trừ kho lẫn lưu đơn; repository không trả domain object ra REST trực tiếp; secret DB lấy từ biến môi trường; test JDBC chạy trên PostgreSQL thật (Testcontainers, `@Tag("docker")`).
