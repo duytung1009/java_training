@@ -282,3 +282,25 @@ API (quyết định 21/10):
 Ngoài spec: list trả về của `search` / `topSellingProducts` có sửa được hay không, kiểu `Map` cụ thể (`EnumMap` hay `HashMap`), thứ tự key của `revenueByCategory`, hiệu năng.
 
 **Kiểm khi review:** không còn `for`/`while` trong `InventoryManager`, `Order`, `PricingEngine`, `ReportService`; không `forEach` để add vào collection bên ngoài; không đặt logic trong `peek`; không `Optional.get()` trần (dùng `orElseThrow` / `map` / `orElse`); gộp `BigDecimal` bằng `reduce` / `reducing`, không `double`; `toMap` có merge function; `PricingRule.chain` dùng `reduce(identity(), PricingRule::andThen)`; constructor có category tái sử dụng validation cũ (constructor chaining, không chép lại kiểm tra); có `S05Demo` chạy được.
+
+## S06 – Multi-threading & Concurrency: tồn kho an toàn, chuyển kho, gọi song song
+**Nhánh:** `s06/concurrency-inventory` · bài tập cuối slide S06 (tự trình bày 24/10)
+
+| # | Class/Task | Package | Ghi chú |
+|---|---|---|---|
+| 1 | `InventoryManager`: `addProduct`, `findById`, `search`, `decreaseStock(Order)` an toàn khi nhiều thread cùng gọi; all-or-nothing vẫn đúng khi chạy đồng thời | `domain/inventory` | refactor S05, giữ nguyên hành vi đơn luồng đã spec. Cách khóa (một lock chung, hay lock theo product + lock ordering) và việc có thêm `reserve(productId, quantity)` (slide gọi là `InventoryService.reserve()`) chốt ở spec |
+| 2 | `Warehouse`: kho có id, tồn kho theo product id (đọc tồn, nhập, xuất) | `domain/inventory` | mới; id `String`, so thứ tự bằng `compareTo` |
+| 3 | `WarehouseTransferService.transfer(from, to, productId, quantity)`: khóa cả 2 kho theo thứ tự id cố định | `domain/inventory` | mới; thiếu hàng ném `OutOfStockException` (S04). Cách xử lý `from == to` chốt ở spec |
+| 4 | `OrderDetailService.loadDetail(orderId)`: gọi song song 3 nguồn (thanh toán, vận chuyển, các dòng đơn) qua `ExecutorService` được inject, gộp thành `OrderDetail` (record) | `application` | mới; 3 nguồn là interface trong `application`, bản giả có độ trễ (`sleep`) để demo đặt ở `infrastructure`. Cách xử lý khi một nguồn lỗi hoặc bị interrupt chốt ở spec |
+| 5 | `S06Demo` | `demo` | 100 thread cùng mua sản phẩm cuối; chuyển kho hai chiều song song; so thời gian `loadDetail` tuần tự / `newFixedThreadPool` / `newVirtualThreadPerTaskExecutor`. Bản nháp đang ở `git stash` (`S06Demo concurrency demo`) |
+
+**Acceptance**
+- [ ] 100 thread cùng mua sản phẩm còn 1: đúng 1 lần thành công, các lần còn lại ném `OutOfStockException`, stock cuối = 0, không bao giờ âm
+- [ ] Nhiều đơn nhiều dòng chạy đồng thời vẫn all-or-nothing: không đơn nào bị trừ một phần, tổng đã trừ = tổng số lượng của các đơn thành công
+- [ ] Kiểm tra và trừ nằm trong cùng một lock (không check-then-act bên ngoài lock); lock ngắn, không gọi IO hay `sleep` khi đang giữ lock
+- [ ] `transfer` hai chiều (A → B và B → A) chạy song song nhiều lần không treo (test có timeout); tổng tồn kho hai kho không đổi
+- [ ] `OrderDetailService`: 3 nguồn chạy song song, tổng thời gian ≈ nguồn chậm nhất; service không tự `new Thread()` và không tự tạo pool; bên nào tạo `ExecutorService` thì bên đó đóng (try-with-resources / `shutdown`)
+- [ ] Không nuốt `InterruptedException` (bật lại cờ bằng `Thread.currentThread().interrupt()` hoặc ném tiếp); không dùng `volatile` cho thao tác đọc-sửa-ghi
+- [ ] Module `domain/` vẫn là Java thuần; test S02–S05 vẫn xanh
+
+Ngoài phạm vi: transaction / optimistic lock ở DB (để buổi JDBC), structured concurrency (preview), jcstress.

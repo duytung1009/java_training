@@ -145,6 +145,32 @@ Cách dùng: sau mỗi lần ôn, cập nhật cột *Tự tin* và *Ôn lần c
 | Optional: orElse vs orElseGet vs orElseThrow | | | |
 | Comparator.comparing / thenComparing / reversed · type witness | | | |
 
+## S06
+
+| Keyword | Tự tin | Ôn lần cuối | Ghi chú |
+|---|---|---|---|
+| Process vs thread (heap chung, stack riêng) | | | |
+| Runnable vs Callable · 4 cách tạo task | | | |
+| start() vs run() | | | |
+| ExecutorService · thread pool · shutdown/close (Java 19) | | | |
+| Future.get() · ExecutionException · invokeAll | | | |
+| 6 thread state (BLOCKED vs WAITING vs TIMED_WAITING) | | | |
+| start() một lần (IllegalThreadStateException) | | | |
+| sleep giữ lock · join | | | |
+| interrupt() hợp tác · không nuốt InterruptedException | | | |
+| Race condition · critical section · check-then-act | | | |
+| synchronized: lock trên this / class / obj · chung một lock | | | |
+| Reentrant (synchronized, ReentrantLock holdCount) | | | |
+| AtomicInteger · CAS · getAndUpdate / compareAndSet | | | |
+| ReentrantLock: tryLock, lockInterruptibly, fair, unlock trong finally | | | |
+| ConcurrentHashMap · merge/compute | | | |
+| Visibility · volatile (không atomic) · happens-before | | | |
+| Deadlock · 4 điều kiện Coffman · thread dump | | | |
+| Lock ordering · tryLock timeout · lock scope ngắn | | | |
+| Virtual thread vs platform thread · carrier | | | |
+| newVirtualThreadPerTaskExecutor · không cần pool · CPU-bound không nhanh hơn | | | |
+| Semaphore · ThreadLocal · pinning (JEP 491) | | | |
+
 ## Ngoài lớp
 
 | Keyword | Tự tin | Ôn lần cuối | Ghi chú |

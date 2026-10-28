@@ -13,6 +13,7 @@
 | S03 – OOP, SOLID | 26/09 | Done | Done | – | – | 1.9/3 | 7/8 (biến tấu, 28/09) |
 | S04 – Generics, Collections & Exception | 03/10 | Todo | Doing | – | – | ?/3 | ?/15 |
 | S05 – FP, Lambda & Stream | 17/10 | Todo | Doing | – | – | ?/3 | ?/15 |
+| S06 – Multi-threading & Concurrency | 24/10 | Todo | Todo | – | – | ?/3 | ?/15 |
 
 - **Quiz:** số câu trả lời đúng khi *chưa mở* đáp án (phần quiz trong `sessions/session-XX.md`).
 - **Tự tin:** trung bình mức tự tin các keyword của buổi đó trong `review/keywords.md`.
@@ -23,6 +24,7 @@
 - [x] S03 – Case Study 2 vào ecommerce
 - [ ] S04 – Repository generic + Cart + domain exception vào ecommerce
 - [ ] S05 – Refactor Stream + PricingRule + ReportService vào ecommerce
+- [ ] S06 – InventoryManager thread-safe + chuyển kho + OrderDetailService vào ecommerce
 
 Đọc thêm (tham khảo, không tính vào tiến độ): Effective Java Item 6 và Item 15; VisualVM; G1 vs ZGC.
 
