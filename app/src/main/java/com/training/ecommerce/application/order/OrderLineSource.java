@@ -1,4 +1,4 @@
-package com.training.ecommerce.application;
+package com.training.ecommerce.application.order;
 
 import com.training.ecommerce.domain.order.OrderLine;
 

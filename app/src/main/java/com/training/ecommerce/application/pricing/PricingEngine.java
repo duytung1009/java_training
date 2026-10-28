@@ -1,4 +1,4 @@
-package com.training.ecommerce.application;
+package com.training.ecommerce.application.pricing;
 
 import com.training.ecommerce.domain.catalog.Product;
 import com.training.ecommerce.domain.pricing.PricingRule;

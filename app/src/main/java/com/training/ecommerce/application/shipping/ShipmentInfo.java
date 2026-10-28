@@ -1,4 +1,4 @@
-package com.training.ecommerce.application;
+package com.training.ecommerce.application.shipping;
 
 /**
  * S06: thông tin vận chuyển.

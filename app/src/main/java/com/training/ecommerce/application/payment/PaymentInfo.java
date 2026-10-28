@@ -1,4 +1,4 @@
-package com.training.ecommerce.application;
+package com.training.ecommerce.application.payment;
 
 import java.math.BigDecimal;
 

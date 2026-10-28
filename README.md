@@ -38,7 +38,8 @@ java_training/
 └── app/                            # module Spring Boot, phụ thuộc domain
     └── src/{main,test}/java/com/training/ecommerce/
         ├── EcommerceApplication.java
-        ├── application/            # service / use case (PricingEngine, CheckoutService…)
+        ├── application/            # service / use case, chia package theo domain/use case:
+        │                           #   pricing/, report/, order/, payment/, shipping/
         ├── infrastructure/         # lưu trữ in-memory / JDBC, đọc/ghi file
         ├── interfaces/             # cli/ (ReceiptPrinter…), REST controller
         └── demo/                   # SXXDemo: entry point chạy thử theo từng buổi

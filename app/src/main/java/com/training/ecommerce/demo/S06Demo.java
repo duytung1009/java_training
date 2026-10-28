@@ -1,7 +1,7 @@
 package com.training.ecommerce.demo;
 
-import com.training.ecommerce.application.OrderDetail;
-import com.training.ecommerce.application.OrderDetailService;
+import com.training.ecommerce.application.order.OrderDetail;
+import com.training.ecommerce.application.order.OrderDetailService;
 import com.training.ecommerce.domain.catalog.Category;
 import com.training.ecommerce.domain.catalog.OutOfStockException;
 import com.training.ecommerce.domain.catalog.PhysicalProduct;

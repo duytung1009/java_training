@@ -1,6 +1,6 @@
 package com.training.ecommerce.infrastructure.fake;
 
-import com.training.ecommerce.application.OrderLineSource;
+import com.training.ecommerce.application.order.OrderLineSource;
 import com.training.ecommerce.domain.order.OrderLine;
 
 import java.time.Duration;

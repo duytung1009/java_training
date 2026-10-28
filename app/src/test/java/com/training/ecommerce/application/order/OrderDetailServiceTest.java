@@ -1,7 +1,11 @@
 // SPEC S06 – sinh bởi java-start-backlog 28/10. Không sửa test để cho pass; muốn đổi spec thì sửa bảng Spec trong backlog trước.
 // Test "song song" dùng CountDownLatch thay vì đo thời gian, để không flaky.
-package com.training.ecommerce.application;
+package com.training.ecommerce.application.order;
 
+import com.training.ecommerce.application.payment.PaymentGateway;
+import com.training.ecommerce.application.payment.PaymentInfo;
+import com.training.ecommerce.application.shipping.ShipmentInfo;
+import com.training.ecommerce.application.shipping.ShipmentTracker;
 import com.training.ecommerce.domain.catalog.PhysicalProduct;
 import com.training.ecommerce.domain.catalog.Product;
 import com.training.ecommerce.domain.order.OrderLine;

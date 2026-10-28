@@ -1,4 +1,4 @@
-package com.training.ecommerce.application;
+package com.training.ecommerce.application.payment;
 
 /** S06: nguồn thông tin thanh toán của đơn (bản thật gọi cổng thanh toán, có độ trễ). */
 @FunctionalInterface

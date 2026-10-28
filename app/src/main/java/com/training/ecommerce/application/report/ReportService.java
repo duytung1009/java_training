@@ -1,4 +1,4 @@
-package com.training.ecommerce.application;
+package com.training.ecommerce.application.report;
 
 import com.training.ecommerce.domain.catalog.Category;
 import com.training.ecommerce.domain.catalog.Product;

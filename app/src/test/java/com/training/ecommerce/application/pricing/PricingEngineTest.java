@@ -1,5 +1,5 @@
 // SPEC S03 – sinh bởi java-start-backlog 20/10. Không sửa test để cho pass; muốn đổi spec thì sửa bảng Spec trong backlog trước.
-package com.training.ecommerce.application;
+package com.training.ecommerce.application.pricing;
 
 import com.training.ecommerce.domain.catalog.BundleProduct;
 import com.training.ecommerce.domain.catalog.DigitalProduct;

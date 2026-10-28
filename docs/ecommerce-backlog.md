@@ -121,7 +121,7 @@ Ngoài spec: cùng product add 2 lần (gộp hay tách line), header receipt, c
 | 5 | `interface Discountable { applyDiscount(DiscountCode) }` | `domain/pricing` | |
 | 6 | `interface Shippable { calculateShipping(Address) }` | `domain/shipping` | |
 | 7 | `DiscountCode`, `Address` | `domain/pricing`, `domain/customer` | |
-| 8 | `PricingEngine.calculateRevenue(List<Product>)` | `application` | không dùng `instanceof` trong phần tính giá |
+| 8 | `PricingEngine.calculateRevenue(List<Product>)` | `application/pricing` (từ 28/10) | không dùng `instanceof` trong phần tính giá |
 | 9 | `equals`/`hashCode` theo `id`, `toString` | `domain/catalog` | |
 
 > Đã merge (tag `s03-done`).
@@ -134,13 +134,13 @@ Ngoài spec: cùng product add 2 lần (gộp hay tách line), header receipt, c
 - [x] Không có cây kế thừa sâu quá 3 tầng
 - [x] Code S02 (`OrderLine`, `InventoryManager`) vẫn chạy với `Product` mới
 
-**Spec hành vi** (chốt 20/10, test: `domain/src/test/java/com/training/ecommerce/domain/{catalog/PhysicalProductTest, catalog/DigitalProductTest, catalog/SubscriptionProductTest, catalog/BundleProductTest, catalog/ProductIdentityTest, pricing/DiscountCodeTest, customer/AddressTest}.java`, `app/src/test/java/com/training/ecommerce/application/PricingEngineTest.java`; nâng cấp test S02)
+**Spec hành vi** (chốt 20/10, test: `domain/src/test/java/com/training/ecommerce/domain/{catalog/PhysicalProductTest, catalog/DigitalProductTest, catalog/SubscriptionProductTest, catalog/BundleProductTest, catalog/ProductIdentityTest, pricing/DiscountCodeTest, customer/AddressTest}.java`, `app/src/test/java/com/training/ecommerce/application/pricing/PricingEngineTest.java`; nâng cấp test S02)
 
 API (quyết định 20/10, theo khuyến nghị):
 - `abstract class Product`: constructor `protected (id, name, basePrice, stock)` và `(id, name, basePrice)`; `getId/getName/getBasePrice/getStock`, `decreaseStock(int)`; `public abstract BigDecimal calculateFinalPrice()`; `equals`/`hashCode` **chỉ theo id** (final, bất kể subtype); `toString()` có id + tên. `getPrice()` đổi thành `getBasePrice()`.
 - `PhysicalProduct(id, name, basePrice, stock, BigDecimal weightKg)` implements `Shippable`, `Discountable` · `DigitalProduct(id, name, basePrice, stock)` implements `Discountable` · `SubscriptionProduct(id, name, monthlyPrice, int months, stock)` · `BundleProduct(id, name, stock, BigDecimal discountRate, Product... items)`
 - `Discountable.applyDiscount(DiscountCode)` → giá sau giảm · `DiscountCode(String code, BigDecimal rate)` (không có hạn dùng) · `Shippable.calculateShipping(Address)` · `Address(String street, String city)`
-- `PricingEngine` (app, `application`): instance method `BigDecimal calculateRevenue(List<Product>)`
+- `PricingEngine` (app, `application.pricing` từ 28/10): instance method `BigDecimal calculateRevenue(List<Product>)`
 - `OrderLine` chụp giá từ `calculateFinalPrice()` (không phải basePrice). Mọi số tiền scale 2, HALF_UP.
 
 | Method | Input | Kết quả mong đợi | Test |
@@ -228,9 +228,9 @@ Ngoài spec: `Repository.saveAll(null)`, `Cart.changeQuantity(null, …)` trả 
 | 1 | `InventoryManager`: thay vòng lặp bằng Stream (`findById`, `addProduct`, `decreaseStock`) | `domain/inventory` | refactor S02/S04 (catalog đã là `Map` từ S04), giữ nguyên hành vi đã spec |
 | 2 | `Order`: `subtotal` bằng `reduce(BigDecimal.ZERO, BigDecimal::add)` | `domain/order` | refactor S02 |
 | 3 | `PricingRule` (`@FunctionalInterface`, `BigDecimal apply(BigDecimal price)`, default method để ghép) + cách gộp một danh sách rule thành một rule | `domain/pricing` | mới; ví dụ rule: thành viên −5%, flash sale −20.000đ |
-| 4 | `PricingEngine`: doanh thu bằng Stream; áp chuỗi `PricingRule` lên giá bán | `application` | refactor S03 |
+| 4 | `PricingEngine`: doanh thu bằng Stream; áp chuỗi `PricingRule` lên giá bán | `application/pricing` (từ 28/10) | refactor S03 |
 | 5 | `Category` cho sản phẩm | `domain/catalog` | mới, phục vụ báo cáo theo category (cách gắn vào `Product` chốt ở spec) |
-| 6 | `ReportService`: doanh thu theo category, top N sản phẩm bán chạy (theo số lượng), tách đơn lớn / nhỏ theo ngưỡng | `application` | mới; pure, không sửa input |
+| 6 | `ReportService`: doanh thu theo category, top N sản phẩm bán chạy (theo số lượng), tách đơn lớn / nhỏ theo ngưỡng | `application/report` (từ 28/10) | mới; pure, không sửa input |
 | 7 | `S05Demo` | `demo` | in giá sau chuỗi rule + 3 báo cáo |
 
 **Acceptance**
@@ -242,14 +242,14 @@ Ngoài spec: `Repository.saveAll(null)`, `Cart.changeQuantity(null, …)` trả 
 - [ ] Không `forEach` để add vào list bên ngoài, không đặt logic trong `peek`, không `Optional.get()` trần
 - [ ] `findById` trả `Optional` ở `InventoryManager` và `Repository` (đổi D1 của S04, chốt 21/10)
 
-**Spec hành vi** (chốt 21/10, test: `domain/src/test/java/com/training/ecommerce/domain/{catalog/ProductCategoryTest, inventory/InventoryManagerSearchTest, pricing/PricingRuleTest}.java`, `app/src/test/java/com/training/ecommerce/application/{PricingEngineRuleTest, ReportServiceTest}.java`; nâng cấp có chủ đích `InventoryManagerTest`, `InMemoryRepositoryTest` cho `Optional` (D2), các test S02–S04 khác giữ nguyên)
+**Spec hành vi** (chốt 21/10, test: `domain/src/test/java/com/training/ecommerce/domain/{catalog/ProductCategoryTest, inventory/InventoryManagerSearchTest, pricing/PricingRuleTest}.java`, `app/src/test/java/com/training/ecommerce/application/{pricing/PricingEngineRuleTest, report/ReportServiceTest}.java`; nâng cấp có chủ đích `InventoryManagerTest`, `InMemoryRepositoryTest` cho `Optional` (D2), các test S02–S04 khác giữ nguyên)
 
 API (quyết định 21/10):
 - **D1** `enum Category { FASHION, ELECTRONICS, SOFTWARE, SUBSCRIPTION, OTHER }` ở `domain/catalog`. Mỗi subtype thêm constructor có `Category` ở cuối (`BundleProduct`: trước varargs `items`); constructor cũ giữ nguyên, mặc định `OTHER`. `Product.getCategory()`; category `null` → IAE.
 - **D2** `InventoryManager.findById` và `Repository.findById` trả `Optional` (đổi D1 của S04). `InventoryManager.search(Predicate<Product>)` → list mới theo thứ tự thêm.
 - `PricingRule` (`@FunctionalInterface`) ở `domain/pricing`: `apply`, default `andThen(next)`, static `identity()`, `percentOff(rate)` với rate trong (0, 1], `amountOff(amount)` với amount ≥ 0, `chain(List<PricingRule>)` = `reduce(identity, andThen)`. Rule giảm giá trả scale 2 HALF_UP.
 - `PricingEngine.calculateRevenue(products, rule)` = Σ `rule.apply(calculateFinalPrice())` từng product, scale 2 (overload S03 giữ nguyên).
-- `ReportService` ở `application`: `revenueByCategory(List<Order>)` → `Map<Category, BigDecimal>` (Σ `lineTotal`, trước giảm giá/thuế của đơn); `topSellingProducts(orders, n)` → `List<Product>` (**D4**); `partitionByFinalAmount(orders, threshold)` → `Map<Boolean, List<Order>>`.
+- `ReportService` ở `application.report` (từ 28/10): `revenueByCategory(List<Order>)` → `Map<Category, BigDecimal>` (Σ `lineTotal`, trước giảm giá/thuế của đơn); `topSellingProducts(orders, n)` → `List<Product>` (**D4**); `partitionByFinalAmount(orders, threshold)` → `Map<Boolean, List<Order>>`.
 - Tham số `null` → IAE ở mọi method mới.
 
 | Method | Input | Kết quả mong đợi | Test |
@@ -291,7 +291,7 @@ Ngoài spec: list trả về của `search` / `topSellingProducts` có sửa đ�
 | 1 | `InventoryManager`: `addProduct`, `findById`, `search`, `decreaseStock(Order)` an toàn khi nhiều thread cùng gọi; all-or-nothing vẫn đúng khi chạy đồng thời | `domain/inventory` | refactor S05, giữ nguyên hành vi đơn luồng đã spec. Cách khóa (một lock chung, hay lock theo product + lock ordering) và việc có thêm `reserve(productId, quantity)` (slide gọi là `InventoryService.reserve()`) chốt ở spec |
 | 2 | `Warehouse`: kho có id, tồn kho theo product id (đọc tồn, nhập, xuất) | `domain/inventory` | mới; id `String`, so thứ tự bằng `compareTo` |
 | 3 | `WarehouseTransferService.transfer(from, to, productId, quantity)`: khóa cả 2 kho theo thứ tự id cố định | `domain/inventory` | mới; thiếu hàng ném `OutOfStockException` (S04). Cách xử lý `from == to` chốt ở spec |
-| 4 | `OrderDetailService.loadDetail(orderId)`: gọi song song 3 nguồn (thanh toán, vận chuyển, các dòng đơn) qua `ExecutorService` được inject, gộp thành `OrderDetail` (record) | `application` | mới; 3 nguồn là interface trong `application`, bản giả có độ trễ (`sleep`) để demo đặt ở `infrastructure`. Cách xử lý khi một nguồn lỗi hoặc bị interrupt chốt ở spec |
+| 4 | `OrderDetailService.loadDetail(orderId)`: gọi song song 3 nguồn (thanh toán, vận chuyển, các dòng đơn) qua `ExecutorService` được inject, gộp thành `OrderDetail` (record) | `application/{order, payment, shipping}` | mới; 3 nguồn là interface trong `application` (`order.OrderLineSource`, `payment.PaymentGateway`, `shipping.ShipmentTracker`), bản giả có độ trễ (`sleep`) để demo đặt ở `infrastructure`. Cách xử lý khi một nguồn lỗi hoặc bị interrupt chốt ở spec |
 | 5 | `S06Demo` | `demo` | 100 thread cùng mua sản phẩm cuối; chuyển kho hai chiều song song; so thời gian `loadDetail` tuần tự / `newFixedThreadPool` / `newVirtualThreadPerTaskExecutor`. Bản nháp đang ở `git stash` (`S06Demo concurrency demo`) |
 
 **Acceptance**
@@ -305,14 +305,14 @@ Ngoài spec: list trả về của `search` / `topSellingProducts` có sửa đ�
 
 Ngoài phạm vi: transaction / optimistic lock ở DB (để buổi JDBC), structured concurrency (preview), jcstress.
 
-**Spec hành vi** (chốt 28/10, test: `domain/src/test/java/com/training/ecommerce/domain/inventory/{InventoryManagerConcurrencyTest, WarehouseTest, WarehouseTransferServiceTest}.java` (+ helper `Concurrently`), `app/src/test/java/com/training/ecommerce/application/OrderDetailServiceTest.java`; test S02–S05 giữ nguyên)
+**Spec hành vi** (chốt 28/10, test: `domain/src/test/java/com/training/ecommerce/domain/inventory/{InventoryManagerConcurrencyTest, WarehouseTest, WarehouseTransferServiceTest}.java` (+ helper `Concurrently`), `app/src/test/java/com/training/ecommerce/application/order/OrderDetailServiceTest.java`; test S02–S05 giữ nguyên)
 
 API (quyết định 28/10):
 - **D1** Không thêm `reserve`: flash sale dùng luôn `InventoryManager.decreaseStock(Order)`. Mọi method public của `InventoryManager` an toàn khi nhiều thread cùng gọi; cách khóa do Tùng chọn (test chỉ kiểm hành vi).
 - `Warehouse(String id)` ở `domain/inventory`: `getId()`, `stockOf(productId)` (chưa có → 0), `add(productId, quantity)`, `remove(productId, quantity)` (thiếu → `OutOfStockException`). Tự thân an toàn khi nhiều thread cùng gọi.
 - `WarehouseTransferService.transfer(from, to, productId, quantity)` ở `domain/inventory`. **D2** `from == to` hoặc hai kho trùng id → IAE.
-- `application`: `PaymentGateway.findPayment`, `ShipmentTracker.track`, `OrderLineSource.findLines` (functional interface); record `PaymentInfo(status, amount)`, `ShipmentInfo(carrier, status)`, `OrderDetail(orderId, payment, shipment, lines)` (field null → IAE, `lines` là bản copy không sửa được); `OrderDetailService(payments, shipments, lines, executor)` + `loadDetail(orderId)`.
-- **D3** Một nguồn lỗi → `OrderDetailLoadException` (unchecked, mới, ở `application`), `getCause()` là exception gốc. Thread gọi bị interrupt → cũng `OrderDetailLoadException`, cờ interrupt vẫn bật.
+- `application` (tách package 28/10): `payment.PaymentGateway.findPayment` + record `payment.PaymentInfo(status, amount)`; `shipping.ShipmentTracker.track` + record `shipping.ShipmentInfo(carrier, status)`; `order.OrderLineSource.findLines` (functional interface); record `order.OrderDetail(orderId, payment, shipment, lines)` (field null → IAE, `lines` là bản copy không sửa được); `OrderDetailService(payments, shipments, lines, executor)` + `loadDetail(orderId)`.
+- **D3** Một nguồn lỗi → `OrderDetailLoadException` (unchecked, mới, ở `application.order`), `getCause()` là exception gốc. Thread gọi bị interrupt → cũng `OrderDetailLoadException`, cờ interrupt vẫn bật.
 - **D4** Nguồn lỗi thì cancel các task còn lại: test `@Tag("bonus")`.
 - Tham số `null` / quantity ≤ 0 / id rỗng → IAE ở mọi method mới.
 

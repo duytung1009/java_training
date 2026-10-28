@@ -1,7 +1,8 @@
 package com.training.ecommerce.infrastructure.fake;
 
-import com.training.ecommerce.application.ShipmentInfo;
-import com.training.ecommerce.application.ShipmentTracker;
+import com.training.ecommerce.application.shipping.ShipmentInfo;
+import com.training.ecommerce.application.shipping.ShipmentTracker;
+
 
 import java.time.Duration;
 

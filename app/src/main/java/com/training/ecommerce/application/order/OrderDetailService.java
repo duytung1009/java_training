@@ -1,5 +1,9 @@
-package com.training.ecommerce.application;
+package com.training.ecommerce.application.order;
 
+import com.training.ecommerce.application.payment.PaymentGateway;
+import com.training.ecommerce.application.payment.PaymentInfo;
+import com.training.ecommerce.application.shipping.ShipmentInfo;
+import com.training.ecommerce.application.shipping.ShipmentTracker;
 import com.training.ecommerce.domain.order.OrderLine;
 
 import java.util.List;

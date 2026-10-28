@@ -1,6 +1,6 @@
 package com.training.ecommerce.demo;
 
-import com.training.ecommerce.application.PricingEngine;
+import com.training.ecommerce.application.pricing.PricingEngine;
 import com.training.ecommerce.domain.catalog.BundleProduct;
 import com.training.ecommerce.domain.catalog.DigitalProduct;
 import com.training.ecommerce.domain.catalog.PhysicalProduct;

@@ -1,7 +1,8 @@
 package com.training.ecommerce.infrastructure.fake;
 
-import com.training.ecommerce.application.PaymentGateway;
-import com.training.ecommerce.application.PaymentInfo;
+import com.training.ecommerce.application.payment.PaymentGateway;
+import com.training.ecommerce.application.payment.PaymentInfo;
+
 
 import java.math.BigDecimal;
 import java.time.Duration;
