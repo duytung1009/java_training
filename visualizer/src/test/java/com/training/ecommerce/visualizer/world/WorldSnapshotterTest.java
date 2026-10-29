@@ -16,12 +16,14 @@ class WorldSnapshotterTest {
         WorldView view = snapshotter.snapshot(new WorldFactory().create()).view();
 
         assertThat(view.nodes()).extracting(NodeView::id).containsExactly(
-                "warehouse:WH-HN", "warehouse:WH-HCM", "hub", "cart", "orders", "pricing", "shipping",
-                "zone:INNER_CITY", "zone:OTHER_CITY");
+                "inventory", "warehouse:WH-HN", "warehouse:WH-HCM", "hub",
+                "order", "cart", "orders", "catalog", "pricing", "shipping", "zone:INNER_CITY", "zone:OTHER_CITY");
         assertThat(view.nodes()).extracting(NodeView::kind).containsExactly(
-                "object", "object", "object", "object", "collection", "area", "area", "object", "object");
+                "area", "object", "object", "object", "area", "object", "collection", "area", "area", "area",
+                "object", "object");
         assertThat(view.nodes()).extracting(NodeView::parent).containsExactly(
-                null, null, null, null, null, null, null, "shipping", "shipping");
+                null, "inventory", "inventory", "inventory", null, "order", "order", null, null, null,
+                "shipping", "shipping");
         assertThat(view.nodes().stream().filter(n -> !n.kind().equals("object")))
                 .allSatisfy(n -> assertThat(n.items()).isEmpty());
     }
@@ -30,7 +32,7 @@ class WorldSnapshotterTest {
     void soLuongLaIntegerVaTienLaString() {
         WorldView view = snapshotter.snapshot(new WorldFactory().create()).view();
 
-        NodeView hn = view.nodes().getFirst();
+        NodeView hn = view.nodes().get(1);
         assertThat(hn.items()).extracting(ItemView::key, ItemView::label, ItemView::value)
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple("LAPTOP", "LAP", 10),

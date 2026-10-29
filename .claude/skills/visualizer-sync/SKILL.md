@@ -26,7 +26,7 @@ diff visualizer/src/main/resources/domain-api.txt "$TMPDIR/domain-api.now.txt"
 | Method bị đổi tên/xoá, đổi tham số | Các `scenario/*Scenario.java` gọi nó; nhãn `recorder.call/run("Class", "method", ...)` phải khớp tên thật |
 | Trạng thái mới cần thấy (field, collection, stock…) | `world/WorldSnapshotter` (node + item + object diff; `ItemView.type` = class mà ô đại diện, hiện thành nhãn nhỏ trên ô — ghi đúng kiểu trong code, vd. `Map.Entry` nếu domain chỉ giữ id), có thể cả `world/World`, `WorldFactory` (seed) |
 | Hành vi mới đáng demo (use case, exception, concurrency) | Thêm `scenario/<Tên>Scenario.java`, đăng ký trong `ScenarioRegistry`, thêm test bất biến trong `ScenarioTest` |
-| Domain object mới cần một khối trên bản đồ | Chọn dạng khối: `object` (một instance thật), `collection` (danh sách chứa object), `area` (package/khái niệm, không có class). Ô là kết quả hàm thuần thì `computed=true`, không ghi như state. Node con chỉ cần `parent` trong `WorldSnapshotter`; node gốc mới thêm vào `ROOTS` trong `static/js/map/layout.js` (toạ độ, `child` spec nếu là container), `WIRES` nếu có flow; màu ở `styles.css` + legend `index.html` |
+| Domain object mới cần một khối trên bản đồ | Chọn dạng khối: `object` (một instance thật), `collection` (danh sách chứa object), `area` (package/khái niệm, không có class). Ô là kết quả hàm thuần thì `computed=true`, không ghi như state. `area` = đúng một package domain (mỗi package một vùng gốc trong `ROOTS` của `static/js/map/layout.js`). Object cố định (luôn có) đặt toạ độ trong `PLACED`, nằm trọn trong vùng của nó; object sinh lúc chạy chỉ cần `parent` trong `WorldSnapshotter`, tự xếp lưới theo `child` spec của vùng/collection. `WIRES` nối giữa object/collection (được cắt qua khung vùng, không được cắt qua khối); màu ở `styles.css` + legend `index.html` |
 | Mô tả, API chính, buổi học đổi | `static/js/panels/info.js` (bảng chú thích khi click khối, tra theo `cls`) — mô tả phải đúng với code domain, đối chiếu lại |
 | Flow mới giữa hai khối | `TraceEvent.flows` (danh sách `{from,to}`) trong kịch bản + một wire trong `layout.js` (FE tự đảo chiều) |
 
@@ -34,7 +34,7 @@ Chỉ thay đổi nội bộ (private, refactor không đổi hành vi) thì th�
 
 ## 3. Quy tắc bố cục
 
-- Wire chỉ nối giữa các node gốc (flow tới node con tự đi về node gốc chứa nó), gồm đoạn ngang/dọc trên lưới, không cắt xuyên khối. `checkLayout()` trong `layout.js` in cảnh báo `Visualizer layout:` ở console khi vi phạm — phải sạch.
+- Wire nối giữa object/collection đặt trong `PLACED` (hoặc vùng chỉ có khối con, vd. shipping); flow tới khối con tự đi về tổ tiên gần nhất có wire, gồm đoạn ngang/dọc trên lưới, không cắt xuyên khối. `checkLayout()` trong `layout.js` in cảnh báo `Visualizer layout:` ở console khi vi phạm — phải sạch.
 - Khối có dải tiêu đề (`HEADER` cho gốc, `CHILD_HEADER` cho khối con); ô bắt đầu dưới dải này. Chữ tự co/cắt cho vừa bề ngang khối (`fit` trong `scene.js`) — vẫn nên giữ tiêu đề ngắn.
 - Giữ viewBox vừa bản đồ; mở rộng lưới nền trong `scene.js` nếu thêm hàng/cột.
 

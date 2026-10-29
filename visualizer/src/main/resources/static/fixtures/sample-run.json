@@ -5,12 +5,21 @@
  "worldBefore": {
   "nodes": [
    {
+    "id": "inventory",
+    "kind": "area",
+    "cls": "domain.inventory",
+    "title": "domain.inventory",
+    "sub": "Warehouse \u00b7 InventoryManager",
+    "parent": null,
+    "items": []
+   },
+   {
     "id": "warehouse:WH-HN",
     "kind": "object",
     "cls": "Warehouse",
     "title": "Warehouse WH-HN",
     "sub": "Map<productId, qty>",
-    "parent": null,
+    "parent": "inventory",
     "items": [
      {
       "key": "LAPTOP",
@@ -41,7 +50,7 @@
     "cls": "Warehouse",
     "title": "Warehouse WH-HCM",
     "sub": "Map<productId, qty>",
-    "parent": null,
+    "parent": "inventory",
     "items": [
      {
       "key": "LAPTOP",
@@ -65,7 +74,7 @@
     "cls": "InventoryManager",
     "title": "InventoryManager",
     "sub": "catalog: Product.stock",
-    "parent": null,
+    "parent": "inventory",
     "items": [
      {
       "key": "LAPTOP",
@@ -91,12 +100,21 @@
     ]
    },
    {
+    "id": "order",
+    "kind": "area",
+    "cls": "domain.order",
+    "title": "domain.order",
+    "sub": "Cart \u00b7 Order \u00b7 OrderLine",
+    "parent": null,
+    "items": []
+   },
+   {
     "id": "cart",
     "kind": "object",
     "cls": "Cart",
     "title": "Cart",
     "sub": "Map<Product, qty>",
-    "parent": null,
+    "parent": "order",
     "items": []
    },
    {
@@ -105,6 +123,15 @@
     "cls": "List<Order>",
     "title": "List<Order> \u00b7 World",
     "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+    "parent": "order",
+    "items": []
+   },
+   {
+    "id": "catalog",
+    "kind": "area",
+    "cls": "domain.catalog",
+    "title": "domain.catalog",
+    "sub": "Product v\u00e0 c\u00e1c l\u1edbp con",
     "parent": null,
     "items": []
    },
@@ -113,7 +140,7 @@
     "kind": "area",
     "cls": "domain.pricing",
     "title": "domain.pricing",
-    "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+    "sub": "PricingRule \u00b7 DiscountCode",
     "parent": null,
     "items": []
    },
@@ -165,8 +192,8 @@
  "events": [
   {
    "seq": 1,
-   "at": "2026-10-29T16:32:59.845550Z",
-   "thread": "http-nio-8084-exec-2",
+   "at": "2026-10-29T16:50:07.187409Z",
+   "thread": "http-nio-8084-exec-3",
    "className": "Cart",
    "method": "add",
    "args": [
@@ -197,12 +224,21 @@
    "worldAfter": {
     "nodes": [
      {
+      "id": "inventory",
+      "kind": "area",
+      "cls": "domain.inventory",
+      "title": "domain.inventory",
+      "sub": "Warehouse \u00b7 InventoryManager",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "warehouse:WH-HN",
       "kind": "object",
       "cls": "Warehouse",
       "title": "Warehouse WH-HN",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -233,7 +269,7 @@
       "cls": "Warehouse",
       "title": "Warehouse WH-HCM",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -257,7 +293,7 @@
       "cls": "InventoryManager",
       "title": "InventoryManager",
       "sub": "catalog: Product.stock",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -283,12 +319,21 @@
       ]
      },
      {
+      "id": "order",
+      "kind": "area",
+      "cls": "domain.order",
+      "title": "domain.order",
+      "sub": "Cart \u00b7 Order \u00b7 OrderLine",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "cart",
       "kind": "object",
       "cls": "Cart",
       "title": "Cart",
       "sub": "Map<Product, qty>",
-      "parent": null,
+      "parent": "order",
       "items": [
        {
         "key": "LAPTOP",
@@ -305,6 +350,15 @@
       "cls": "List<Order>",
       "title": "List<Order> \u00b7 World",
       "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+      "parent": "order",
+      "items": []
+     },
+     {
+      "id": "catalog",
+      "kind": "area",
+      "cls": "domain.catalog",
+      "title": "domain.catalog",
+      "sub": "Product v\u00e0 c\u00e1c l\u1edbp con",
       "parent": null,
       "items": []
      },
@@ -313,7 +367,7 @@
       "kind": "area",
       "cls": "domain.pricing",
       "title": "domain.pricing",
-      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "sub": "PricingRule \u00b7 DiscountCode",
       "parent": null,
       "items": []
      },
@@ -365,8 +419,8 @@
   },
   {
    "seq": 2,
-   "at": "2026-10-29T16:32:59.846021Z",
-   "thread": "http-nio-8084-exec-2",
+   "at": "2026-10-29T16:50:07.187800Z",
+   "thread": "http-nio-8084-exec-3",
    "className": "Cart",
    "method": "add",
    "args": [
@@ -397,12 +451,21 @@
    "worldAfter": {
     "nodes": [
      {
+      "id": "inventory",
+      "kind": "area",
+      "cls": "domain.inventory",
+      "title": "domain.inventory",
+      "sub": "Warehouse \u00b7 InventoryManager",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "warehouse:WH-HN",
       "kind": "object",
       "cls": "Warehouse",
       "title": "Warehouse WH-HN",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -433,7 +496,7 @@
       "cls": "Warehouse",
       "title": "Warehouse WH-HCM",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -457,7 +520,7 @@
       "cls": "InventoryManager",
       "title": "InventoryManager",
       "sub": "catalog: Product.stock",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -483,12 +546,21 @@
       ]
      },
      {
+      "id": "order",
+      "kind": "area",
+      "cls": "domain.order",
+      "title": "domain.order",
+      "sub": "Cart \u00b7 Order \u00b7 OrderLine",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "cart",
       "kind": "object",
       "cls": "Cart",
       "title": "Cart",
       "sub": "Map<Product, qty>",
-      "parent": null,
+      "parent": "order",
       "items": [
        {
         "key": "LAPTOP",
@@ -512,6 +584,15 @@
       "cls": "List<Order>",
       "title": "List<Order> \u00b7 World",
       "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+      "parent": "order",
+      "items": []
+     },
+     {
+      "id": "catalog",
+      "kind": "area",
+      "cls": "domain.catalog",
+      "title": "domain.catalog",
+      "sub": "Product v\u00e0 c\u00e1c l\u1edbp con",
       "parent": null,
       "items": []
      },
@@ -520,7 +601,7 @@
       "kind": "area",
       "cls": "domain.pricing",
       "title": "domain.pricing",
-      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "sub": "PricingRule \u00b7 DiscountCode",
       "parent": null,
       "items": []
      },
@@ -572,8 +653,8 @@
   },
   {
    "seq": 3,
-   "at": "2026-10-29T16:32:59.846153Z",
-   "thread": "http-nio-8084-exec-2",
+   "at": "2026-10-29T16:50:07.187925Z",
+   "thread": "http-nio-8084-exec-3",
    "className": "Cart",
    "method": "add",
    "args": [
@@ -604,12 +685,21 @@
    "worldAfter": {
     "nodes": [
      {
+      "id": "inventory",
+      "kind": "area",
+      "cls": "domain.inventory",
+      "title": "domain.inventory",
+      "sub": "Warehouse \u00b7 InventoryManager",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "warehouse:WH-HN",
       "kind": "object",
       "cls": "Warehouse",
       "title": "Warehouse WH-HN",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -640,7 +730,7 @@
       "cls": "Warehouse",
       "title": "Warehouse WH-HCM",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -664,7 +754,7 @@
       "cls": "InventoryManager",
       "title": "InventoryManager",
       "sub": "catalog: Product.stock",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -690,12 +780,21 @@
       ]
      },
      {
+      "id": "order",
+      "kind": "area",
+      "cls": "domain.order",
+      "title": "domain.order",
+      "sub": "Cart \u00b7 Order \u00b7 OrderLine",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "cart",
       "kind": "object",
       "cls": "Cart",
       "title": "Cart",
       "sub": "Map<Product, qty>",
-      "parent": null,
+      "parent": "order",
       "items": [
        {
         "key": "LAPTOP",
@@ -726,6 +825,15 @@
       "cls": "List<Order>",
       "title": "List<Order> \u00b7 World",
       "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+      "parent": "order",
+      "items": []
+     },
+     {
+      "id": "catalog",
+      "kind": "area",
+      "cls": "domain.catalog",
+      "title": "domain.catalog",
+      "sub": "Product v\u00e0 c\u00e1c l\u1edbp con",
       "parent": null,
       "items": []
      },
@@ -734,7 +842,7 @@
       "kind": "area",
       "cls": "domain.pricing",
       "title": "domain.pricing",
-      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "sub": "PricingRule \u00b7 DiscountCode",
       "parent": null,
       "items": []
      },
@@ -786,8 +894,8 @@
   },
   {
    "seq": 4,
-   "at": "2026-10-29T16:32:59.846321Z",
-   "thread": "http-nio-8084-exec-2",
+   "at": "2026-10-29T16:50:07.188057Z",
+   "thread": "http-nio-8084-exec-3",
    "className": "Cart",
    "method": "changeQuantity",
    "args": [
@@ -815,12 +923,21 @@
    "worldAfter": {
     "nodes": [
      {
+      "id": "inventory",
+      "kind": "area",
+      "cls": "domain.inventory",
+      "title": "domain.inventory",
+      "sub": "Warehouse \u00b7 InventoryManager",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "warehouse:WH-HN",
       "kind": "object",
       "cls": "Warehouse",
       "title": "Warehouse WH-HN",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -851,7 +968,7 @@
       "cls": "Warehouse",
       "title": "Warehouse WH-HCM",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -875,7 +992,7 @@
       "cls": "InventoryManager",
       "title": "InventoryManager",
       "sub": "catalog: Product.stock",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -901,12 +1018,21 @@
       ]
      },
      {
+      "id": "order",
+      "kind": "area",
+      "cls": "domain.order",
+      "title": "domain.order",
+      "sub": "Cart \u00b7 Order \u00b7 OrderLine",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "cart",
       "kind": "object",
       "cls": "Cart",
       "title": "Cart",
       "sub": "Map<Product, qty>",
-      "parent": null,
+      "parent": "order",
       "items": [
        {
         "key": "LAPTOP",
@@ -937,6 +1063,15 @@
       "cls": "List<Order>",
       "title": "List<Order> \u00b7 World",
       "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+      "parent": "order",
+      "items": []
+     },
+     {
+      "id": "catalog",
+      "kind": "area",
+      "cls": "domain.catalog",
+      "title": "domain.catalog",
+      "sub": "Product v\u00e0 c\u00e1c l\u1edbp con",
       "parent": null,
       "items": []
      },
@@ -945,7 +1080,7 @@
       "kind": "area",
       "cls": "domain.pricing",
       "title": "domain.pricing",
-      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "sub": "PricingRule \u00b7 DiscountCode",
       "parent": null,
       "items": []
      },
@@ -997,8 +1132,8 @@
   },
   {
    "seq": 5,
-   "at": "2026-10-29T16:32:59.846482Z",
-   "thread": "http-nio-8084-exec-2",
+   "at": "2026-10-29T16:50:07.188182Z",
+   "thread": "http-nio-8084-exec-3",
    "className": "Cart",
    "method": "remove",
    "args": [
@@ -1023,12 +1158,21 @@
    "worldAfter": {
     "nodes": [
      {
+      "id": "inventory",
+      "kind": "area",
+      "cls": "domain.inventory",
+      "title": "domain.inventory",
+      "sub": "Warehouse \u00b7 InventoryManager",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "warehouse:WH-HN",
       "kind": "object",
       "cls": "Warehouse",
       "title": "Warehouse WH-HN",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -1059,7 +1203,7 @@
       "cls": "Warehouse",
       "title": "Warehouse WH-HCM",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -1083,7 +1227,7 @@
       "cls": "InventoryManager",
       "title": "InventoryManager",
       "sub": "catalog: Product.stock",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -1109,12 +1253,21 @@
       ]
      },
      {
+      "id": "order",
+      "kind": "area",
+      "cls": "domain.order",
+      "title": "domain.order",
+      "sub": "Cart \u00b7 Order \u00b7 OrderLine",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "cart",
       "kind": "object",
       "cls": "Cart",
       "title": "Cart",
       "sub": "Map<Product, qty>",
-      "parent": null,
+      "parent": "order",
       "items": [
        {
         "key": "LAPTOP",
@@ -1138,6 +1291,15 @@
       "cls": "List<Order>",
       "title": "List<Order> \u00b7 World",
       "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+      "parent": "order",
+      "items": []
+     },
+     {
+      "id": "catalog",
+      "kind": "area",
+      "cls": "domain.catalog",
+      "title": "domain.catalog",
+      "sub": "Product v\u00e0 c\u00e1c l\u1edbp con",
       "parent": null,
       "items": []
      },
@@ -1146,7 +1308,7 @@
       "kind": "area",
       "cls": "domain.pricing",
       "title": "domain.pricing",
-      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "sub": "PricingRule \u00b7 DiscountCode",
       "parent": null,
       "items": []
      },
@@ -1198,8 +1360,8 @@
   },
   {
    "seq": 6,
-   "at": "2026-10-29T16:32:59.848384Z",
-   "thread": "http-nio-8084-exec-2",
+   "at": "2026-10-29T16:50:07.189627Z",
+   "thread": "http-nio-8084-exec-3",
    "className": "Cart",
    "method": "toOrder",
    "args": [
@@ -1207,7 +1369,7 @@
     "0.08"
    ],
    "outcome": "OK",
-   "result": "Order 3529",
+   "result": "Order 4c46",
    "exception": null,
    "flows": [
     {
@@ -1218,11 +1380,11 @@
    "panels": [
     "cart",
     "orders",
-    "order:3529"
+    "order:4c46"
    ],
    "changes": [
     {
-     "ref": "Order 3529",
+     "ref": "Order 4c46",
      "before": null,
      "after": {
       "lines": 2,
@@ -1236,12 +1398,21 @@
    "worldAfter": {
     "nodes": [
      {
+      "id": "inventory",
+      "kind": "area",
+      "cls": "domain.inventory",
+      "title": "domain.inventory",
+      "sub": "Warehouse \u00b7 InventoryManager",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "warehouse:WH-HN",
       "kind": "object",
       "cls": "Warehouse",
       "title": "Warehouse WH-HN",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -1272,7 +1443,7 @@
       "cls": "Warehouse",
       "title": "Warehouse WH-HCM",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -1296,7 +1467,7 @@
       "cls": "InventoryManager",
       "title": "InventoryManager",
       "sub": "catalog: Product.stock",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -1322,12 +1493,21 @@
       ]
      },
      {
+      "id": "order",
+      "kind": "area",
+      "cls": "domain.order",
+      "title": "domain.order",
+      "sub": "Cart \u00b7 Order \u00b7 OrderLine",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "cart",
       "kind": "object",
       "cls": "Cart",
       "title": "Cart",
       "sub": "Map<Product, qty>",
-      "parent": null,
+      "parent": "order",
       "items": [
        {
         "key": "LAPTOP",
@@ -1351,14 +1531,14 @@
       "cls": "List<Order>",
       "title": "List<Order> \u00b7 World",
       "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
-      "parent": null,
+      "parent": "order",
       "items": []
      },
      {
-      "id": "order:3529",
+      "id": "order:4c46",
       "kind": "object",
       "cls": "Order",
-      "title": "Order 3529",
+      "title": "Order 4c46",
       "sub": "-10% +8% = 31.1tr",
       "parent": "orders",
       "items": [
@@ -1379,11 +1559,20 @@
       ]
      },
      {
+      "id": "catalog",
+      "kind": "area",
+      "cls": "domain.catalog",
+      "title": "domain.catalog",
+      "sub": "Product v\u00e0 c\u00e1c l\u1edbp con",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "pricing",
       "kind": "area",
       "cls": "domain.pricing",
       "title": "domain.pricing",
-      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "sub": "PricingRule \u00b7 DiscountCode",
       "parent": null,
       "items": []
      },
@@ -1435,19 +1624,19 @@
   },
   {
    "seq": 7,
-   "at": "2026-10-29T16:32:59.849832Z",
-   "thread": "http-nio-8084-exec-2",
+   "at": "2026-10-29T16:50:07.190692Z",
+   "thread": "http-nio-8084-exec-3",
    "className": "InventoryManager",
    "method": "decreaseStock",
    "args": [
-    "Order 3529"
+    "Order 4c46"
    ],
    "outcome": "OK",
    "result": null,
    "exception": null,
    "flows": [
     {
-     "from": "order:3529",
+     "from": "order:4c46",
      "to": "hub"
     }
    ],
@@ -1477,12 +1666,21 @@
    "worldAfter": {
     "nodes": [
      {
+      "id": "inventory",
+      "kind": "area",
+      "cls": "domain.inventory",
+      "title": "domain.inventory",
+      "sub": "Warehouse \u00b7 InventoryManager",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "warehouse:WH-HN",
       "kind": "object",
       "cls": "Warehouse",
       "title": "Warehouse WH-HN",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -1513,7 +1711,7 @@
       "cls": "Warehouse",
       "title": "Warehouse WH-HCM",
       "sub": "Map<productId, qty>",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -1537,7 +1735,7 @@
       "cls": "InventoryManager",
       "title": "InventoryManager",
       "sub": "catalog: Product.stock",
-      "parent": null,
+      "parent": "inventory",
       "items": [
        {
         "key": "LAPTOP",
@@ -1563,12 +1761,21 @@
       ]
      },
      {
+      "id": "order",
+      "kind": "area",
+      "cls": "domain.order",
+      "title": "domain.order",
+      "sub": "Cart \u00b7 Order \u00b7 OrderLine",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "cart",
       "kind": "object",
       "cls": "Cart",
       "title": "Cart",
       "sub": "Map<Product, qty>",
-      "parent": null,
+      "parent": "order",
       "items": [
        {
         "key": "LAPTOP",
@@ -1592,14 +1799,14 @@
       "cls": "List<Order>",
       "title": "List<Order> \u00b7 World",
       "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
-      "parent": null,
+      "parent": "order",
       "items": []
      },
      {
-      "id": "order:3529",
+      "id": "order:4c46",
       "kind": "object",
       "cls": "Order",
-      "title": "Order 3529",
+      "title": "Order 4c46",
       "sub": "-10% +8% = 31.1tr",
       "parent": "orders",
       "items": [
@@ -1620,11 +1827,20 @@
       ]
      },
      {
+      "id": "catalog",
+      "kind": "area",
+      "cls": "domain.catalog",
+      "title": "domain.catalog",
+      "sub": "Product v\u00e0 c\u00e1c l\u1edbp con",
+      "parent": null,
+      "items": []
+     },
+     {
       "id": "pricing",
       "kind": "area",
       "cls": "domain.pricing",
       "title": "domain.pricing",
-      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "sub": "PricingRule \u00b7 DiscountCode",
       "parent": null,
       "items": []
      },

@@ -22,6 +22,9 @@ import java.util.Map;
 @Component
 public class WorldSnapshotter {
 
+    public static final String INVENTORY = "inventory";
+    public static final String ORDER_AREA = "order";
+    public static final String CATALOG = "catalog";
     public static final String HUB = "hub";
     public static final String CART = "cart";
     public static final String ORDERS = "orders";
@@ -53,6 +56,8 @@ public class WorldSnapshotter {
         Map<String, Map<String, Object>> objects = new LinkedHashMap<>();
         List<NodeView> nodes = new ArrayList<>();
 
+        nodes.add(new NodeView(INVENTORY, NodeView.AREA, "domain.inventory", "domain.inventory",
+                "Warehouse · InventoryManager", null, List.of()));
         for (Warehouse warehouse : world.warehouses()) {
             Map<String, Object> quantities = new LinkedHashMap<>();
             for (String productId : world.productIds()) {
@@ -64,7 +69,7 @@ public class WorldSnapshotter {
             objects.put("Warehouse " + warehouse.getId(), quantities);
             // Warehouse chỉ giữ Map<String, Integer>: mỗi ô là một entry productId → qty, không phải object Product
             nodes.add(new NodeView(warehousePanelId(warehouse.getId()), NodeView.OBJECT, "Warehouse",
-                    "Warehouse " + warehouse.getId(), "Map<productId, qty>", null,
+                    "Warehouse " + warehouse.getId(), "Map<productId, qty>", INVENTORY,
                     countItems(quantities, "Map.Entry")));
         }
 
@@ -77,18 +82,20 @@ public class WorldSnapshotter {
             });
         }
         nodes.add(new NodeView(HUB, NodeView.OBJECT, "InventoryManager", "InventoryManager",
-                "catalog: Product.stock", null, countItems(stocks, "Product")));
+                "catalog: Product.stock", INVENTORY, countItems(stocks, "Product")));
 
+        nodes.add(new NodeView(ORDER_AREA, NodeView.AREA, "domain.order", "domain.order",
+                "Cart · Order · OrderLine", null, List.of()));
         Map<String, Object> cartItems = new LinkedHashMap<>();
         for (Map.Entry<Product, Integer> entry : world.cart().getItems().entrySet()) {
             cartItems.put(entry.getKey().getId(), entry.getValue());
         }
         objects.put("Cart", cartItems);
-        nodes.add(new NodeView(CART, NodeView.OBJECT, "Cart", "Cart", "Map<Product, qty>", null,
+        nodes.add(new NodeView(CART, NodeView.OBJECT, "Cart", "Cart", "Map<Product, qty>", ORDER_AREA,
                 countItems(cartItems, "Product")));
 
         nodes.add(new NodeView(ORDERS, NodeView.COLLECTION, "List<Order>", "List<Order> · World", "đơn đã tạo",
-                null, List.of()));
+                ORDER_AREA, List.of()));
         for (Order order : world.orders()) {
             String shortId = shortId(order);
             objects.put("Order " + shortId, orderFields(order));
@@ -97,11 +104,13 @@ public class WorldSnapshotter {
                             + " = " + MoneyFormat.shortOf(order.finalAmount()), ORDERS, orderLineItems(order)));
         }
 
+        nodes.add(new NodeView(CATALOG, NodeView.AREA, "domain.catalog", "domain.catalog",
+                "Product và các lớp con", null, List.of()));
+        addRegistered(world, CATALOG, nodes, objects);
+
         nodes.add(new NodeView(PRICING, NodeView.AREA, "domain.pricing", "domain.pricing",
-                "PricingRule · DiscountCode · Product giá", null, List.of()));
-        for (World.PricingEntry entry : world.pricingObjects()) {
-            nodes.add(pricingNode(world, entry, objects));
-        }
+                "PricingRule · DiscountCode", null, List.of()));
+        addRegistered(world, PRICING, nodes, objects);
 
         nodes.add(new NodeView(SHIPPING, NodeView.AREA, "domain.shipping", "domain.shipping",
                 "ShippingZone · Address", null, List.of()));
@@ -116,9 +125,19 @@ public class WorldSnapshotter {
         return new WorldSnapshot(new WorldView(List.copyOf(nodes)), objects);
     }
 
-    /** Node con của pricing: field đọc từ object thật, computed lấy từ world. */
-    private static NodeView pricingNode(World world, World.PricingEntry entry,
-                                        Map<String, Map<String, Object>> objects) {
+    /** Thêm các node đã đăng ký dưới area {@code parentId}, theo thứ tự đăng ký. */
+    private static void addRegistered(World world, String parentId, List<NodeView> nodes,
+                                       Map<String, Map<String, Object>> objects) {
+        for (World.RegisteredNode entry : world.registeredObjects()) {
+            if (entry.parentId().equals(parentId)) {
+                nodes.add(registeredNode(world, entry, objects));
+            }
+        }
+    }
+
+    /** Node con của một area: field đọc từ object thật, computed lấy từ world. */
+    private static NodeView registeredNode(World world, World.RegisteredNode entry,
+                                           Map<String, Map<String, Object>> objects) {
         Object object = entry.domainObject();
         String name = entry.nodeId().substring(entry.nodeId().lastIndexOf(':') + 1);
         List<ItemView> items = new ArrayList<>();
@@ -145,7 +164,7 @@ public class WorldSnapshotter {
             default -> title = cls + " " + name;
         }
         items.addAll(world.computed(entry.nodeId()));
-        return new NodeView(entry.nodeId(), NodeView.OBJECT, cls, title, entry.sub(), PRICING, items);
+        return new NodeView(entry.nodeId(), NodeView.OBJECT, cls, title, entry.sub(), entry.parentId(), items);
     }
 
     private static List<ItemView> orderLineItems(Order order) {

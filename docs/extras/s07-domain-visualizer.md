@@ -104,18 +104,19 @@ Kịch bản đa luồng: snapshot chụp ngoài lock của domain, nên `change
 
 ### 4.3 Node và cặp flow
 
-`WorldView` là cây node `{id, kind, cls, title, sub, parent, items[]}`; `kind`: `object` (một instance thật), `collection` (danh sách chứa object), `area` (package/khái niệm, không có class). Ô `computed=true` là kết quả hàm thuần để hiển thị, không phải state.
+`WorldView` là cây node `{id, kind, cls, title, sub, parent, items[]}`; `kind`: `object` (một instance thật), `collection` (danh sách chứa object), `area` (đúng một package domain, không có class). Ô `computed=true` là kết quả hàm thuần để hiển thị, không phải state.
 
-| Node | Kind | Class / ý nghĩa | Ô |
-|---|---|---|---|
-| `warehouse:WH-HN`, `warehouse:WH-HCM` | object | `Warehouse` | `Map.Entry` productId → qty |
-| `hub` | object | `InventoryManager` | `Product` → stock |
-| `cart` | object | `Cart` | `Product` → qty |
-| `orders` | collection | `List<Order>` do `World` của visualizer giữ (domain không có object này) | con `order:<id>`: `OrderLine` sản phẩm × qty → đơn giá snapshot; dòng phụ: giảm giá, thuế, thành tiền |
-| `pricing` | area | package `domain.pricing` | con (chỉ khi kịch bản tạo): `pricing:product:*` (basePrice, `= finalPrice`), `pricing:rule:*` (`= apply(...)`), `pricing:code:*` (code, rate) |
-| `shipping` | area | package `domain.shipping` | con `zone:INNER_CITY`, `zone:OTHER_CITY` (enum): baseFee + phí theo thành phố (computed) |
+Mỗi package domain là một `area` gốc; object nằm trong vùng của package chứa class đó.
 
-Wire chỉ nối node gốc (chiều ngược tự đảo): `warehouse:WH-HN ↔ warehouse:WH-HCM`, `hub → cart`, `cart → orders`, `orders → hub`, `hub → shipping`. Flow tới node con đi về node gốc chứa nó. `toOrder` không dùng `domain.pricing` (tỉ lệ do người gọi truyền, đơn giá lấy từ `Product.calculateFinalPrice` trong `OrderLine`); phí ship do `PhysicalProduct.calculateShipping` tính, `Order` không liên quan `ShippingZone`.
+| Vùng (area gốc) | Con | Ô |
+|---|---|---|
+| `inventory` · `domain.inventory` | `warehouse:WH-HN`, `warehouse:WH-HCM` (object `Warehouse`), `hub` (object `InventoryManager`) | `Map.Entry` productId → qty; `Product` → stock |
+| `order` · `domain.order` | `cart` (object `Cart`), `orders` (collection `List<Order>` do `World` của visualizer giữ) → `order:<id>` (object `Order`) | `Product` → qty; `OrderLine` sản phẩm × qty → đơn giá snapshot, dòng phụ: giảm giá, thuế, thành tiền |
+| `catalog` · `domain.catalog` | `catalog:product:*` (chỉ khi kịch bản tạo) | basePrice, `= finalPrice` |
+| `pricing` · `domain.pricing` | `pricing:rule:*`, `pricing:code:*` (chỉ khi kịch bản tạo) | `= apply(...)`; code, rate |
+| `shipping` · `domain.shipping` | `zone:INNER_CITY`, `zone:OTHER_CITY` (enum) | baseFee + phí theo thành phố (computed) |
+
+Wire nối object/collection (chiều ngược tự đảo): `warehouse:WH-HN ↔ warehouse:WH-HCM`, `hub → cart`, `cart → orders`, `orders → hub`, `hub → shipping`. Flow tới khối con đi về tổ tiên gần nhất có wire. `toOrder` không dùng `domain.pricing` (tỉ lệ do người gọi truyền, đơn giá lấy từ `Product.calculateFinalPrice` trong `OrderLine`); phí ship do `PhysicalProduct.calculateShipping` tính, `Order` không liên quan `ShippingZone`.
 
 ## 5. Kịch bản
 

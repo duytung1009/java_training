@@ -1,6 +1,6 @@
 // Vẽ bản đồ SVG: panel, ô con, đường nối và animation
 import { el, iso, diamond, wirePath, css, flat } from './iso.js';
-import { ROOTS, HEADER, WIRES, MISSING_WIRE, resolveFlow, checkLayout } from './layout.js';
+import { ROOTS, PLACED, HEADER, WIRES, MISSING_WIRE, resolveFlow, checkLayout } from './layout.js';
 
 const PRODUCT = { LAPTOP: '#e8c46a', PHONE: '#7fd4e0', HEADPHONE: '#b7e07f', BOOK: '#e88fb4' };
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -10,12 +10,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 function tileColor(rootId, key) {
   if (key === MORE) return '#7d8290';
   if (PRODUCT[key]) return PRODUCT[key];
-  if (rootId === 'pricing' || rootId === 'orders') return '#c9b6ff';
+  if (rootId === 'pricing' || rootId === 'catalog' || rootId === 'orders') return '#c9b6ff';
   if (rootId === 'shipping') return '#8fe0d6';
   return '#cfd3dc';
 }
 
 const EPS = 1e-6;
+const specOf = id => ROOTS[id] ?? PLACED[id]; // area hoặc thành viên cố định
 const CELL = 35.78; // độ dài 1 ô lưới dọc trục x trên màn hình (px)
 
 // Vừa chữ vào maxPx: thu font xuống tối thiểu minPx, vẫn dài thì cắt và thêm "…". Trả về true nếu giữ nguyên chữ gốc.
@@ -81,20 +82,22 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
       el('path', { d: wirePath(w.pts), fill: 'none', stroke: css('--wire'), 'stroke-width': 1.5 }, layers.wires);
     el('path', { d: wirePath(MISSING_WIRE), fill: 'none', stroke: css('--wire'), 'stroke-width': 1, 'stroke-dasharray': '2 5' }, layers.wires);
     // Ghi chú nằm phẳng dọc theo đường, phía sau đường
-    const note = el('text', { transform: flat(...iso(4.45, 2.4)), 'text-anchor': 'middle', class: 'zone-sub' }, layers.labels);
+    const note = el('text', { transform: flat(...iso(4.95, 3)), 'text-anchor': 'middle', class: 'zone-sub' }, layers.labels);
     el('tspan', { x: 0, y: -13 }, note).textContent = 'WH → hub';
     el('tspan', { x: 0, y: -3 }, note).textContent = 'chưa có';
 
-    for (const [id, p] of Object.entries(ROOTS)) {
+    // Area vẽ trước (nền), thành viên cố định nằm trong group của area nên click sâu nhất thắng
+    for (const [id, p] of Object.entries(ROOTS))
       setHead(makeBlock(id, id, p, layers.zones, false, p.kind), p.title, p.sub);
-    }
+    for (const [id, p] of Object.entries(PLACED))
+      setHead(makeBlock(id, id, p, blocks.get(p.area).g, false, p.kind), p.title, p.sub);
     svg.onclick = () => select(null);
     if (selected) frames[selected]?.classList.add('sel');
   }
 
   // Dựng khung + tiêu đề một khối (root hoặc con). Con: tiêu đề nhỏ hơn, không có nhãn loại
   function makeBlock(id, root, rect, parent, small, kind, cls = 'zone', selectable = true) {
-    const color = css(ROOTS[root].color), st = FRAME[kind] ?? FRAME.object;
+    const color = css(specOf(root).color), st = FRAME[kind] ?? FRAME.object;
     const g = el('g', { class: cls }, parent);
     if (selectable) g.addEventListener('click', e => { e.stopPropagation(); select(selected === id ? null : id); });
     const frame = el('polygon', { fill: color, 'fill-opacity': st.fill, stroke: color, 'stroke-width': small ? 1.2 : 1.5, class: 'zone-frame' }, g);
@@ -280,11 +283,11 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     world = next;
     nodes = new Map((world?.nodes ?? []).map(n => [n.id, n]));
     const opts = { animate, speed, slow: reduced() ? 0 : 1 };
-    for (const [id, r] of Object.entries(ROOTS)) {
+    for (const [id, r] of [...Object.entries(ROOTS), ...Object.entries(PLACED)]) {
       const b = blocks.get(id), n = nodeOf(id);
       setHead(b, n?.title ?? r.title, n?.sub ?? r.sub);
       if (r.child) syncChildren(id, r, [...nodes.values()].filter(c => c.parent === id), opts);
-      else syncTiles(b, n?.items ?? [], { tw: r.tileW || 1.3, td: 0.9, gap: 0.2, margin: 0.3, head: HEADER }, opts);
+      else if (r.kind === 'object') syncTiles(b, n?.items ?? [], { tw: r.tileW || 1.3, td: 0.9, gap: 0.2, margin: 0.3, head: HEADER }, opts);
     }
     if (selected && !frames[selected]) select(null);
     else if (selected) onSelect(selected, describe(selected));

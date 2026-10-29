@@ -1,5 +1,5 @@
 // Bảng chú thích khi click một khối trên bản đồ: class domain, vai trò, API chính, trạng thái hiện tại
-import { ROOTS } from '../map/layout.js';
+import { ROOTS, PLACED } from '../map/layout.js';
 
 const WAREHOUSE = {
   cls: 'Warehouse', pkg: 'domain.inventory', session: 'S04 · S06',
@@ -10,7 +10,7 @@ const WAREHOUSE = {
 
 const PRODUCT = (cls, calc, extra = '') => ({
   cls, pkg: 'domain.catalog', session: 'S03',
-  desc: `Một Product cụ thể trong khu pricing, giá cuối tính đa hình qua calculateFinalPrice(): ${calc}${extra}`,
+  desc: `Một Product cụ thể trong package catalog, giá cuối tính đa hình qua calculateFinalPrice(): ${calc}${extra}`,
   api: ['calculateFinalPrice()', 'getBasePrice()', 'decreaseStock(qty)'],
   items: 'basePrice, giá cuối',
 });
@@ -47,11 +47,29 @@ export const INFO = {
     api: ['add(order)', 'size()'],
     items: 'các Order đã tạo',
   },
+  'domain.inventory': {
+    cls: 'domain.inventory', pkg: 'package', session: 'S04 · S06',
+    desc: 'Package tồn kho: Warehouse (kho vật lý), InventoryManager (danh mục + Product.stock) và WarehouseTransferService chuyển hàng giữa hai kho.',
+    api: ['Warehouse', 'InventoryManager', 'WarehouseTransferService'],
+    items: 'thành viên',
+  },
+  'domain.order': {
+    cls: 'domain.order', pkg: 'package', session: 'S02 · S04',
+    desc: 'Package đơn hàng: Cart chốt thành Order qua toOrder; Order giữ OrderLine với giá đã snapshot. Danh sách đơn là do visualizer (World) giữ.',
+    api: ['Cart', 'Order', 'OrderLine'],
+    items: 'thành viên',
+  },
+  'domain.catalog': {
+    cls: 'domain.catalog', pkg: 'package', session: 'S03',
+    desc: 'Package sản phẩm: Product và các lớp con (Physical, Digital, Subscription, Bundle) tính giá cuối đa hình. Object hiện ra khi kịch bản tạo chúng.',
+    api: ['Product', 'PhysicalProduct · DigitalProduct', 'SubscriptionProduct · BundleProduct'],
+    items: 'sản phẩm đã tạo',
+  },
   'domain.pricing': {
     cls: 'domain.pricing', pkg: 'package', session: 'S03',
-    desc: 'Package giá gồm PricingRule, DiscountCode và Discountable. Chỉ là khu vực: object (sản phẩm, rule, mã giảm giá) hiện ra khi kịch bản tạo chúng.',
+    desc: 'Package giá gồm PricingRule, DiscountCode và Discountable. Chỉ là khung package: rule và mã giảm giá hiện ra khi kịch bản tạo chúng.',
     api: ['PricingRule', 'DiscountCode', 'Discountable'],
-    items: 'object trong package',
+    items: 'rule / mã đã tạo',
   },
   PhysicalProduct: PRODUCT('PhysicalProduct', 'basePrice làm tròn scale 2 (implements Shippable, Discountable); calculateShipping(address) gọi ShippingZone.'),
   DigitalProduct: PRODUCT('DigitalProduct', 'basePrice làm tròn scale 2 (implements Discountable).'),
@@ -88,9 +106,10 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 
 // Vẽ bảng cho node (id, kind, cls, title, sub, parent, items); node null thì ẩn bảng
 export function renderInfo(el, id, node) {
-  const info = node && (INFO[node.cls] ?? INFO[node.title]);
+  const info = node && (INFO[node.cls] ?? INFO[node.title] ?? INFO[`domain.${node.id}`]);
   if (!id || !node || !info) { el.hidden = true; return; }
-  const root = ROOTS[node.parent ?? id];
+  const top = (PLACED[id] ?? ROOTS[id]) ? id : node.parent; // con: lấy màu container
+  const root = ROOTS[top] ?? PLACED[top];
   const items = node.items ?? [];
   const kids = node.children ?? [];
   el.style.setProperty('--c', `var(${root?.color ?? '--hub'})`);

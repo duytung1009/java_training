@@ -81,6 +81,9 @@ class ScenarioTest {
                 .filter(n -> n.id().startsWith("order:")).toList();
         assertThat(orderNodes).hasSize(1);
         assertThat(orderNodes.getFirst().parent()).isEqualTo("orders");
+        var orders = run.events().getLast().worldAfter().nodes().stream()
+                .filter(n -> n.id().equals("orders")).findFirst().orElseThrow();
+        assertThat(orders.parent()).isEqualTo("order");
         assertThat(orderNodes.getFirst().id()).isEqualTo(orderNode);
         assertThat(orderNodes.getFirst().items()).hasSize(2)
                 .allSatisfy(i -> {
@@ -102,15 +105,18 @@ class ScenarioTest {
     void pricingTypesTaoNodeConCuaPricing() {
         Run run = run("pricing-types");
         var nodes = run.events().getLast().worldAfter().nodes();
+        var products = nodes.stream().filter(n -> "catalog".equals(n.parent())).toList();
+        assertThat(products).extracting(NodeView::id).containsExactly(
+                "catalog:product:LAPTOP-X", "catalog:product:EBOOK", "catalog:product:NEWS",
+                "catalog:product:COMBO");
+        assertThat(products).extracting(NodeView::cls).containsExactly(
+                "PhysicalProduct", "DigitalProduct", "SubscriptionProduct", "BundleProduct");
         var children = nodes.stream().filter(n -> "pricing".equals(n.parent())).toList();
         assertThat(children).extracting(NodeView::id).containsExactly(
-                "pricing:product:LAPTOP-X", "pricing:product:EBOOK", "pricing:product:NEWS",
-                "pricing:product:COMBO", "pricing:rule:then", "pricing:rule:chain", "pricing:code:SALE20",
-                "pricing:rule:sale20");
+                "pricing:rule:then", "pricing:rule:chain", "pricing:code:SALE20", "pricing:rule:sale20");
         assertThat(children).extracting(NodeView::cls).containsExactly(
-                "PhysicalProduct", "DigitalProduct", "SubscriptionProduct", "BundleProduct", "PricingRule",
-                "PricingRule", "DiscountCode", "PricingRule");
-        children.stream().filter(n -> n.id().startsWith("pricing:product:")).forEach(n -> {
+                "PricingRule", "PricingRule", "DiscountCode", "PricingRule");
+        products.forEach(n -> {
             assertThat(n.items()).extracting(ItemView::key).containsExactly("basePrice", "finalPrice");
             assertThat(n.items()).extracting(ItemView::computed).containsExactly(false, true);
         });

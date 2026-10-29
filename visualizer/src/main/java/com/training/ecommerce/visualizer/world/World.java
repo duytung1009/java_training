@@ -26,7 +26,7 @@ public class World {
     private final List<Order> orders = new CopyOnWriteArrayList<>();
     /** Warehouse không liệt kê được sản phẩm, nên snapshot phải biết trước danh sách productId cần hỏi. */
     private final List<String> productIds = new CopyOnWriteArrayList<>();
-    private final Map<String, PricingEntry> pricingObjects = new LinkedHashMap<>();     // guarded by this.pricingObjects
+    private final Map<String, RegisteredNode> registered = new LinkedHashMap<>();     // guarded by this.registered
     private final Map<String, Map<String, ItemView>> computed = new LinkedHashMap<>();  // guarded by this.computed
 
     /**
@@ -115,26 +115,27 @@ public class World {
     }
 
     /**
-     * Đăng ký một object domain (Product, PricingRule, DiscountCode) làm node con của area pricing.
+     * Đăng ký một object domain (Product, PricingRule, DiscountCode…) làm node con của một area.
      * Field của node được đọc từ chính object này lúc snapshot. Đăng ký lại cùng nodeId thì thay object.
      *
-     * @param nodeId id node, vd. "pricing:code:SALE20"
+     * @param parentId id area cha, vd. "pricing", "catalog"
+     * @param nodeId   id node, vd. "pricing:code:SALE20"
      * @param sub    chú thích ngắn của node, null nếu không có
-     * @throws IllegalArgumentException nếu nodeId hoặc domainObject null
+     * @throws IllegalArgumentException nếu parentId, nodeId hoặc domainObject null
      */
-    public void registerPricingObject(String nodeId, Object domainObject, String sub) {
-        if (nodeId == null || domainObject == null) {
-            throw new IllegalArgumentException("nodeId và domainObject không được null");
+    public void registerObject(String parentId, String nodeId, Object domainObject, String sub) {
+        if (parentId == null || nodeId == null || domainObject == null) {
+            throw new IllegalArgumentException("parentId, nodeId và domainObject không được null");
         }
-        synchronized (pricingObjects) {
-            pricingObjects.put(nodeId, new PricingEntry(nodeId, domainObject, sub));
+        synchronized (registered) {
+            registered.put(nodeId, new RegisteredNode(parentId, nodeId, domainObject, sub));
         }
     }
 
-    /** Các object pricing đã đăng ký, theo thứ tự đăng ký lần đầu. */
-    public List<PricingEntry> pricingObjects() {
-        synchronized (pricingObjects) {
-            return List.copyOf(pricingObjects.values());
+    /** Các object đã đăng ký, theo thứ tự đăng ký lần đầu. */
+    public List<RegisteredNode> registeredObjects() {
+        synchronized (registered) {
+            return List.copyOf(registered.values());
         }
     }
 
@@ -161,12 +162,13 @@ public class World {
     }
 
     /**
-     * Một object domain đăng ký dưới area pricing.
+     * Một object domain đăng ký dưới một area.
      *
+     * @param parentId     id area cha
      * @param nodeId       id node
      * @param domainObject object thật để đọc field
      * @param sub          chú thích ngắn, có thể null
      */
-    public record PricingEntry(String nodeId, Object domainObject, String sub) {
+    public record RegisteredNode(String parentId, String nodeId, Object domainObject, String sub) {
     }
 }

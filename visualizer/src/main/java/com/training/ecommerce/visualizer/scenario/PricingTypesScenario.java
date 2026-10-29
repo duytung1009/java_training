@@ -36,7 +36,7 @@ public class PricingTypesScenario implements Scenario {
 
     @Override
     public String description() {
-        return "calculateFinalPrice cho Physical / Digital / Subscription / Bundle, rồi PricingRule.andThen, chain và DiscountCode: mỗi giá hiện thành node con của domain.pricing.";
+        return "calculateFinalPrice cho Physical / Digital / Subscription / Bundle, rồi PricingRule.andThen, chain và DiscountCode: product hiện dưới domain.catalog, rule và code dưới domain.pricing.";
     }
 
     @Override
@@ -79,7 +79,7 @@ public class PricingTypesScenario implements Scenario {
         recorder.call("DiscountCode", "new", List.of("SALE20", "0.20"), null, pricingPanels("pricing:code:SALE20"),
                 () -> {
                     holder[0] = new DiscountCode("SALE20", new BigDecimal("0.20"));
-                    world.registerPricingObject("pricing:code:" + holder[0].getCode(), holder[0], null);
+                    world.registerObject(WorldSnapshotter.PRICING, "pricing:code:" + holder[0].getCode(), holder[0], null);
                     return holder[0].getCode() + " -" + MoneyFormat.percent(holder[0].getRate());
                 });
         DiscountCode code = holder[0];
@@ -101,17 +101,17 @@ public class PricingTypesScenario implements Scenario {
     /** Đăng ký node rule và ghi kết quả apply (hàm thuần, computed). */
     private static void showRule(World world, String nodeId, PricingRule rule, String sub, BigDecimal input,
                                  BigDecimal result) {
-        world.registerPricingObject(nodeId, rule, sub);
+        world.registerObject(WorldSnapshotter.PRICING, nodeId, rule, sub);
         String label = "apply(" + MoneyFormat.shortOf(input) + ")";
         world.putComputed(nodeId, new ItemView("apply", label, MoneyFormat.shortOf(result), "BigDecimal", true));
     }
 
     private static void price(World world, TraceRecorder recorder, Product product) {
-        String nodeId = "pricing:product:" + product.getId();
+        String nodeId = "catalog:product:" + product.getId();
         recorder.call(product.getClass().getSimpleName(), "calculateFinalPrice", List.of(product.getId()), null,
-                pricingPanels(nodeId), () -> {
+                List.of(WorldSnapshotter.CATALOG, nodeId), () -> {
                     BigDecimal price = product.calculateFinalPrice();
-                    world.registerPricingObject(nodeId, product, null);
+                    world.registerObject(WorldSnapshotter.CATALOG, nodeId, product, null);
                     world.putComputed(nodeId, new ItemView("finalPrice", "= finalPrice", MoneyFormat.shortOf(price),
                             "BigDecimal", true));
                     return MoneyFormat.full(price);
