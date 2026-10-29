@@ -1,0 +1,65 @@
+package com.training.ecommerce.visualizer.web;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class VisualizerControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void worldTraVe8Panel() throws Exception {
+        mockMvc.perform(get("/api/viz/world"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.panels", hasSize(8)))
+                .andExpect(jsonPath("$.panels[0].id").value("warehouse:WH-HN"))
+                .andExpect(jsonPath("$.panels[0].items[0].value").value(10));
+    }
+
+    @Test
+    void scenariosTraVeTamKichBan() throws Exception {
+        mockMvc.perform(get("/api/viz/scenarios"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(8)))
+                .andExpect(jsonPath("$[0].id").value("cart-to-order"))
+                .andExpect(jsonPath("$[0].session").value("S02"));
+    }
+
+    @Test
+    void runTraVeRunResultVoiTruongNullVanCoMat() throws Exception {
+        mockMvc.perform(post("/api/viz/scenarios/decrease-stock-fail/run"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.scenarioId").value("decrease-stock-fail"))
+                .andExpect(jsonPath("$.concurrent").value(false))
+                .andExpect(jsonPath("$.worldBefore.panels", hasSize(8)))
+                .andExpect(jsonPath("$.events[0].result").hasJsonPath())
+                .andExpect(jsonPath("$.events[0].exception").hasJsonPath())
+                .andExpect(jsonPath("$.events[0].flow").hasJsonPath())
+                .andExpect(jsonPath("$.events[0].outcome").value("OK"))
+                .andExpect(jsonPath("$.events[0].changes[0].before").hasJsonPath())
+                .andExpect(jsonPath("$.events[0].changes[0].before").value((Object) null))
+                .andExpect(jsonPath("$.events[3].outcome").value("THROWN"))
+                .andExpect(jsonPath("$.events[3].exception.type").value("OutOfStockException"))
+                .andExpect(jsonPath("$.events[3].changes", hasSize(0)));
+    }
+
+    @Test
+    void idSaiTra404ProblemDetail() throws Exception {
+        mockMvc.perform(post("/api/viz/scenarios/khong-co/run"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.detail").value("Không tìm thấy kịch bản: khong-co"));
+    }
+}

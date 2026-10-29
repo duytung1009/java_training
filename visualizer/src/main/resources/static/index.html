@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domain Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <h1>DOMAIN VISUALIZER</h1>
+  <span id="badge" class="badge" hidden>fixture</span>
+  <select id="scenario" aria-label="Kịch bản"></select>
+  <button id="run">▶ Run</button>
+  <button id="pause">⏸ Pause</button>
+  <button id="step">⏭ Step</button>
+  <select id="speed" aria-label="Tốc độ">
+    <option value="0.5">0.5×</option>
+    <option value="1" selected>1×</option>
+    <option value="2">2×</option>
+  </select>
+  <button id="reset">↺ Reset</button>
+</header>
+<div class="legend">
+  <span><i style="border-color:var(--wh)"></i>Warehouse</span>
+  <span><i style="border-color:var(--hub)"></i>InventoryManager</span>
+  <span><i style="border-color:var(--price)"></i>Pricing</span>
+  <span><i style="border-color:var(--store)"></i>Cart / Order</span>
+  <span><i style="border-color:var(--zone)"></i>ShippingZone</span>
+  <span><i style="border-color:var(--err)"></i>Exception</span>
+</div>
+<main>
+  <section class="panel map"><h2>BẢN ĐỒ 2.5D · domain/</h2><svg id="map" viewBox="0 0 820 510" role="img" aria-label="Bản đồ isometric các domain object"></svg></section>
+  <div class="right">
+    <section class="panel log"><h2>CALL LOG</h2><ol id="log"></ol></section>
+    <section class="panel diff"><h2>STATE CHANGES · before → after</h2><div class="body" id="diff"></div></section>
+  </div>
+</main>
+<footer id="status"></footer>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

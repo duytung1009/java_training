@@ -1,0 +1,1459 @@
+{
+ "scenarioId": "fixture-demo",
+ "title": "Fixture tổng hợp (dữ liệu tay)",
+ "concurrent": false,
+ "worldBefore": {
+  "panels": [
+   {
+    "id": "warehouse:WH-HN",
+    "type": "warehouse",
+    "title": "Warehouse WH-HN",
+    "items": [
+     {
+      "key": "LAPTOP",
+      "label": "LAP",
+      "value": 10
+     },
+     {
+      "key": "PHONE",
+      "label": "PHO",
+      "value": 6
+     },
+     {
+      "key": "HEADPHONE",
+      "label": "HDP",
+      "value": 4
+     }
+    ]
+   },
+   {
+    "id": "warehouse:WH-HCM",
+    "type": "warehouse",
+    "title": "Warehouse WH-HCM",
+    "items": [
+     {
+      "key": "LAPTOP",
+      "label": "LAP",
+      "value": 2
+     },
+     {
+      "key": "PHONE",
+      "label": "PHO",
+      "value": 4
+     }
+    ]
+   },
+   {
+    "id": "hub",
+    "type": "hub",
+    "title": "InventoryManager",
+    "items": [
+     {
+      "key": "LAPTOP",
+      "label": "LAP",
+      "value": 5
+     },
+     {
+      "key": "PHONE",
+      "label": "PHO",
+      "value": 8
+     },
+     {
+      "key": "BOOK",
+      "label": "BOK",
+      "value": 12
+     }
+    ]
+   },
+   {
+    "id": "cart",
+    "type": "cart",
+    "title": "Cart",
+    "items": []
+   },
+   {
+    "id": "pricing",
+    "type": "pricing",
+    "title": "Pricing",
+    "items": [
+     {
+      "key": "DISC",
+      "label": "DISC",
+      "value": "-10%"
+     },
+     {
+      "key": "TAX",
+      "label": "TAX",
+      "value": "+8%"
+     }
+    ]
+   },
+   {
+    "id": "order",
+    "type": "order",
+    "title": "Order",
+    "items": []
+   },
+   {
+    "id": "zone:INNER_CITY",
+    "type": "zone",
+    "title": "INNER_CITY",
+    "items": []
+   },
+   {
+    "id": "zone:OTHER_CITY",
+    "type": "zone",
+    "title": "OTHER_CITY",
+    "items": []
+   }
+  ]
+ },
+ "events": [
+  {
+   "seq": 1,
+   "at": "2026-11-01T10:00:00.237Z",
+   "thread": "main",
+   "className": "WarehouseTransferService",
+   "method": "transfer",
+   "args": [
+    "WH-HN",
+    "WH-HCM",
+    "LAPTOP",
+    "3"
+   ],
+   "outcome": "OK",
+   "result": null,
+   "exception": null,
+   "flow": {
+    "from": "warehouse:WH-HN",
+    "to": "warehouse:WH-HCM"
+   },
+   "panels": [
+    "warehouse:WH-HN",
+    "warehouse:WH-HCM"
+   ],
+   "changes": [
+    {
+     "ref": "Warehouse WH-HN",
+     "before": {
+      "LAPTOP": 10
+     },
+     "after": {
+      "LAPTOP": 7
+     }
+    },
+    {
+     "ref": "Warehouse WH-HCM",
+     "before": {
+      "LAPTOP": 2
+     },
+     "after": {
+      "LAPTOP": 5
+     }
+    }
+   ],
+   "worldAfter": {
+    "panels": [
+     {
+      "id": "warehouse:WH-HN",
+      "type": "warehouse",
+      "title": "Warehouse WH-HN",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 7
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 6
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 4
+       }
+      ]
+     },
+     {
+      "id": "warehouse:WH-HCM",
+      "type": "warehouse",
+      "title": "Warehouse WH-HCM",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 4
+       }
+      ]
+     },
+     {
+      "id": "hub",
+      "type": "hub",
+      "title": "InventoryManager",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 8
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 12
+       }
+      ]
+     },
+     {
+      "id": "cart",
+      "type": "cart",
+      "title": "Cart",
+      "items": []
+     },
+     {
+      "id": "pricing",
+      "type": "pricing",
+      "title": "Pricing",
+      "items": [
+       {
+        "key": "DISC",
+        "label": "DISC",
+        "value": "-10%"
+       },
+       {
+        "key": "TAX",
+        "label": "TAX",
+        "value": "+8%"
+       }
+      ]
+     },
+     {
+      "id": "order",
+      "type": "order",
+      "title": "Order",
+      "items": []
+     },
+     {
+      "id": "zone:INNER_CITY",
+      "type": "zone",
+      "title": "INNER_CITY",
+      "items": []
+     },
+     {
+      "id": "zone:OTHER_CITY",
+      "type": "zone",
+      "title": "OTHER_CITY",
+      "items": []
+     }
+    ]
+   }
+  },
+  {
+   "seq": 2,
+   "at": "2026-11-01T10:00:00.374Z",
+   "thread": "main",
+   "className": "WarehouseTransferService",
+   "method": "transfer",
+   "args": [
+    "WH-HN",
+    "WH-HCM",
+    "HEADPHONE",
+    "2"
+   ],
+   "outcome": "OK",
+   "result": null,
+   "exception": null,
+   "flow": {
+    "from": "warehouse:WH-HN",
+    "to": "warehouse:WH-HCM"
+   },
+   "panels": [
+    "warehouse:WH-HN",
+    "warehouse:WH-HCM"
+   ],
+   "changes": [
+    {
+     "ref": "Warehouse WH-HN",
+     "before": {
+      "HEADPHONE": 4
+     },
+     "after": {
+      "HEADPHONE": 2
+     }
+    },
+    {
+     "ref": "Warehouse WH-HCM",
+     "before": {},
+     "after": {
+      "HEADPHONE": 2
+     }
+    }
+   ],
+   "worldAfter": {
+    "panels": [
+     {
+      "id": "warehouse:WH-HN",
+      "type": "warehouse",
+      "title": "Warehouse WH-HN",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 7
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 6
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "warehouse:WH-HCM",
+      "type": "warehouse",
+      "title": "Warehouse WH-HCM",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 4
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "hub",
+      "type": "hub",
+      "title": "InventoryManager",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 8
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 12
+       }
+      ]
+     },
+     {
+      "id": "cart",
+      "type": "cart",
+      "title": "Cart",
+      "items": []
+     },
+     {
+      "id": "pricing",
+      "type": "pricing",
+      "title": "Pricing",
+      "items": [
+       {
+        "key": "DISC",
+        "label": "DISC",
+        "value": "-10%"
+       },
+       {
+        "key": "TAX",
+        "label": "TAX",
+        "value": "+8%"
+       }
+      ]
+     },
+     {
+      "id": "order",
+      "type": "order",
+      "title": "Order",
+      "items": []
+     },
+     {
+      "id": "zone:INNER_CITY",
+      "type": "zone",
+      "title": "INNER_CITY",
+      "items": []
+     },
+     {
+      "id": "zone:OTHER_CITY",
+      "type": "zone",
+      "title": "OTHER_CITY",
+      "items": []
+     }
+    ]
+   }
+  },
+  {
+   "seq": 3,
+   "at": "2026-11-01T10:00:00.511Z",
+   "thread": "pool-1-thread-2",
+   "className": "WarehouseTransferService",
+   "method": "transfer",
+   "args": [
+    "WH-HCM",
+    "WH-HN",
+    "PHONE",
+    "9"
+   ],
+   "outcome": "THROWN",
+   "result": null,
+   "exception": {
+    "type": "OutOfStockException",
+    "message": "PHONE: cần 9, còn 4"
+   },
+   "flow": {
+    "from": "warehouse:WH-HCM",
+    "to": "warehouse:WH-HN"
+   },
+   "panels": [
+    "warehouse:WH-HCM"
+   ],
+   "changes": [],
+   "worldAfter": {
+    "panels": [
+     {
+      "id": "warehouse:WH-HN",
+      "type": "warehouse",
+      "title": "Warehouse WH-HN",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 7
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 6
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "warehouse:WH-HCM",
+      "type": "warehouse",
+      "title": "Warehouse WH-HCM",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 4
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "hub",
+      "type": "hub",
+      "title": "InventoryManager",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 8
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 12
+       }
+      ]
+     },
+     {
+      "id": "cart",
+      "type": "cart",
+      "title": "Cart",
+      "items": []
+     },
+     {
+      "id": "pricing",
+      "type": "pricing",
+      "title": "Pricing",
+      "items": [
+       {
+        "key": "DISC",
+        "label": "DISC",
+        "value": "-10%"
+       },
+       {
+        "key": "TAX",
+        "label": "TAX",
+        "value": "+8%"
+       }
+      ]
+     },
+     {
+      "id": "order",
+      "type": "order",
+      "title": "Order",
+      "items": []
+     },
+     {
+      "id": "zone:INNER_CITY",
+      "type": "zone",
+      "title": "INNER_CITY",
+      "items": []
+     },
+     {
+      "id": "zone:OTHER_CITY",
+      "type": "zone",
+      "title": "OTHER_CITY",
+      "items": []
+     }
+    ]
+   }
+  },
+  {
+   "seq": 4,
+   "at": "2026-11-01T10:00:00.648Z",
+   "thread": "main",
+   "className": "Cart",
+   "method": "add",
+   "args": [
+    "LAPTOP",
+    "1"
+   ],
+   "outcome": "OK",
+   "result": null,
+   "exception": null,
+   "flow": {
+    "from": "hub",
+    "to": "cart"
+   },
+   "panels": [
+    "cart"
+   ],
+   "changes": [
+    {
+     "ref": "Cart",
+     "before": {},
+     "after": {
+      "LAPTOP": 1
+     }
+    }
+   ],
+   "worldAfter": {
+    "panels": [
+     {
+      "id": "warehouse:WH-HN",
+      "type": "warehouse",
+      "title": "Warehouse WH-HN",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 7
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 6
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "warehouse:WH-HCM",
+      "type": "warehouse",
+      "title": "Warehouse WH-HCM",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 4
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "hub",
+      "type": "hub",
+      "title": "InventoryManager",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 8
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 12
+       }
+      ]
+     },
+     {
+      "id": "cart",
+      "type": "cart",
+      "title": "Cart",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 1
+       }
+      ]
+     },
+     {
+      "id": "pricing",
+      "type": "pricing",
+      "title": "Pricing",
+      "items": [
+       {
+        "key": "DISC",
+        "label": "DISC",
+        "value": "-10%"
+       },
+       {
+        "key": "TAX",
+        "label": "TAX",
+        "value": "+8%"
+       }
+      ]
+     },
+     {
+      "id": "order",
+      "type": "order",
+      "title": "Order",
+      "items": []
+     },
+     {
+      "id": "zone:INNER_CITY",
+      "type": "zone",
+      "title": "INNER_CITY",
+      "items": []
+     },
+     {
+      "id": "zone:OTHER_CITY",
+      "type": "zone",
+      "title": "OTHER_CITY",
+      "items": []
+     }
+    ]
+   }
+  },
+  {
+   "seq": 5,
+   "at": "2026-11-01T10:00:00.785Z",
+   "thread": "main",
+   "className": "Cart",
+   "method": "add",
+   "args": [
+    "BOOK",
+    "1"
+   ],
+   "outcome": "OK",
+   "result": null,
+   "exception": null,
+   "flow": {
+    "from": "hub",
+    "to": "cart"
+   },
+   "panels": [
+    "cart"
+   ],
+   "changes": [
+    {
+     "ref": "Cart",
+     "before": {},
+     "after": {
+      "BOOK": 1
+     }
+    }
+   ],
+   "worldAfter": {
+    "panels": [
+     {
+      "id": "warehouse:WH-HN",
+      "type": "warehouse",
+      "title": "Warehouse WH-HN",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 7
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 6
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "warehouse:WH-HCM",
+      "type": "warehouse",
+      "title": "Warehouse WH-HCM",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 4
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "hub",
+      "type": "hub",
+      "title": "InventoryManager",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 8
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 12
+       }
+      ]
+     },
+     {
+      "id": "cart",
+      "type": "cart",
+      "title": "Cart",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 1
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 1
+       }
+      ]
+     },
+     {
+      "id": "pricing",
+      "type": "pricing",
+      "title": "Pricing",
+      "items": [
+       {
+        "key": "DISC",
+        "label": "DISC",
+        "value": "-10%"
+       },
+       {
+        "key": "TAX",
+        "label": "TAX",
+        "value": "+8%"
+       }
+      ]
+     },
+     {
+      "id": "order",
+      "type": "order",
+      "title": "Order",
+      "items": []
+     },
+     {
+      "id": "zone:INNER_CITY",
+      "type": "zone",
+      "title": "INNER_CITY",
+      "items": []
+     },
+     {
+      "id": "zone:OTHER_CITY",
+      "type": "zone",
+      "title": "OTHER_CITY",
+      "items": []
+     }
+    ]
+   }
+  },
+  {
+   "seq": 6,
+   "at": "2026-11-01T10:00:00.922Z",
+   "thread": "main",
+   "className": "Cart",
+   "method": "remove",
+   "args": [
+    "BOOK"
+   ],
+   "outcome": "OK",
+   "result": null,
+   "exception": null,
+   "flow": null,
+   "panels": [
+    "cart"
+   ],
+   "changes": [
+    {
+     "ref": "Cart",
+     "before": {
+      "BOOK": 1
+     },
+     "after": {}
+    }
+   ],
+   "worldAfter": {
+    "panels": [
+     {
+      "id": "warehouse:WH-HN",
+      "type": "warehouse",
+      "title": "Warehouse WH-HN",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 7
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 6
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "warehouse:WH-HCM",
+      "type": "warehouse",
+      "title": "Warehouse WH-HCM",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 4
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "hub",
+      "type": "hub",
+      "title": "InventoryManager",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 8
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 12
+       }
+      ]
+     },
+     {
+      "id": "cart",
+      "type": "cart",
+      "title": "Cart",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 1
+       }
+      ]
+     },
+     {
+      "id": "pricing",
+      "type": "pricing",
+      "title": "Pricing",
+      "items": [
+       {
+        "key": "DISC",
+        "label": "DISC",
+        "value": "-10%"
+       },
+       {
+        "key": "TAX",
+        "label": "TAX",
+        "value": "+8%"
+       }
+      ]
+     },
+     {
+      "id": "order",
+      "type": "order",
+      "title": "Order",
+      "items": []
+     },
+     {
+      "id": "zone:INNER_CITY",
+      "type": "zone",
+      "title": "INNER_CITY",
+      "items": []
+     },
+     {
+      "id": "zone:OTHER_CITY",
+      "type": "zone",
+      "title": "OTHER_CITY",
+      "items": []
+     }
+    ]
+   }
+  },
+  {
+   "seq": 7,
+   "at": "2026-11-01T10:00:01.059Z",
+   "thread": "main",
+   "className": "Cart",
+   "method": "toOrder",
+   "args": [
+    "0.10",
+    "0.08"
+   ],
+   "outcome": "OK",
+   "result": "Order a1f3",
+   "exception": null,
+   "flow": {
+    "from": "cart",
+    "to": "order"
+   },
+   "panels": [
+    "pricing",
+    "order"
+   ],
+   "changes": [
+    {
+     "ref": "Order a1f3",
+     "before": null,
+     "after": {
+      "lines": 1,
+      "subtotal": "20 000 000",
+      "discount": "2 000 000",
+      "tax": "1 440 000",
+      "final": "19 440 000"
+     }
+    }
+   ],
+   "worldAfter": {
+    "panels": [
+     {
+      "id": "warehouse:WH-HN",
+      "type": "warehouse",
+      "title": "Warehouse WH-HN",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 7
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 6
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "warehouse:WH-HCM",
+      "type": "warehouse",
+      "title": "Warehouse WH-HCM",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 4
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "hub",
+      "type": "hub",
+      "title": "InventoryManager",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 8
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 12
+       }
+      ]
+     },
+     {
+      "id": "cart",
+      "type": "cart",
+      "title": "Cart",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 1
+       }
+      ]
+     },
+     {
+      "id": "pricing",
+      "type": "pricing",
+      "title": "Pricing",
+      "items": [
+       {
+        "key": "DISC",
+        "label": "DISC",
+        "value": "-10%"
+       },
+       {
+        "key": "TAX",
+        "label": "TAX",
+        "value": "+8%"
+       }
+      ]
+     },
+     {
+      "id": "order",
+      "type": "order",
+      "title": "Order",
+      "items": [
+       {
+        "key": "a1f3",
+        "label": "a1f3",
+        "value": "19.4tr"
+       }
+      ]
+     },
+     {
+      "id": "zone:INNER_CITY",
+      "type": "zone",
+      "title": "INNER_CITY",
+      "items": []
+     },
+     {
+      "id": "zone:OTHER_CITY",
+      "type": "zone",
+      "title": "OTHER_CITY",
+      "items": []
+     }
+    ]
+   }
+  },
+  {
+   "seq": 8,
+   "at": "2026-11-01T10:00:01.196Z",
+   "thread": "main",
+   "className": "InventoryManager",
+   "method": "decreaseStock",
+   "args": [
+    "Order a1f3"
+   ],
+   "outcome": "OK",
+   "result": null,
+   "exception": null,
+   "flow": {
+    "from": "order",
+    "to": "hub"
+   },
+   "panels": [
+    "hub"
+   ],
+   "changes": [
+    {
+     "ref": "Product LAPTOP",
+     "before": {
+      "stock": 5
+     },
+     "after": {
+      "stock": 4
+     }
+    }
+   ],
+   "worldAfter": {
+    "panels": [
+     {
+      "id": "warehouse:WH-HN",
+      "type": "warehouse",
+      "title": "Warehouse WH-HN",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 7
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 6
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "warehouse:WH-HCM",
+      "type": "warehouse",
+      "title": "Warehouse WH-HCM",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 4
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "hub",
+      "type": "hub",
+      "title": "InventoryManager",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 4
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 8
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 12
+       }
+      ]
+     },
+     {
+      "id": "cart",
+      "type": "cart",
+      "title": "Cart",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 1
+       }
+      ]
+     },
+     {
+      "id": "pricing",
+      "type": "pricing",
+      "title": "Pricing",
+      "items": [
+       {
+        "key": "DISC",
+        "label": "DISC",
+        "value": "-10%"
+       },
+       {
+        "key": "TAX",
+        "label": "TAX",
+        "value": "+8%"
+       }
+      ]
+     },
+     {
+      "id": "order",
+      "type": "order",
+      "title": "Order",
+      "items": [
+       {
+        "key": "a1f3",
+        "label": "a1f3",
+        "value": "19.4tr"
+       }
+      ]
+     },
+     {
+      "id": "zone:INNER_CITY",
+      "type": "zone",
+      "title": "INNER_CITY",
+      "items": []
+     },
+     {
+      "id": "zone:OTHER_CITY",
+      "type": "zone",
+      "title": "OTHER_CITY",
+      "items": []
+     }
+    ]
+   }
+  },
+  {
+   "seq": 9,
+   "at": "2026-11-01T10:00:01.333Z",
+   "thread": "main",
+   "className": "ShippingZone",
+   "method": "feeFor",
+   "args": [
+    "Address(Hà Nội)",
+    "1.5"
+   ],
+   "outcome": "OK",
+   "result": "INNER_CITY · 27 500",
+   "exception": null,
+   "flow": {
+    "from": "order",
+    "to": "zone:INNER_CITY"
+   },
+   "panels": [
+    "zone:INNER_CITY"
+   ],
+   "changes": [],
+   "worldAfter": {
+    "panels": [
+     {
+      "id": "warehouse:WH-HN",
+      "type": "warehouse",
+      "title": "Warehouse WH-HN",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 7
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 6
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "warehouse:WH-HCM",
+      "type": "warehouse",
+      "title": "Warehouse WH-HCM",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 4
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 2
+       }
+      ]
+     },
+     {
+      "id": "hub",
+      "type": "hub",
+      "title": "InventoryManager",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 4
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 8
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 12
+       }
+      ]
+     },
+     {
+      "id": "cart",
+      "type": "cart",
+      "title": "Cart",
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 1
+       }
+      ]
+     },
+     {
+      "id": "pricing",
+      "type": "pricing",
+      "title": "Pricing",
+      "items": [
+       {
+        "key": "DISC",
+        "label": "DISC",
+        "value": "-10%"
+       },
+       {
+        "key": "TAX",
+        "label": "TAX",
+        "value": "+8%"
+       }
+      ]
+     },
+     {
+      "id": "order",
+      "type": "order",
+      "title": "Order",
+      "items": [
+       {
+        "key": "a1f3",
+        "label": "a1f3",
+        "value": "19.4tr"
+       }
+      ]
+     },
+     {
+      "id": "zone:INNER_CITY",
+      "type": "zone",
+      "title": "INNER_CITY",
+      "items": [
+       {
+        "key": "Hà Nội",
+        "label": "Hà Nội",
+        "value": "27.5k"
+       }
+      ]
+     },
+     {
+      "id": "zone:OTHER_CITY",
+      "type": "zone",
+      "title": "OTHER_CITY",
+      "items": []
+     }
+    ]
+   }
+  }
+ ]
+}

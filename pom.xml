@@ -21,6 +21,7 @@
     <modules>
         <module>domain</module>
         <module>app</module>
+        <module>visualizer</module>
     </modules>
 
     <properties>

@@ -1,0 +1,59 @@
+:root {
+  --bg: #12141a; --panel: #171a21; --line: #2a2e38; --text: #d6d8de; --muted: #7d8290;
+  --wh: #e0894f; --hub: #6f9cf0; --price: #a78bfa; --store: #74c48a; --zone: #4fb8b0;
+  --wire: #3a404d; --flow: #9ab4ff; --ok: #74c48a; --err: #ef6b6b; --dec: #e0894f;
+  --spd: 1; /* hệ số tốc độ, player.js cập nhật */
+}
+* { box-sizing: border-box; }
+html, body { overflow-x: hidden; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.5 "JetBrains Mono", ui-monospace, monospace; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+header h1 { font-size: 13px; letter-spacing: .08em; margin: 0 12px 0 0; }
+button, select { font: inherit; color: var(--text); background: transparent; border: 1px solid var(--line); padding: 4px 10px; cursor: pointer; }
+select option { background: var(--panel); }
+button:hover:not(:disabled), select:hover { border-color: var(--hub); }
+button:disabled { opacity: .4; cursor: default; }
+.badge { font-size: 11px; color: var(--price); border: 1px solid var(--price); padding: 0 6px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 8px 16px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.legend i { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border: 1.5px solid; }
+main { display: grid; grid-template-columns: minmax(0, 62fr) minmax(0, 38fr); gap: 12px; padding: 12px 16px; }
+.panel { border: 1px solid var(--line); background: var(--panel); min-width: 0; }
+.panel > h2 { font-size: 11px; letter-spacing: .1em; margin: 0; padding: 6px 10px; border-bottom: 1px solid var(--line); color: var(--muted); }
+.map h2 { color: var(--wh); } .log h2 { color: var(--hub); } .diff h2 { color: var(--store); }
+.map { border-color: #4a3426; } .log { border-color: #26344d; } .diff { border-color: #29402f; }
+svg { display: block; width: 100%; height: auto; }
+.right { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.log ol { list-style: none; margin: 0; padding: 4px 0; min-height: 220px; max-height: 340px; overflow: auto; }
+.log li { display: grid; grid-template-columns: 92px 60px 1fr 16px; gap: 6px; padding: 3px 10px; cursor: pointer; }
+.log li:hover { background: #1d212a; } .log li.sel { background: #222838; }
+.log .ts, .log .th { color: var(--muted); } .log .m { overflow-wrap: anywhere; } .log .m b { color: var(--hub); font-weight: 400; }
+.log .ok { color: var(--ok); } .log .err, .log li.thrown .m { color: var(--err); }
+.diff .body { padding: 8px 10px; min-height: 160px; overflow-wrap: anywhere; }
+.diff .obj { margin-bottom: 8px; } .diff .obj > div:first-child { color: var(--muted); }
+.diff .f { display: grid; grid-template-columns: 110px 1fr; padding-left: 12px; }
+.up { color: var(--ok); } .down { color: var(--dec); } .same { color: var(--muted); } .new { color: var(--price); } .gone { color: var(--err); }
+.note { color: var(--muted); } .note.err { color: var(--err); }
+footer { padding: 6px 16px 16px; color: var(--muted); }
+
+/* ---- Bản đồ ---- */
+.zone-title { font-size: 11px; letter-spacing: .06em; }
+.zone-sub { font-size: 10px; fill: var(--muted); }
+.tile text { font-size: 10px; font-weight: 600; pointer-events: none; }
+.tile .val { font-size: 11px; }
+.tile, .zone-frame { transform-box: fill-box; transform-origin: center; }
+.pop-in { animation: popIn calc(.45s / var(--spd)) cubic-bezier(.3, 1.6, .5, 1) both; }
+.pop-out { animation: popOut calc(.35s / var(--spd)) ease-in both; }
+.bump-up polygon { animation: bumpUp calc(.6s / var(--spd)) ease-out; }
+.bump-down polygon { animation: bumpDown calc(.6s / var(--spd)) ease-out; }
+.flash-ok { animation: flashOk calc(.9s / var(--spd)) ease-out; }
+.flash-err { animation: flashErr calc(.9s / var(--spd)) ease-out; }
+.flow { fill: none; stroke-width: 2; stroke-dasharray: 4 10; stroke-linecap: round; animation: flow calc(.5s / var(--spd)) linear infinite; }
+@keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes popOut { to { transform: scale(0); opacity: 0; } }
+@keyframes bumpUp { 30% { stroke: var(--ok); stroke-width: 3; } }
+@keyframes bumpDown { 30% { stroke: var(--dec); stroke-width: 3; } }
+@keyframes flashOk { 30% { stroke: var(--ok); stroke-width: 3; } }
+@keyframes flashErr { 20%, 60% { stroke: var(--err); stroke-width: 3; } }
+@keyframes flow { to { stroke-dashoffset: -14; } }
+@media (prefers-reduced-motion: reduce) { .pop-in, .pop-out, .flow, .bump-up polygon, .bump-down polygon, .flash-ok, .flash-err { animation-duration: .01s; } }
+@media (max-width: 1100px) { main { grid-template-columns: minmax(0, 1fr); } }
