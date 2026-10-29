@@ -1,6 +1,6 @@
 // Vẽ bản đồ SVG: panel, ô con, đường nối và animation
 import { el, iso, diamond, wirePath, css, flat } from './iso.js';
-import { ROOTS, PLACED, HEADER, WIRES, MISSING_WIRE, resolveFlow, checkLayout } from './layout.js';
+import { ROOTS, PLACED, WIRES as WIRES_BASE, HEADER, CHILD_MARGIN, CHILD_GAP, computeLayout, resolveFlow, checkLayout } from './layout.js';
 
 const PRODUCT = { LAPTOP: '#e8c46a', PHONE: '#7fd4e0', HEADPHONE: '#b7e07f', BOOK: '#e88fb4' };
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -36,7 +36,7 @@ function fit(node, text, maxPx, basePx, minPx = 6.5) {
   }
   return len <= maxPx && t.length === String(text).length;
 }
-const CHILD_MARGIN = 0.2, CHILD_GAP = 0.2, CHILD_HEADER = 0.9; // dải đầu khối con: tiêu đề + sub + khe ≥ 4px // lưới khối con trong container
+const CHILD_HEADER = 0.9; // dải đầu khối con: tiêu đề + sub + khe ≥ 4px // lưới khối con trong container
 const FRAME = { // kiểu viền theo loại khối
   object: { fill: 0.05 },
   collection: { fill: 0.12, dash: '6 4' },
@@ -50,6 +50,8 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   const layers = {}, frames = {};
   const blocks = new Map(); // id (root hoặc con) → { id, root, kind, color, small, g, frame, head, titleEl, subEl, rect, more }
   let world = null, selected = null, nodes = new Map();
+  let layout = null, layoutKey = '', groundKey = '', wirePaths = [], missingPath = null;
+  const warnedLayout = new Set();
   const tiles = new Map(); // `${blockId}/${key}` → { g, polygon, text, name, val, title, value, pre, anim }
 
   function build() {
@@ -61,26 +63,10 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
       const m = el('marker', { id, viewBox: '0 0 10 10', refX: 7, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, defs);
       el('path', { d: 'M1 1L8 5L1 9', fill: 'none', stroke: c, 'stroke-width': 1.6 }, m);
     }
-    for (const err of checkLayout()) console.warn('Visualizer layout:', err);
     for (const n of ['ground', 'wires', 'zones', 'flows', 'labels']) layers[n] = el('g', {}, svg);
-
-    // Ground + viewBox suy ra từ kích thước các root và đường nối
-    const ps = Object.values(ROOTS);
-    const maxX = Math.max(...ps.map(p => p.x + p.w)) + 0.5, maxY = Math.max(...ps.map(p => p.y + p.d)) + 0.5;
-    const pts = [...ps.flatMap(p => [[p.x, p.y], [p.x + p.w, p.y], [p.x + p.w, p.y + p.d], [p.x, p.y + p.d]]),
-      ...WIRES.flatMap(w => w.pts), ...MISSING_WIRE].map(q => iso(...q));
-    const M = 24, x0 = Math.min(...pts.map(q => q[0])) - M, y0 = Math.min(...pts.map(q => q[1])) - M;
-    const vw = Math.max(...pts.map(q => q[0])) + M - x0, vh = Math.max(...pts.map(q => q[1])) + M - y0;
-    svg.setAttribute('viewBox', `${x0} ${y0} ${vw} ${vh}`);
-    svg.setAttribute('width', Math.round(vw)); svg.setAttribute('height', Math.round(vh));
-    svg.style.setProperty('--nat-w', Math.round(vw) + 'px'); // min-width trong CSS: hẹp thì cuộn ngang
-
-    for (let x = -0.5; x < maxX; x++) for (let y = -0.5; y < maxY; y++)
-      el('polygon', { points: diamond(x, y, 1, 1), fill: 'none', stroke: '#1b1f27' }, layers.ground);
-
-    for (const w of WIRES)
-      el('path', { d: wirePath(w.pts), fill: 'none', stroke: css('--wire'), 'stroke-width': 1.5 }, layers.wires);
-    el('path', { d: wirePath(MISSING_WIRE), fill: 'none', stroke: css('--wire'), 'stroke-width': 1, 'stroke-dasharray': '2 5' }, layers.wires);
+    wirePaths = WIRES_BASE.map(() => el('path', { fill: 'none', stroke: css('--wire'), 'stroke-width': 1.5 }, layers.wires));
+    missingPath = el('path', { fill: 'none', stroke: css('--wire'), 'stroke-width': 1, 'stroke-dasharray': '2 5' }, layers.wires);
+    groundKey = '';
     // Ghi chú nằm phẳng dọc theo đường, phía sau đường
     const note = el('text', { transform: flat(...iso(4.95, 3)), 'text-anchor': 'middle', class: 'zone-sub' }, layers.labels);
     el('tspan', { x: 0, y: -13 }, note).textContent = 'WH → hub';
@@ -93,6 +79,54 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
       setHead(makeBlock(id, id, p, blocks.get(p.area).g, false, p.kind), p.title, p.sub);
     svg.onclick = () => select(null);
     if (selected) frames[selected]?.classList.add('sel');
+    layout = null;
+    applyLayout(computeLayout([]), false);
+  }
+
+  // Khối cục bộ: x/y gốc, d hiệu dụng (group cha/chính nó được tịnh tiến bằng transform khi bị đẩy xuống)
+  const localRect = (id, lay) => ({ ...specOf(id), d: (lay.areas[id] ?? lay.placed[id]).d });
+
+  function setShift(b, dy, animate) {
+    if ((b.dy ?? 0) === dy) return;
+    b.dy = dy;
+    const [x, y] = iso(0, dy), [x0, y0] = iso(0, 0);
+    if (!animate) b.g.style.transition = 'none';
+    b.g.style.transform = `translate(${x - x0}px, ${y - y0}px)`;
+    if (!animate) { void b.g.getBBox(); b.g.style.transition = ''; }
+  }
+
+  // Áp bố cục hiệu dụng: khung, tiêu đề, độ dịch, đường nối, nền, viewBox
+  function applyLayout(lay, animate) {
+    layout = lay;
+    const seen = JSON.stringify([lay.areas, lay.placed, lay.wires]);
+    if (seen !== layoutKey) {
+      layoutKey = seen;
+      for (const err of checkLayout(lay.areas, lay.placed, [...lay.wires, { a: 'missing', b: 'missing', pts: lay.missing }]))
+        if (!warnedLayout.has(err)) { warnedLayout.add(err); console.warn('Visualizer layout:', err); }
+    }
+    for (const id of [...Object.keys(ROOTS), ...Object.keys(PLACED)]) {
+      const b = blocks.get(id);
+      placeBlock(b, localRect(id, lay));
+      setShift(b, lay.dy[id], animate);
+    }
+    lay.wires.forEach((w, i) => wirePaths[i].setAttribute('d', wirePath(w.pts)));
+    missingPath.setAttribute('d', wirePath(lay.missing));
+    // Nền + viewBox suy ra từ area và đường nối hiệu dụng
+    const ps = Object.values(lay.areas);
+    const maxX = Math.max(...ps.map(p => p.x + p.w)) + 0.5, maxY = Math.max(...ps.map(p => p.y + p.d)) + 0.5;
+    const pts = [...ps.flatMap(p => [[p.x, p.y], [p.x + p.w, p.y], [p.x + p.w, p.y + p.d], [p.x, p.y + p.d]]),
+      ...lay.wires.flatMap(w => w.pts), ...lay.missing].map(q => iso(...q));
+    const M = 24, x0 = Math.min(...pts.map(q => q[0])) - M, y0 = Math.min(...pts.map(q => q[1])) - M;
+    const vw = Math.max(...pts.map(q => q[0])) + M - x0, vh = Math.max(...pts.map(q => q[1])) + M - y0;
+    svg.setAttribute('viewBox', `${x0} ${y0} ${vw} ${vh}`);
+    svg.setAttribute('width', Math.round(vw)); svg.setAttribute('height', Math.round(vh));
+    svg.style.setProperty('--nat-w', Math.round(vw) + 'px'); // min-width trong CSS: hẹp thì cuộn ngang
+    const gk = `${maxX}|${maxY}`;
+    if (gk !== groundKey) {
+      groundKey = gk; layers.ground.textContent = '';
+      for (let x = -0.5; x < maxX; x++) for (let y = -0.5; y < maxY; y++)
+        el('polygon', { points: diamond(x, y, 1, 1), fill: 'none', stroke: '#1b1f27' }, layers.ground);
+    }
   }
 
   // Dựng khung + tiêu đề một khối (root hoặc con). Con: tiêu đề nhỏ hơn, không có nhãn loại
@@ -246,9 +280,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   // Xếp khối con của container vào lưới dưới dải tiêu đề; quá chỗ thì ô cuối thành "+N"
   function syncChildren(rid, r, kids, opts) {
     const cs = r.child, gap = CHILD_GAP;
-    const cols = Math.max(1, Math.floor((r.w - 2 * CHILD_MARGIN + gap + EPS) / (cs.w + gap)));
-    const rows = Math.max(1, Math.floor((r.d - HEADER - 0.1 + gap + EPS) / (cs.d + gap)));
-    const cap = cols * rows;
+    const { cols, cap } = layout.grids[rid];
     let shown = kids, hidden = [];
     if (kids.length > cap) { shown = kids.slice(0, cap - 1); hidden = kids.slice(cap - 1); }
     const slots = shown.map(n => ({ id: n.id, node: n }));
@@ -283,8 +315,9 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     world = next;
     nodes = new Map((world?.nodes ?? []).map(n => [n.id, n]));
     const opts = { animate, speed, slow: reduced() ? 0 : 1 };
-    for (const [id, r] of [...Object.entries(ROOTS), ...Object.entries(PLACED)]) {
-      const b = blocks.get(id), n = nodeOf(id);
+    applyLayout(computeLayout(world?.nodes ?? []), animate);
+    for (const id of [...Object.keys(ROOTS), ...Object.keys(PLACED)]) {
+      const r = localRect(id, layout), b = blocks.get(id), n = nodeOf(id);
       setHead(b, n?.title ?? r.title, n?.sub ?? r.sub);
       if (r.child) syncChildren(id, r, [...nodes.values()].filter(c => c.parent === id), opts);
       else if (r.kind === 'object') syncTiles(b, n?.items ?? [], { tw: r.tileW || 1.3, td: 0.9, gap: 0.2, margin: 0.3, head: HEADER }, opts);
@@ -306,7 +339,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   // Flow không hỗ trợ → không animation, không chờ.
   async function flow(f, ok, ms, after) {
     const afterNodes = after?.nodes && new Map(after.nodes.map(n => [n.id, n])); // con mới chưa có trong world hiện tại
-    const pts = resolveFlow(f, id => nodes.get(id)?.parent ?? afterNodes?.get(id)?.parent);
+    const pts = resolveFlow(f, id => nodes.get(id)?.parent ?? afterNodes?.get(id)?.parent, layout.wires);
     if (!pts) return;
     const p = el('path', { d: wirePath(pts), class: 'flow', stroke: ok ? css('--flow') : css('--err'), 'marker-end': `url(#arrow-${ok ? 'flow' : 'err'})` }, layers.flows);
     await sleep(ms);

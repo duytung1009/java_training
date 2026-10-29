@@ -116,6 +116,8 @@ Mỗi package domain là một `area` gốc; object nằm trong vùng của pack
 | `pricing` · `domain.pricing` | `pricing:rule:*`, `pricing:code:*` (chỉ khi kịch bản tạo) | `= apply(...)`; code, rate |
 | `shipping` · `domain.shipping` | `zone:INNER_CITY`, `zone:OTHER_CITY` (enum) | baseFee + phí theo thành phố (computed) |
 
+Container (vùng hoặc collection có `child`) tự giãn theo số khối con, chỉ từ trên xuống, tối đa 4 hàng rồi mới hiện "+N"; vùng giãn đẩy các vùng bên dưới (chồng theo x) xuống (`computeLayout()` trong `layout.js`). Nút "?" trên header mở màn tóm tắt hành trình phát triển (`js/panels/about.js`).
+
 Wire nối object/collection (chiều ngược tự đảo): `warehouse:WH-HN ↔ warehouse:WH-HCM`, `hub → cart`, `cart → orders`, `orders → hub`, `hub → shipping`. Flow tới khối con đi về tổ tiên gần nhất có wire. `toOrder` không dùng `domain.pricing` (tỉ lệ do người gọi truyền, đơn giá lấy từ `Product.calculateFinalPrice` trong `OrderLine`); phí ship do `PhysicalProduct.calculateShipping` tính, `Order` không liên quan `ShippingZone`.
 
 ## 5. Kịch bản

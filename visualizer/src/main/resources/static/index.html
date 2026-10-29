@@ -22,6 +22,7 @@
     <option value="2">2×</option>
   </select>
   <button id="reset">↺ Reset</button>
+  <button id="about" class="about-btn" title="Hành trình phát triển visualizer" aria-label="Hành trình phát triển visualizer">?</button>
 </header>
 <div class="legend">
   <span><i style="border-color:var(--wh)"></i>Warehouse</span>
@@ -43,6 +44,10 @@
   </div>
 </main>
 <footer id="status"></footer>
+<dialog id="about-dlg" class="about" aria-label="Hành trình phát triển visualizer">
+  <div class="about-top"><h2>HÀNH TRÌNH · DOMAIN VISUALIZER</h2><button class="about-close" aria-label="Đóng">×</button></div>
+  <div class="about-body"></div>
+</dialog>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

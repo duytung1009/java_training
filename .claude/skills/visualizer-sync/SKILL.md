@@ -36,7 +36,9 @@ Chỉ thay đổi nội bộ (private, refactor không đổi hành vi) thì th�
 
 - Wire nối giữa object/collection đặt trong `PLACED` (hoặc vùng chỉ có khối con, vd. shipping); flow tới khối con tự đi về tổ tiên gần nhất có wire, gồm đoạn ngang/dọc trên lưới, không cắt xuyên khối. `checkLayout()` trong `layout.js` in cảnh báo `Visualizer layout:` ở console khi vi phạm — phải sạch.
 - Khối có dải tiêu đề (`HEADER` cho gốc, `CHILD_HEADER` cho khối con); ô bắt đầu dưới dải này. Chữ tự co/cắt cho vừa bề ngang khối (`fit` trong `scene.js`) — vẫn nên giữ tiêu đề ngắn.
-- Giữ viewBox vừa bản đồ; mở rộng lưới nền trong `scene.js` nếu thêm hàng/cột.
+- Container (vùng hoặc collection có `child`) tự giãn theo số khối con, chỉ một chiều từ trên xuống, tối đa `MAX_ROWS` hàng rồi mới hiện "+N"; vùng bị giãn đẩy các vùng bên dưới (chồng theo x) xuống. `computeLayout()` trong `layout.js` tính bố cục hiệu lực; wire gắn vào khối có thể bị đẩy sẽ bị `checkLayout()` báo nếu gãy — tránh nối wire vào vùng nằm dưới container động.
+- ViewBox và lưới nền tự tính theo bố cục hiệu lực.
+- Thêm chặng mới vào màn "?" (`static/js/panels/about.js`) khi visualizer có thay đổi đáng kể.
 
 ## 4. Kiểm tra
 

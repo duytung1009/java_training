@@ -71,8 +71,71 @@ export function checkLayout(areas = ROOTS, placed = PLACED, wires = [...WIRES, {
   return errors;
 }
 
+// ---- Bố cục động: container mọc dần theo chiều +y, đẩy phần bên dưới xuống ----
+export const MAX_ROWS = 4;
+export const CHILD_MARGIN = 0.2, CHILD_GAP = 0.2;
+
+// Lưới khối con của container r (có r.child) với n con: cols như cũ, hàng = max(hàng vừa trong d gốc, ceil(n/cols) ≤ MAX_ROWS)
+export function gridOf(r, n) {
+  const cs = r.child;
+  const cols = Math.max(1, Math.floor((r.w - 2 * CHILD_MARGIN + CHILD_GAP + EPS) / (cs.w + CHILD_GAP)));
+  const baseRows = Math.max(1, Math.floor((r.d - HEADER - 0.1 + CHILD_GAP + EPS) / (cs.d + CHILD_GAP)));
+  const rows = Math.max(baseRows, Math.min(MAX_ROWS, Math.ceil(n / cols)));
+  return { cols, rows, cap: cols * rows, d: Math.max(r.d, HEADER - 0.1 + rows * (cs.d + CHILD_GAP)) };
+}
+
+const xOver = (p, q) => overlap(p.x, p.x + p.w, q.x, q.x + q.w);
+
+// Hàm thuần (không DOM): từ nodes của world → toạ độ hiệu dụng của area, thành viên, đường nối.
+// areas/placed: rect tuyệt đối đã dịch; grids: lưới khối con; dy: độ dịch riêng của mỗi khối (placed: chỉ phần trong area, area cha tự dịch);
+// local d (độ sâu hiệu dụng) nằm ở areas[id].d / placed[id].d, còn y gốc ở ROOTS/PLACED
+export function computeLayout(nodes = []) {
+  const count = {};
+  for (const n of nodes) if (n.parent) count[n.parent] = (count[n.parent] ?? 0) + 1;
+  const grids = {}, pd = {};
+  for (const [id, p] of Object.entries(PLACED)) {
+    if (p.child) { grids[id] = gridOf(p, count[id] ?? 0); pd[id] = grids[id].d; } else pd[id] = p.d;
+  }
+  // 1. Trong mỗi area: thành viên bên dưới container đã mọc bị đẩy xuống
+  const inner = {}, growth = {}, ad = {};
+  for (const [aid, A] of Object.entries(ROOTS)) {
+    const ms = Object.entries(PLACED).filter(([, p]) => p.area === aid).sort((x, y) => x[1].y - y[1].y);
+    for (const [id, p] of ms) {
+      inner[id] = 0;
+      for (const [oid, o] of ms)
+        if (o.y + o.d <= p.y + EPS && xOver(o, p)) inner[id] = Math.max(inner[id], inner[oid] + pd[oid] - o.d);
+    }
+    let d = A.d;
+    if (ms.length) {
+      const pad = A.y + A.d - Math.max(...ms.map(([, p]) => p.y + p.d));
+      d = Math.max(d, Math.max(...ms.map(([id, p]) => p.y + inner[id] + pd[id])) + pad - A.y);
+    }
+    if (A.child) { grids[aid] = gridOf(A, count[aid] ?? 0); d = Math.max(d, grids[aid].d); }
+    ad[aid] = d; growth[aid] = d - A.d;
+  }
+  // 2. Area mọc đẩy các area nằm dưới (chồng x) xuống cùng một đoạn, xử lý tăng dần y
+  const shift = {};
+  for (const [id, A] of Object.entries(ROOTS).sort((x, y) => x[1].y - y[1].y)) {
+    shift[id] = 0;
+    for (const [oid, o] of Object.entries(ROOTS))
+      if (oid !== id && o.y + o.d <= A.y + EPS && xOver(o, A)) shift[id] = Math.max(shift[id], shift[oid] + growth[oid]);
+  }
+  const areas = {}, placed = {}, dy = {};
+  for (const [id, A] of Object.entries(ROOTS)) { areas[id] = { ...A, y: A.y + shift[id], d: ad[id] }; dy[id] = shift[id]; }
+  for (const [id, p] of Object.entries(PLACED)) {
+    const s = shift[p.area] + inner[id];
+    placed[id] = { ...p, y: p.y + s, d: pd[id] }; dy[id] = inner[id];
+  }
+  // 3. Đường nối: dịch theo khối đầu mút; hai đầu lệch nhau thì chỉ dịch đầu mút (checkLayout sẽ báo nếu gãy)
+  const total = id => placed[id] ? shift[PLACED[id].area] + inner[id] : (shift[id] ?? 0);
+  const move = (pts, sa, sb) => pts.map(([x, y], i) => [x, y + (sa === sb ? sa : i === 0 ? sa : i === pts.length - 1 ? sb : y < (pts[0][1] + pts.at(-1)[1]) / 2 ? sa : sb)]);
+  const wires = WIRES.map(w => ({ ...w, pts: move(w.pts, total(w.a), total(w.b)) }));
+  const ms = shift.inventory ?? 0;
+  const missing = MISSING_WIRE.map(([x, y]) => [x, y + ms]);
+  return { areas, placed, wires, missing, grids, dy };
+}
+
 const key = (p, q) => [p, q].sort().join('|');
-const byPair = new Map(WIRES.map(w => [key(w.a, w.b), w]));
 const ENDPOINTS = new Set(WIRES.flatMap(w => [w.a, w.b]));
 const warned = new Set();
 const PREFIX = [['order:', 'orders'], ['zone:', 'shipping'], ['catalog:', 'catalog'], ['pricing:', 'pricing']];
@@ -89,11 +152,12 @@ export function rootOf(id, parentOf = () => undefined) {
 }
 
 // Trả về danh sách điểm theo chiều data, hoặc null nếu không có đường (cùng đầu mút: không cần đường; cặp lạ: cảnh báo 1 lần)
-export function resolveFlow(flow, parentOf) {
+// wires: đường hiệu dụng (đã dịch theo bố cục động), mặc định là đường gốc
+export function resolveFlow(flow, parentOf, wires = WIRES) {
   if (!flow || !flow.from || !flow.to) return null;
   const from = rootOf(flow.from, parentOf), to = rootOf(flow.to, parentOf);
   if (from === to) return null;
-  const w = byPair.get(key(from, to));
+  const w = wires.find(x => key(x.a, x.b) === key(from, to));
   if (!w) {
     const k = from + '->' + to;
     if (!warned.has(k)) { warned.add(k); console.warn('Visualizer: chưa có đường nối cho flow', k); }

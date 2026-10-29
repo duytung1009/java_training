@@ -4,9 +4,11 @@ import { createPlayer } from './player.js';
 import { initControls } from './controls.js';
 import { renderInfo } from './panels/info.js';
 import { renderSync } from './panels/sync.js';
+import { initAbout } from './panels/about.js';
 
 const $ = id => document.getElementById(id);
 let setButtons = () => {};
+initAbout($('about'), $('about-dlg'));
 
 const scene = createScene($('map'), { onSelect: (id, node) => renderInfo($('info'), id, node) });
 $('info').addEventListener('click', e => { if (e.target.closest('.close')) scene.select(null); });
