@@ -12,6 +12,7 @@ public class ScenarioConfig {
     @Bean
     public ScenarioRegistry scenarioRegistry() {
         return new ScenarioRegistry(List.of(
+                new OverviewScenario(),
                 new CartToOrderScenario(),
                 new ShippingFeeScenario(),
                 new PricingTypesScenario(),
@@ -19,7 +20,8 @@ public class ScenarioConfig {
                 new DecreaseStockFailScenario(),
                 new TransferScenario(),
                 new TransferDeadlockSafeScenario(),
-                new LastItemRaceScenario()
+                new LastItemRaceScenario(),
+                new ReplenishScenario()
         ));
     }
 }

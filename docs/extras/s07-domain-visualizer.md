@@ -22,7 +22,7 @@ Học viên chọn một **kịch bản** (gắn với buổi S02–S06), bấm 
 | D3 | Snapshot do **`WorldSnapshotter` viết tay** cho từng loại object, không dùng reflection | Kiểm soát field hiện ra; không mở field private |
 | D4 | **Mỗi lượt chạy dựng thế giới mới từ dữ liệu mẫu**, API trả cả lượt (`worldBefore` + danh sách event, mỗi event kèm `worldAfter`). FE tự phát lại Play / Pause / Step; Reset = về `worldBefore`. Không SSE / WebSocket, không endpoint reset | Kết quả tất định, dễ test, không có state dùng chung giữa các request |
 | D5 | FE là **file tĩnh** trong `visualizer/src/main/resources/static/`: HTML + CSS + JS (ES modules) thuần, SVG isometric. Không npm / build tool | `spring-boot:run` là đủ |
-| D6 | Bản đồ **vẽ đúng domain hiện có**; đường `WH → hub` để nét chấm "chưa có" | `Warehouse` và tồn kho `InventoryManager` là hai model riêng |
+| D6 | Bản đồ **vẽ đúng domain hiện có**; đường `WH → hub` là wire nét liền của `InventoryManager.replenish` | Ban đầu `Warehouse` và tồn kho `InventoryManager` là hai model rời (đường nét chấm "chưa có"); nhánh warehouse-hub đã nối chúng: hub = hàng sẵn bán, kho = hàng dự trữ |
 | D7 | **Bố cục bản đồ thuộc FE.** BE chỉ trả panel id + item + `flows` (danh sách `{from, to}` theo thứ tự phát); FE tự map cặp `(from, to)` sang đường và hướng. Đường chỉ gồm đoạn ngang/dọc; `checkLayout()` trong `layout.js` cảnh báo ở console khi đường cắt qua panel hoặc panel chồng nhau | BE không biết gì về toạ độ |
 | D8 | Nhánh `extra/domain-visualizer` từ `main` (đã có S07), commit tiền tố `[S07-extra]` | — |
 
@@ -34,7 +34,7 @@ visualizer/  (artifact ecommerce-visualizer, phụ thuộc ecommerce-domain)
     ├── VisualizerApplication
     ├── trace/        TraceRecorder, TraceEvent, ObjectChange, Flow, Outcome
     ├── world/        World (2 warehouse, InventoryManager, Cart, orders, pricing, shipping), WorldFactory, WorldSnapshotter, PanelView, ItemView
-    ├── scenario/     Scenario (interface), ScenarioRegistry, 8 kịch bản (mục 5)
+    ├── scenario/     Scenario (interface), ScenarioRegistry, 10 kịch bản (mục 5)
     └── web/          VisualizerController, RestExceptionHandler, DTO record
 resources/static/
     index.html, styles.css
@@ -112,19 +112,20 @@ Mỗi package domain là một `area` gốc; object nằm trong vùng của pack
 |---|---|---|
 | `inventory` · `domain.inventory` | `warehouse:WH-HN`, `warehouse:WH-HCM` (object `Warehouse`), `hub` (object `InventoryManager`) | `Map.Entry` productId → qty; `Product` → stock |
 | `order` · `domain.order` | `cart` (object `Cart`), `orders` (collection `List<Order>` do `World` của visualizer giữ) → `order:<id>` (object `Order`) | `Product` → qty; `OrderLine` sản phẩm × qty → đơn giá snapshot, dòng phụ: giảm giá, thuế, thành tiền |
-| `catalog` · `domain.catalog` | `catalog:product:*` (chỉ khi kịch bản tạo) | basePrice, `= finalPrice` |
+| `catalog` · `domain.catalog` | `catalog:product:*`: mọi Product của hub có sẵn từ đầu (`World.registerProduct`), cộng product kịch bản tự tạo (vd. `pricing-types`) | basePrice, `= finalPrice` |
 | `pricing` · `domain.pricing` | `pricing:rule:*`, `pricing:code:*` (chỉ khi kịch bản tạo) | `= apply(...)`; code, rate |
 | `shipping` · `domain.shipping` | `zone:INNER_CITY`, `zone:OTHER_CITY` (enum) | baseFee + phí theo thành phố (computed) |
 
 Container (vùng hoặc collection có `child`) tự giãn theo số khối con, chỉ từ trên xuống, tối đa 4 hàng rồi mới hiện "+N"; vùng giãn đẩy các vùng bên dưới (chồng theo x) xuống (`computeLayout()` trong `layout.js`). Nút "?" trên header mở màn tóm tắt hành trình phát triển (`js/panels/about.js`).
 
-Wire nối object/collection (chiều ngược tự đảo): `warehouse:WH-HN ↔ warehouse:WH-HCM`, `hub → cart`, `cart → orders`, `orders → hub`, `hub → shipping`. Flow tới khối con đi về tổ tiên gần nhất có wire. `toOrder` không dùng `domain.pricing` (tỉ lệ do người gọi truyền, đơn giá lấy từ `Product.calculateFinalPrice` trong `OrderLine`); phí ship do `PhysicalProduct.calculateShipping` tính, `Order` không liên quan `ShippingZone`.
+Wire nối object/collection (chiều ngược tự đảo): `warehouse:WH-HN ↔ warehouse:WH-HCM`, `warehouse:WH-HN → hub`, `warehouse:WH-HCM → hub` (replenish), `hub → cart`, `cart → orders`, `orders → hub`, `orders ↔ pricing` (mã giảm giá áp vào đơn), `hub → shipping`. Flow tới khối con đi về tổ tiên gần nhất có wire. `toOrder` không dùng `domain.pricing` (tỉ lệ do người gọi truyền, đơn giá lấy từ `Product.calculateFinalPrice` trong `OrderLine`); phí ship do `PhysicalProduct.calculateShipping` tính, `Order` không liên quan `ShippingZone`.
 
 ## 5. Kịch bản
 
 | id | Buổi | Nội dung | Điểm cần thấy trên UI |
 |---|---|---|---|
-| `cart-to-order` | S02/S04 | `Cart.add` ×3, `changeQuantity`, `remove`, `toOrder(discount, tax)`, `decreaseStock(order)` | Ô cart pop-in / đổi số / pop-out; toOrder tạo khối `Order` con trong `orders`; kho chỉ giảm ở bước `decreaseStock` (Cart không trừ kho) |
+| `overview` | S02–S07 | Một lượt mua qua mọi package: `transfer` LAPTOP ×2 HCM→HN, `replenish` LAPTOP ×3 HN→hub, `calculateFinalPrice`, `Cart.add` ×2, `new DiscountCode(SALE10)`, `toOrder(code, tax)`, `decreaseStock`, phí ship LAPTOP về Hà Nội. Ghép từ bước của các kịch bản theo buổi (`OrderSteps`, `transfer`/`replenish`/`price`/`ship` dùng chung) | Flow đi kho → kho → hub → giỏ → đơn (cùng mã → đơn) → hub → vùng ship; mọi event OK |
+| `cart-to-order` | S02/S04 | `Cart.add` ×3, `changeQuantity`, `remove`, `new DiscountCode(SALE10, 10%)`, `toOrder(code, tax)`, `decreaseStock(order)` | Ô cart pop-in / đổi số / pop-out; mã SALE10 hiện dưới `domain.pricing`; toOrder có flow giỏ → đơn và mã → đơn, tạo khối `Order` con trong `orders`; kho chỉ giảm ở bước `decreaseStock` (Cart không trừ kho) |
 | `pricing-types` | S03 | `calculateFinalPrice` cho Physical / Digital / Subscription / Bundle; `PricingRule.andThen`; `DiscountCode` | Ô giá từng loại hiện ở trạm giá (đa hình) |
 | `decrease-stock-ok` | S04 | `InventoryManager.decreaseStock(order)` có 2 dòng cùng một sản phẩm | Cộng dồn theo product, trừ đúng một lần |
 | `decrease-stock-fail` | S04 | Đơn có một dòng thiếu hàng | `THROWN OutOfStockException`, `changes` rỗng |
@@ -132,6 +133,7 @@ Wire nối object/collection (chiều ngược tự đảo): `warehouse:WH-HN �
 | `transfer-deadlock-safe` | S06 | 2 thread chuyển A→B và B→A song song (`ExecutorService` kịch bản tự tạo và đóng) | Log xen kẽ hai thread; tổng hàng không đổi |
 | `last-item-race` | S06 | N thread cùng `decreaseStock` sản phẩm còn 1 cái | Đúng một `OK`; stock không âm |
 | `shipping-fee` | S02/S03 | `ShippingZone.of(address)` + `PhysicalProduct.calculateShipping(address)`: LAPTOP → Hà Nội, PHONE → Đà Nẵng | Flow hub → zone; ô phí pop-in ở đúng vùng |
+| `replenish` | S07 | `InventoryManager.replenish` HN→hub LAPTOP ×3, HCM→hub PHONE ×2; thất bại: HEADPHONE (hub không bán, `ProductNotFoundException`), BOOK (kho không có, `OutOfStockException`) | Line chạy kho → hub; kho giảm đúng bằng hub tăng; ca lỗi `changes` rỗng |
 
 ## 6. Thiết kế UI (đã duyệt Gate 1)
 

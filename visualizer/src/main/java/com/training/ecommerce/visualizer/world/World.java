@@ -73,13 +73,15 @@ public class World {
     }
 
     /**
-     * Thêm sản phẩm vào hub và ghi nhớ id để snapshot hỏi kho.
+     * Thêm sản phẩm vào hub, ghi nhớ id để snapshot hỏi kho, và hiện chính object đó thành khối trong
+     * {@code domain.catalog}: mọi Product của hub đều có mặt ở catalog ngay từ đầu, không đợi tới lúc tính giá.
      *
      * @throws IllegalArgumentException nếu product null hoặc trùng id
      */
     public void registerProduct(Product product) {
         hub.addProduct(product);
         trackProductId(product.getId());
+        registerObject(WorldSnapshotter.CATALOG, WorldSnapshotter.productNodeId(product.getId()), product, null);
     }
 
     /**

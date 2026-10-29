@@ -3,6 +3,7 @@ package com.training.ecommerce.visualizer.scenario;
 import com.training.ecommerce.domain.catalog.Product;
 import com.training.ecommerce.domain.order.Cart;
 import com.training.ecommerce.domain.order.Order;
+import com.training.ecommerce.domain.pricing.DiscountCode;
 import com.training.ecommerce.visualizer.trace.Flow;
 import com.training.ecommerce.visualizer.trace.TraceRecorder;
 import com.training.ecommerce.visualizer.world.World;
@@ -10,10 +11,8 @@ import com.training.ecommerce.visualizer.world.WorldSnapshotter;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
 
-/** S02/S04: giỏ hàng thêm, đổi số lượng, xoá rồi chốt thành Order. */
+/** S02/S04: giỏ hàng thêm, đổi số lượng, xoá, nhập mã giảm giá rồi chốt thành Order. */
 public class CartToOrderScenario implements Scenario {
 
     @Override
@@ -33,7 +32,7 @@ public class CartToOrderScenario implements Scenario {
 
     @Override
     public String description() {
-        return "Cart.add ×3, changeQuantity, remove rồi toOrder(giảm giá 10%, thuế 8%): ô cart pop-in, đổi số, pop-out; Order mới xuất hiện. Cart chỉ kiểm tồn kho, không trừ; kho giảm ở bước InventoryManager.decreaseStock cuối.";
+        return "Cart.add ×3, changeQuantity, remove, nhập mã SALE10 (giảm 10%) rồi toOrder(SALE10, thuế 8%): ô cart pop-in, đổi số, pop-out; mã hiện ở domain.pricing; Order mới xuất hiện. Cart chỉ kiểm tồn kho, không trừ; kho giảm ở bước InventoryManager.decreaseStock cuối.";
     }
 
     @Override
@@ -51,22 +50,10 @@ public class CartToOrderScenario implements Scenario {
         recorder.run("Cart", "changeQuantity", List.of("PHONE", "1"), null, cartPanel,
                 () -> cart.changeQuantity(phone, 1));
         recorder.run("Cart", "remove", List.of("BOOK"), null, cartPanel, () -> cart.remove(book));
-        AtomicReference<Order> created = new AtomicReference<>();
-        // toOrder không dùng domain.pricing: đơn giá lấy từ Product.calculateFinalPrice trong OrderLine.
-        // Danh sách panel được ghi nhận sau action nên thêm node con của đơn vào ngay khi đơn có id.
-        List<String> toOrderPanels = new CopyOnWriteArrayList<>(List.of(WorldSnapshotter.CART, WorldSnapshotter.ORDERS));
-        recorder.callFlows("Cart", "toOrder", List.of("0.10", "0.08"),
-                List.of(new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDERS)), toOrderPanels, () -> {
-                    Order order = cart.toOrder(new BigDecimal("0.10"), new BigDecimal("0.08"));
-                    world.addOrder(order);
-                    created.set(order);
-                    toOrderPanels.add(WorldSnapshotter.orderNodeId(order));
-                    return WorldSnapshotter.orderRef(order);
-                });
-        Order order = created.get();
+        // Nhập mã giảm giá rồi chốt giỏ bằng chính mã đó: Order chỉ giữ tỉ lệ 10%, không giữ mã
+        DiscountCode sale10 = PricingTypesScenario.createCode(world, recorder, "SALE10", new BigDecimal("0.10"));
+        Order order = OrderSteps.checkout(world, recorder, sale10, new BigDecimal("0.08"));
         // Cart không trừ kho; kho chỉ giảm khi InventoryManager.decreaseStock(order)
-        recorder.run("InventoryManager", "decreaseStock", List.of(WorldSnapshotter.orderRef(order)),
-                new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.HUB), List.of(WorldSnapshotter.HUB),
-                () -> world.hub().decreaseStock(order));
+        OrderSteps.decreaseStock(world, recorder, order);
     }
 }

@@ -23,22 +23,23 @@ class VisualizerControllerTest {
     void worldTraVeCayNode() throws Exception {
         mockMvc.perform(get("/api/viz/world"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nodes", hasSize(12)))
+                .andExpect(jsonPath("$.nodes", hasSize(15)))
                 .andExpect(jsonPath("$.nodes[1].id").value("warehouse:WH-HN"))
                 .andExpect(jsonPath("$.nodes[0].kind").value("area"))
                 .andExpect(jsonPath("$.nodes[1].items[0].value").value(10))
                 .andExpect(jsonPath("$.nodes[1].items[0].computed").value(false))
                 .andExpect(jsonPath("$.nodes[6].kind").value("collection"))
-                .andExpect(jsonPath("$.nodes[10].parent").value("shipping"));
+                .andExpect(jsonPath("$.nodes[8].parent").value("catalog"))
+                .andExpect(jsonPath("$.nodes[13].parent").value("shipping"));
     }
 
     @Test
-    void scenariosTraVeTamKichBan() throws Exception {
+    void scenariosTraVeMuoiKichBan() throws Exception {
         mockMvc.perform(get("/api/viz/scenarios"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(8)))
-                .andExpect(jsonPath("$[0].id").value("cart-to-order"))
-                .andExpect(jsonPath("$[0].session").value("S02"));
+                .andExpect(jsonPath("$", hasSize(10)))
+                .andExpect(jsonPath("$[0].id").value("overview"))
+                .andExpect(jsonPath("$[0].session").value("S02–S07"));
     }
 
     @Test
@@ -47,7 +48,7 @@ class VisualizerControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.scenarioId").value("decrease-stock-fail"))
                 .andExpect(jsonPath("$.concurrent").value(false))
-                .andExpect(jsonPath("$.worldBefore.nodes", hasSize(12)))
+                .andExpect(jsonPath("$.worldBefore.nodes", hasSize(15)))
                 .andExpect(jsonPath("$.events[0].result").hasJsonPath())
                 .andExpect(jsonPath("$.events[0].exception").hasJsonPath())
                 .andExpect(jsonPath("$.events[0].flows").isArray())

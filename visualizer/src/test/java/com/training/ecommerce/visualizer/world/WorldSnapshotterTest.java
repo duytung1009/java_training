@@ -17,15 +17,27 @@ class WorldSnapshotterTest {
 
         assertThat(view.nodes()).extracting(NodeView::id).containsExactly(
                 "inventory", "warehouse:WH-HN", "warehouse:WH-HCM", "hub",
-                "order", "cart", "orders", "catalog", "pricing", "shipping", "zone:INNER_CITY", "zone:OTHER_CITY");
+                "order", "cart", "orders", "catalog", "catalog:product:LAPTOP", "catalog:product:PHONE",
+                "catalog:product:BOOK", "pricing", "shipping", "zone:INNER_CITY", "zone:OTHER_CITY");
         assertThat(view.nodes()).extracting(NodeView::kind).containsExactly(
-                "area", "object", "object", "object", "area", "object", "collection", "area", "area", "area",
-                "object", "object");
+                "area", "object", "object", "object", "area", "object", "collection", "area",
+                "object", "object", "object", "area", "area", "object", "object");
         assertThat(view.nodes()).extracting(NodeView::parent).containsExactly(
-                null, "inventory", "inventory", "inventory", null, "order", "order", null, null, null,
-                "shipping", "shipping");
+                null, "inventory", "inventory", "inventory", null, "order", "order", null,
+                "catalog", "catalog", "catalog", null, null, "shipping", "shipping");
         assertThat(view.nodes().stream().filter(n -> !n.kind().equals("object")))
                 .allSatisfy(n -> assertThat(n.items()).isEmpty());
+    }
+
+    @Test
+    void productCuaHubCoMatOCatalogNgayTuDau() {
+        WorldView view = snapshotter.snapshot(new WorldFactory().create()).view();
+
+        var products = view.nodes().stream().filter(n -> "catalog".equals(n.parent())).toList();
+        assertThat(products).extracting(NodeView::title)
+                .containsExactly("PhysicalProduct LAPTOP", "PhysicalProduct PHONE", "PhysicalProduct BOOK");
+        // chưa tính giá: chỉ có basePrice, chưa có ô computed finalPrice
+        products.forEach(n -> assertThat(n.items()).extracting(ItemView::key).containsExactly("basePrice"));
     }
 
     @Test

@@ -11,6 +11,9 @@ import java.util.Map;
  * <p>Mọi method đọc/ghi tồn kho đều {@code synchronized} trên chính object {@code Warehouse}. Đây cũng là lock mà
  * {@link WarehouseTransferService} dùng khi chuyển hàng, nên một lần chuyển kho và một lần nhập/xuất trực tiếp
  * không bao giờ chen vào giữa nhau.
+ *
+ * <p>S07-extra: {@link InventoryManager#replenish} khóa hub trước rồi mới khóa kho. Vì vậy khi đang giữ lock
+ * của kho thì không được gọi vào {@code InventoryManager}.
  */
 public class Warehouse {
     private final String id;                                   // final + gán trong constructor → thread nào cũng thấy đúng

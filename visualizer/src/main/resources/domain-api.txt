@@ -74,6 +74,7 @@ method catalog.Product#getId(): String
 method catalog.Product#getName(): String
 method catalog.Product#getStock(): int
 method catalog.Product#hashCode(): int
+method catalog.Product#increaseStock(int): void
 method catalog.Product#toString(): String
 method catalog.ProductNotFoundException#getProductId(): String
 method catalog.ProductType#of(Product): ProductType static
@@ -86,6 +87,7 @@ method customer.Address#getStreet(): String
 method inventory.InventoryManager#addProduct(Product): void
 method inventory.InventoryManager#decreaseStock(Order): void
 method inventory.InventoryManager#findById(String): Optional<Product>
+method inventory.InventoryManager#replenish(Warehouse, String, int): void
 method inventory.InventoryManager#search(Predicate<Product>): List<Product>
 method inventory.Warehouse#add(String, int): void
 method inventory.Warehouse#getId(): String
@@ -100,6 +102,7 @@ method order.Cart#getQuantity(Product): int
 method order.Cart#isEmpty(): boolean
 method order.Cart#remove(Product): void
 method order.Cart#toOrder(BigDecimal, BigDecimal): Order
+method order.Cart#toOrder(DiscountCode, BigDecimal): Order
 method order.Order#addLine(OrderLine): void
 method order.Order#discountAmount(): BigDecimal
 method order.Order#finalAmount(): BigDecimal

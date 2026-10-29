@@ -137,4 +137,30 @@ class ProductTest {
                     () -> product("P001", " ", TSHIRT_PRICE));
         }
     }
+
+    // SPEC S07-extra – thêm 30/10 (warehouse-hub): nhập hàng kho → hub cộng stock qua increaseStock.
+    @Nested
+    @DisplayName("increaseStock")
+    class IncreaseStock {
+
+        @Test
+        @DisplayName("Stock 5, cộng 3 → 8")
+        void increaseAddsStock() {
+            Product tshirt = product("P001", "Áo thun nam", TSHIRT_PRICE, 5);
+
+            tshirt.increaseStock(3);
+
+            assertEquals(8, tshirt.getStock());
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {0, -1})
+        @DisplayName("quantity <= 0 → IllegalArgumentException, stock giữ nguyên")
+        void increaseRejectsNonPositive(int quantity) {
+            Product tshirt = product("P001", "Áo thun nam", TSHIRT_PRICE, 5);
+
+            assertThrows(IllegalArgumentException.class, () -> tshirt.increaseStock(quantity));
+            assertEquals(5, tshirt.getStock());
+        }
+    }
 }
