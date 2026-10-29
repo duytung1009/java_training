@@ -34,7 +34,7 @@ visualizer/  (artifact ecommerce-visualizer, phụ thuộc ecommerce-domain)
     ├── VisualizerApplication
     ├── trace/        TraceRecorder, TraceEvent, ObjectChange, Flow, Outcome
     ├── world/        World (2 warehouse, InventoryManager, Cart, orders, pricing, shipping), WorldFactory, WorldSnapshotter, PanelView, ItemView
-    ├── scenario/     Scenario (interface), ScenarioRegistry, 10 kịch bản (mục 5)
+    ├── scenario/     Scenario (interface), ScenarioRegistry, 12 kịch bản (mục 5)
     └── web/          VisualizerController, RestExceptionHandler, DTO record
 resources/static/
     index.html, styles.css
@@ -114,11 +114,11 @@ Mỗi package domain là một `area` gốc; object nằm trong vùng của pack
 | `order` · `domain.order` | `cart` (object `Cart`), `orders` (collection `List<Order>` do `World` của visualizer giữ) → `order:<id>` (object `Order`) | `Product` → qty; `OrderLine` sản phẩm × qty → đơn giá snapshot, dòng phụ: giảm giá, thuế, thành tiền |
 | `catalog` · `domain.catalog` | `catalog:product:*`: mọi Product của hub có sẵn từ đầu (`World.registerProduct`), cộng product kịch bản tự tạo (vd. `pricing-types`) | basePrice, `= finalPrice` |
 | `pricing` · `domain.pricing` | `pricing:rule:*`, `pricing:code:*` (chỉ khi kịch bản tạo) | `= apply(...)`; code, rate |
-| `shipping` · `domain.shipping` | `zone:INNER_CITY`, `zone:OTHER_CITY` (enum) | baseFee + phí theo thành phố (computed) |
+| `shipping` · `domain.shipping` | `zone:INNER_CITY`, `zone:OTHER_CITY` (enum); `shipping:shipment:<trackingCode>` (chỉ khi kịch bản tạo `Shipment`, đăng ký qua `World.registerObject`) | zone: baseFee + phí theo thành phố (computed); shipment: status, failed (failedAttempts), fee, tracking (state, không computed vì `fee` là field của `Shipment`; kết quả `ShippingFeeCalculator.feeFor` hiện ở log) |
 
 Container (vùng hoặc collection có `child`) tự giãn theo số khối con, chỉ từ trên xuống, tối đa 4 hàng rồi mới hiện "+N"; vùng giãn đẩy các vùng bên dưới (chồng theo x) xuống (`computeLayout()` trong `layout.js`). Nút "?" trên header mở màn tóm tắt hành trình phát triển (`js/panels/about.js`).
 
-Wire nối object/collection (chiều ngược tự đảo): `warehouse:WH-HN ↔ warehouse:WH-HCM`, `warehouse:WH-HN → hub`, `warehouse:WH-HCM → hub` (replenish), `hub → cart`, `cart → orders`, `orders → hub`, `orders ↔ pricing` (mã giảm giá áp vào đơn), `hub → shipping`. Flow tới khối con đi về tổ tiên gần nhất có wire. `toOrder` không dùng `domain.pricing` (tỉ lệ do người gọi truyền, đơn giá lấy từ `Product.calculateFinalPrice` trong `OrderLine`); phí ship do `PhysicalProduct.calculateShipping` tính, `Order` không liên quan `ShippingZone`.
+Wire nối object/collection (chiều ngược tự đảo): `warehouse:WH-HN ↔ warehouse:WH-HCM`, `warehouse:WH-HN → hub`, `warehouse:WH-HCM → hub` (replenish), `hub → cart`, `cart → orders`, `orders → hub`, `orders ↔ pricing` (mã giảm giá áp vào đơn), `hub → shipping`, `orders → shipping` (tạo vận đơn; hoàn kho `InventoryManager.restock` đi lại đường shipping → hub). Flow tới khối con đi về tổ tiên gần nhất có wire. `toOrder` không dùng `domain.pricing` (tỉ lệ do người gọi truyền, đơn giá lấy từ `Product.calculateFinalPrice` trong `OrderLine`); phí ship do `PhysicalProduct.calculateShipping` tính, `Order` không liên quan `ShippingZone`.
 
 ## 5. Kịch bản
 
@@ -134,6 +134,8 @@ Wire nối object/collection (chiều ngược tự đảo): `warehouse:WH-HN �
 | `last-item-race` | S06 | N thread cùng `decreaseStock` sản phẩm còn 1 cái | Đúng một `OK`; stock không âm |
 | `shipping-fee` | S02/S03 | `ShippingZone.of(address)` + `PhysicalProduct.calculateShipping(address)`: LAPTOP → Hà Nội, PHONE → Đà Nẵng | Flow hub → zone; ô phí pop-in ở đúng vùng |
 | `replenish` | S07 | `InventoryManager.replenish` HN→hub LAPTOP ×3, HCM→hub PHONE ×2; thất bại: HEADPHONE (hub không bán, `ProductNotFoundException`), BOOK (kho không có, `OutOfStockException`) | Line chạy kho → hub; kho giảm đúng bằng hub tăng; ca lỗi `changes` rỗng |
+| `shipment-delivered` | Extra | Đặt đơn LAPTOP ×1 + PHONE ×1 (trừ kho), `ShippingFeeCalculator.feeFor` (32k, Hà Nội), `new Shipment`, `pickUp`, `markDelivered` (dùng chung `ShipmentSteps`) | Status CREATED → IN_TRANSIT → DELIVERED trong diff; kho không hoàn |
+| `shipment-returned` | Extra | Như trên giao Đà Nẵng, `pickUp`, `cancel` khi IN_TRANSIT bị từ chối (`IllegalShipmentTransitionException`), `failAttempt` ×3 (lần 3 tự sang RETURNING), `markReturned`, `InventoryManager.restock(order)` | failedAttempts 1→3; ca lỗi `changes` rỗng; stock hub về như trước khi đặt |
 
 ## 6. Thiết kế UI (đã duyệt Gate 1)
 

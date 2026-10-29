@@ -1,10 +1,12 @@
 package com.training.ecommerce.infrastructure.config;
 
 import com.training.ecommerce.application.inventory.StockStore;
+import com.training.ecommerce.application.shipping.ShipmentRepository;
 import com.training.ecommerce.domain.catalog.Product;
 import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.infrastructure.persistence.jdbc.JdbcOrderRepository;
 import com.training.ecommerce.infrastructure.persistence.jdbc.JdbcProductRepository;
+import com.training.ecommerce.infrastructure.persistence.jdbc.JdbcShipmentRepository;
 import com.training.ecommerce.infrastructure.persistence.jdbc.JdbcStockStore;
 import com.training.ecommerce.shared.repository.Repository;
 import org.springframework.context.annotation.Bean;
@@ -33,5 +35,10 @@ public class JdbcPersistenceConfig {
     @Bean
     StockStore stockStore(JdbcClient jdbc) {
         return new JdbcStockStore(jdbc);
+    }
+
+    @Bean
+    ShipmentRepository shipmentRepository(JdbcClient jdbc) {
+        return new JdbcShipmentRepository(jdbc);
     }
 }

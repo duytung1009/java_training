@@ -344,5 +344,123 @@ class ShipmentTest {
 
             assertEquals(List.of(ShipmentStatus.DELIVERED, ShipmentStatus.RETURNED, ShipmentStatus.CANCELLED), terminals);
         }
+
+        @Test
+        @DisplayName("blocksNewShipment: mọi trạng thái trừ CANCELLED, RETURNED (DELIVERED vẫn chặn)")
+        void blocksNewShipment() {
+            List<ShipmentStatus> blocking = new ArrayList<>();
+            for (ShipmentStatus status : ShipmentStatus.values()) {
+                if (status.blocksNewShipment()) {
+                    blocking.add(status);
+                }
+            }
+
+            assertEquals(List.of(ShipmentStatus.CREATED, ShipmentStatus.IN_TRANSIT, ShipmentStatus.DELIVERED,
+                    ShipmentStatus.RETURNING), blocking);
+        }
+    }
+
+    @Nested
+    @DisplayName("Khôi phục từ dữ liệu đã lưu")
+    class Restore {
+
+        private final List<ShipmentEvent> savedHistory = List.of(
+                new ShipmentEvent(ShipmentStatus.CREATED, null),
+                new ShipmentEvent(ShipmentStatus.IN_TRANSIT, null));
+
+        private Shipment restore(String id, String orderId, Address address, BigDecimal fee, String tracking,
+                                 ShipmentStatus status, int attempts, List<ShipmentEvent> history) {
+            return new Shipment(id, orderId, address, fee, tracking, status, attempts, history);
+        }
+
+        private Shipment restoreValid(int attempts) {
+            return restore("id-1", "o-9", HANOI, new BigDecimal("12000"), "SHP-ABCDEF12",
+                    ShipmentStatus.IN_TRANSIT, attempts, savedHistory);
+        }
+
+        @Test
+        @DisplayName("Giữ nguyên các field; fee về scale 2")
+        void keepsFields() {
+            Shipment s = restoreValid(2);
+
+            assertEquals("id-1", s.getId());
+            assertEquals("o-9", s.getOrderId());
+            assertEquals(HANOI, s.getAddress());
+            assertEquals(new BigDecimal("12000.00"), s.getFee());
+            assertEquals("SHP-ABCDEF12", s.getTrackingCode());
+            assertEquals(ShipmentStatus.IN_TRANSIT, s.getStatus());
+            assertEquals(2, s.getFailedAttempts());
+            assertEquals(savedHistory, s.history());
+        }
+
+        @Test
+        @DisplayName("History là bản copy: sửa list nguồn không ảnh hưởng vận đơn")
+        void copiesHistory() {
+            List<ShipmentEvent> source = new ArrayList<>(savedHistory);
+            Shipment s = restore("id-1", "o-9", HANOI, BigDecimal.TEN, "SHP-ABCDEF12",
+                    ShipmentStatus.IN_TRANSIT, 0, source);
+            source.add(new ShipmentEvent(ShipmentStatus.DELIVERED, "giả"));
+
+            assertEquals(2, s.history().size());
+        }
+
+        @Test
+        @DisplayName("Khôi phục ở IN_TRANSIT với 2 lần thất bại: failAttempt tiếp → RETURNING")
+        void continuesLifecycle() {
+            Shipment s = restoreValid(2);
+
+            s.failAttempt("lần 3");
+
+            assertEquals(ShipmentStatus.RETURNING, s.getStatus());
+            assertEquals(3, s.getFailedAttempts());
+            assertEquals(3, s.history().size());
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = {"  "})
+        @DisplayName("id / orderId / trackingCode null / rỗng / blank → IAE")
+        void rejectsBlankStrings(String blank) {
+            assertThrows(IllegalArgumentException.class, () -> restore(blank, "o-9", HANOI, BigDecimal.TEN,
+                    "SHP-1", ShipmentStatus.CREATED, 0, savedHistory));
+            assertThrows(IllegalArgumentException.class, () -> restore("id-1", blank, HANOI, BigDecimal.TEN,
+                    "SHP-1", ShipmentStatus.CREATED, 0, savedHistory));
+            assertThrows(IllegalArgumentException.class, () -> restore("id-1", "o-9", HANOI, BigDecimal.TEN,
+                    blank, ShipmentStatus.CREATED, 0, savedHistory));
+        }
+
+        @Test
+        @DisplayName("address / status / history null, fee null hoặc âm → IAE")
+        void rejectsInvalidValues() {
+            assertThrows(IllegalArgumentException.class, () -> restore("id-1", "o-9", null, BigDecimal.TEN,
+                    "SHP-1", ShipmentStatus.CREATED, 0, savedHistory));
+            assertThrows(IllegalArgumentException.class, () -> restore("id-1", "o-9", HANOI, BigDecimal.TEN,
+                    "SHP-1", null, 0, savedHistory));
+            assertThrows(IllegalArgumentException.class, () -> restore("id-1", "o-9", HANOI, BigDecimal.TEN,
+                    "SHP-1", ShipmentStatus.CREATED, 0, null));
+            assertThrows(IllegalArgumentException.class, () -> restore("id-1", "o-9", HANOI, null,
+                    "SHP-1", ShipmentStatus.CREATED, 0, savedHistory));
+            assertThrows(IllegalArgumentException.class, () -> restore("id-1", "o-9", HANOI, new BigDecimal("-1"),
+                    "SHP-1", ShipmentStatus.CREATED, 0, savedHistory));
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {-1, 4})
+        @DisplayName("failedAttempts ngoài [0, MAX_ATTEMPTS] → IAE")
+        void rejectsAttemptsOutOfRange(int attempts) {
+            assertThrows(IllegalArgumentException.class, () -> restoreValid(attempts));
+        }
+
+        @Test
+        @DisplayName("History rỗng hoặc chứa null → IAE")
+        void rejectsInvalidHistory() {
+            List<ShipmentEvent> withNull = new ArrayList<>();
+            withNull.add(null);
+
+            assertThrows(IllegalArgumentException.class, () -> restore("id-1", "o-9", HANOI, BigDecimal.TEN,
+                    "SHP-1", ShipmentStatus.CREATED, 0, List.of()));
+            assertThrows(IllegalArgumentException.class, () -> restore("id-1", "o-9", HANOI, BigDecimal.TEN,
+                    "SHP-1", ShipmentStatus.CREATED, 0, withNull));
+        }
     }
 }

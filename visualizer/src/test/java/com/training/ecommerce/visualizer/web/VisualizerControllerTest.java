@@ -34,10 +34,10 @@ class VisualizerControllerTest {
     }
 
     @Test
-    void scenariosTraVeMuoiKichBan() throws Exception {
+    void scenariosTraVeMuoiHaiKichBan() throws Exception {
         mockMvc.perform(get("/api/viz/scenarios"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(10)))
+                .andExpect(jsonPath("$", hasSize(12)))
                 .andExpect(jsonPath("$[0].id").value("overview"))
                 .andExpect(jsonPath("$[0].session").value("S02–S07"));
     }

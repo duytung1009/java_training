@@ -1,11 +1,13 @@
 package com.training.ecommerce.visualizer.world;
 
 import com.training.ecommerce.domain.catalog.Product;
+import com.training.ecommerce.domain.customer.Address;
 import com.training.ecommerce.domain.inventory.Warehouse;
 import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.domain.order.OrderLine;
 import com.training.ecommerce.domain.pricing.DiscountCode;
 import com.training.ecommerce.domain.pricing.PricingRule;
+import com.training.ecommerce.domain.shipping.Shipment;
 import com.training.ecommerce.domain.shipping.ShippingZone;
 import org.springframework.stereotype.Component;
 
@@ -42,6 +44,11 @@ public class WorldSnapshotter {
     /** Node id của một order, vd. "order:a1f3" (con của {@link #ORDERS}). */
     public static String productNodeId(String productId) {
         return "catalog:product:" + productId;
+    }
+
+    /** Node id của một vận đơn, vd. "shipping:shipment:SHP-1A2B3C4D" (con của {@link #SHIPPING}). */
+    public static String shipmentNodeId(Shipment shipment) {
+        return "shipping:shipment:" + shipment.getTrackingCode();
     }
 
     public static String orderNodeId(Order order) {
@@ -117,7 +124,7 @@ public class WorldSnapshotter {
         addRegistered(world, PRICING, nodes, objects);
 
         nodes.add(new NodeView(SHIPPING, NodeView.AREA, "domain.shipping", "domain.shipping",
-                "ShippingZone · Address", null, List.of()));
+                "Shipment · ShippingZone · Address", null, List.of()));
         // Phí ship là hàm thuần (computed), không đưa vào objects nên không sinh diff
         for (ShippingZone zone : ShippingZone.values()) {
             List<ItemView> items = new ArrayList<>();
@@ -126,6 +133,7 @@ public class WorldSnapshotter {
             nodes.add(new NodeView(zoneNodeId(zone), NodeView.OBJECT, "ShippingZone", "ShippingZone." + zone.name(),
                     null, SHIPPING, items));
         }
+        addRegistered(world, SHIPPING, nodes, objects);
         return new WorldSnapshot(new WorldView(List.copyOf(nodes)), objects);
     }
 
@@ -161,6 +169,20 @@ public class WorldSnapshotter {
                 items.add(new ItemView("rate", "rate", rate, "BigDecimal"));
                 objects.put(title, Map.of("code", code.getCode(), "rate", rate));
             }
+            case Shipment shipment -> {
+                title = "Shipment " + shipment.getTrackingCode();
+                String status = shipment.getStatus().name();
+                items.add(new ItemView("status", "status", status, "ShipmentStatus"));
+                items.add(new ItemView("failedAttempts", "failed", shipment.getFailedAttempts(), "int"));
+                items.add(new ItemView("fee", "fee", MoneyFormat.shortOf(shipment.getFee()), "BigDecimal"));
+                items.add(new ItemView("trackingCode", "tracking", shipment.getTrackingCode(), "String"));
+                Map<String, Object> fields = new LinkedHashMap<>();
+                fields.put("status", status);
+                fields.put("failedAttempts", shipment.getFailedAttempts());
+                fields.put("fee", MoneyFormat.full(shipment.getFee()));
+                fields.put("history", shipment.history().size() + " event");
+                objects.put(title, fields);
+            }
             case PricingRule rule -> {
                 cls = "PricingRule";   // lambda/class ẩn danh: dùng tên interface cho dễ đọc
                 title = "PricingRule " + name;
@@ -185,6 +207,11 @@ public class WorldSnapshotter {
     /** Ref dễ đọc của một order, vd. "Order a1f3". */
     public static String orderRef(Order order) {
         return "Order " + shortId(order);
+    }
+
+    /** Nhãn địa chỉ trong call log, vd. "Address(Hà Nội)". */
+    public static String addressRef(Address address) {
+        return "Address(" + address.getCity() + ")";
     }
 
     /** Nhãn 3 chữ cái của một productId. */

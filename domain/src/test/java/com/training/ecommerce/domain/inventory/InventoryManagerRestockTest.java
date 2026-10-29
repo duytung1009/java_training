@@ -55,7 +55,7 @@ class InventoryManagerRestockTest {
     @Test
     @DisplayName("Một dòng có product không có trong hub → ProductNotFoundException, stock không đổi")
     void restockAllOrNothing() {
-        Product ghost = new PhysicalProduct("P999", "Không có trong hub", new BigDecimal("1000"), 0, BigDecimal.ONE);
+        Product ghost = new PhysicalProduct("P999", "Không có trong hub", new BigDecimal("1000"), 5, BigDecimal.ONE);
         Order order = orderOf(new OrderLine(tshirt, 2), new OrderLine(ghost, 1), new OrderLine(jeans, 1));
 
         assertThrows(ProductNotFoundException.class, () -> hub.restock(order));

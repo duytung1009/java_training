@@ -1,6 +1,7 @@
 package com.training.ecommerce.infrastructure.config;
 
 import com.training.ecommerce.application.inventory.StockStore;
+import com.training.ecommerce.application.shipping.ShipmentRepository;
 import com.training.ecommerce.domain.catalog.BundleProduct;
 import com.training.ecommerce.domain.catalog.Category;
 import com.training.ecommerce.domain.catalog.DigitalProduct;
@@ -9,6 +10,7 @@ import com.training.ecommerce.domain.catalog.Product;
 import com.training.ecommerce.domain.catalog.SubscriptionProduct;
 import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.infrastructure.persistence.inmemory.InMemoryRepository;
+import com.training.ecommerce.infrastructure.persistence.inmemory.InMemoryShipmentRepository;
 import com.training.ecommerce.infrastructure.persistence.inmemory.InMemoryStockStore;
 import com.training.ecommerce.shared.repository.Repository;
 import org.springframework.boot.CommandLineRunner;
@@ -34,6 +36,11 @@ public class InMemoryPersistenceConfig {
     @Bean
     Repository<Order, String> orderRepository() {
         return new InMemoryRepository<>();
+    }
+
+    @Bean
+    ShipmentRepository shipmentRepository() {
+        return new InMemoryShipmentRepository();
     }
 
     @Bean

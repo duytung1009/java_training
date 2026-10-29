@@ -6,7 +6,8 @@ export const ROOTS = {
   order:     { kind: 'area', x: 12.5, y: 0,    w: 8.5, d: 12.2, color: '--store', title: 'domain.order',     sub: 'package' },
   catalog:   { kind: 'area', x: 8.8,  y: 12.7, w: 7.5, d: 6.2,  color: '--cat',   title: 'domain.catalog',   sub: 'package', child: { w: 3.4, d: 2.4, tileW: 1.45 } },
   pricing:   { kind: 'area', x: 16.5, y: 12.7, w: 7.5, d: 6.2,  color: '--price', title: 'domain.pricing',   sub: 'package', child: { w: 3.4, d: 2.4, tileW: 1.45 } },
-  shipping:  { kind: 'area', x: 0,    y: 9.7,  w: 8,   d: 3.8,  color: '--zone',  title: 'domain.shipping',  sub: 'package', child: { w: 3.6, d: 2.4, tileW: 1.5 } },
+  // child.d 3.6: khối Shipment có 4 ô (status, failed, fee, tracking) xếp 2×2
+  shipping:  { kind: 'area', x: 0,    y: 9.7,  w: 8,   d: 4.7,  color: '--zone',  title: 'domain.shipping',  sub: 'package', child: { w: 3.6, d: 3.6, tileW: 1.5 } },
 };
 // Thành viên cố định đặt tuyệt đối trong một area (object / collection)
 export const PLACED = {
@@ -36,6 +37,9 @@ export const WIRES = [
   { a: 'orders', b: 'pricing', pts: [[20.5, 6.5], [22, 6.5], [22, 12.7]] },
   // Phí ship: Product (trong hub) gọi ShippingZone qua PhysicalProduct.calculateShipping
   { a: 'hub', b: 'shipping', pts: [[7.7, 5.25], [7.7, 9.7]] },
+  // Tạo vận đơn từ đơn (ShippingFeeCalculator.feeFor, new Shipment): ra từ cạnh trái orders, đi ngang qua khoảng trống
+  // giữa các vùng tới cạnh phải vùng shipping. Hoàn kho (shipping → hub, InventoryManager.restock) dùng lại đường hub ↔ shipping
+  { a: 'orders', b: 'shipping', pts: [[13, 10.5], [8, 10.5]] },
 ];
 
 const EPS = 1e-6;
@@ -140,7 +144,7 @@ export function computeLayout(nodes = []) {
 const key = (p, q) => [p, q].sort().join('|');
 const ENDPOINTS = new Set(WIRES.flatMap(w => [w.a, w.b]));
 const warned = new Set();
-const PREFIX = [['order:', 'orders'], ['zone:', 'shipping'], ['catalog:', 'catalog'], ['pricing:', 'pricing']];
+const PREFIX = [['order:', 'orders'], ['zone:', 'shipping'], ['shipping:', 'shipping'], ['catalog:', 'catalog'], ['pricing:', 'pricing']];
 
 // Id → id đầu tiên trên chuỗi cha là đầu mút của một đường (không có thì lên tới root).
 // parentOf(id) trả id cha hoặc undefined; con lạ thì đoán theo tiền tố

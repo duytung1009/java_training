@@ -42,6 +42,26 @@ public class JdbcStockStore implements StockStore {
         }
     }
 
+    /**
+     * Hoàn kho bằng {@code UPDATE ... SET stock = stock + :q}; product không tồn tại (0 dòng được cập nhật) thì ném
+     * {@link ProductNotFoundException}. Cũng như {@link #decreaseStock}, all-or-nothing do transaction của caller.
+     */
+    @Override
+    public void increaseStock(Order order) {
+        if (order == null) {
+            throw new IllegalArgumentException("order không được null");
+        }
+        for (Map.Entry<String, Integer> entry : new TreeMap<>(order.quantitiesByProductId()).entrySet()) {
+            int updated = jdbc.sql("UPDATE products SET stock = stock + :q WHERE id = :id")
+                    .param("q", entry.getValue())
+                    .param("id", entry.getKey())
+                    .update();
+            if (updated == 0) {
+                throw new ProductNotFoundException(entry.getKey());
+            }
+        }
+    }
+
     private void decrease(String productId, int quantity) {
         int updated = jdbc.sql("UPDATE products SET stock = stock - :q WHERE id = :id AND stock >= :q")
                 .param("q", quantity)

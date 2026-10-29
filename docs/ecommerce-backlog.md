@@ -469,9 +469,9 @@ CANCELLED                ├──refuse(lý do)──▶ RETURNING ──markRe
 | 3 | `Shipment implements Identifiable<String>` | `domain/shipping` | `orderId`, `Address`, `fee`, `trackingCode`, `status`, `failedAttempts`, `history()` (bản copy không sửa được); method chuyển trạng thái như sơ đồ |
 | 4 | `ShippingFeeCalculator.feeFor(Order, Address)` | `domain/shipping` | `ShippingZone.of(address).feeFor(tổng cân nặng)`: cộng `weightKg × quantity` các dòng `PhysicalProduct`, bundle tính item physical bên trong; `baseFee` tính một lần |
 | 5 | `InventoryManager.restock(Order)` | `domain/inventory` | đối xứng `decreaseStock(Order)`, `synchronized`, dùng `Product.increaseStock` |
-| 6 | Port `StockStore.increaseStock(Order)` + `ShipmentRepository` (`findActiveByOrderId`) | `application/{inventory, shipping}` | |
+| 6 | Port `StockStore.increaseStock(Order)` + `ShipmentRepository` (`findByOrderId`) | `application/{inventory, shipping}` | service tự lọc vận đơn còn hiệu lực |
 | 7 | `ShipmentService`: `create(orderId, address)`, `pickUp`, `deliver`, `failAttempt`, `refuse`, `markReturned`, `cancel` | `application/shipping` | `markReturned`/`cancel` là `@Transactional`: đổi trạng thái + hoàn kho cùng commit/rollback |
-| 8 | JDBC + in-memory (`shipments`, `shipment_events`), REST `/api/shipments` | `infrastructure`, `interfaces/rest/shipping` | ISE → 409, IAE → 400, không tìm thấy → 404 |
+| 8 | JDBC + in-memory (`shipments`, `shipment_events`), REST `/api/shipments` | `infrastructure`, `interfaces/rest/shipping` | `IllegalShipmentTransitionException` (domain) / `ActiveShipmentExistsException` (application) → 409, IAE → 400, không tìm thấy → 404; ISE chung (dữ liệu hỏng) vẫn 500 |
 | 9 | Visualizer: kịch bản giao thành công và giao thất bại 3 lần → hoàn kho | `visualizer` | sau khi domain xanh, chạy skill `visualizer-sync` |
 
 **Spec hành vi** (đề xuất 30/10, test: `ShipmentTest`, `ShippingFeeCalculatorTest` trong `domain/src/test/java/com/training/ecommerce/domain/shipping/`, `InventoryManagerRestockTest` trong `domain/src/test/java/com/training/ecommerce/domain/inventory/`, `ShipmentServiceTest` ở `app`)
@@ -481,9 +481,9 @@ CANCELLED                ├──refuse(lý do)──▶ RETURNING ──markRe
 - **G3** Đơn không có dòng hàng vật lý nào (chỉ digital/subscription) → IAE khi tính phí / tạo vận đơn; `order`, `address`, `orderId` null/rỗng → IAE.
 - **G4** `failAttempt(lý do)` chỉ ở `IN_TRANSIT`: `failedAttempts + 1`, giữ `IN_TRANSIT`; lần thứ 3 (`MAX_ATTEMPTS = 3`) tự chuyển `RETURNING`. Lý do null/rỗng → IAE (kiểm trước trạng thái).
 - **G5** `cancel()` chỉ ở `CREATED`; đã lấy hàng thì phải `refuse` → `markReturned`.
-- **G6** Chuyển trạng thái không có trong sơ đồ → `IllegalStateException`, message nêu trạng thái hiện tại; trạng thái kết thúc (`DELIVERED`, `RETURNED`, `CANCELLED`) không chuyển đi đâu được. Ném lỗi thì trạng thái và history không đổi.
+- **G6** Chuyển trạng thái không có trong sơ đồ → `IllegalShipmentTransitionException` (kế thừa `IllegalStateException`, như `OutOfStockException`), message nêu trạng thái hiện tại; trạng thái kết thúc (`DELIVERED`, `RETURNED`, `CANCELLED`) không chuyển đi đâu được. Ném lỗi thì trạng thái và history không đổi.
 - **G7** `restock(Order)` cộng lại đúng số lượng theo product của đơn; product không có trong hub → `ProductNotFoundException`, không product nào được cộng (all-or-nothing như `decreaseStock`). Ở `ShipmentService`: `RETURNED` và `CANCELLED` hoàn kho, `DELIVERED` không.
-- **G8** Mỗi đơn có tối đa một vận đơn chưa kết thúc: tạo thêm → ISE (REST 409); vận đơn trước đã `CANCELLED`/`RETURNED` thì được tạo mới.
+- **G8** Mỗi đơn có tối đa một vận đơn "còn hiệu lực" (khác `CANCELLED`/`RETURNED`): tạo thêm → ISE (REST 409). `DELIVERED` cũng chặn (đơn đã giao xong không giao lại); vận đơn trước đã `CANCELLED`/`RETURNED` thì được tạo mới. DB có partial unique index cùng điều kiện làm lớp phòng thủ cuối.
 
 | Method | Input | Kết quả mong đợi | Test |
 |---|---|---|---|
@@ -502,7 +502,7 @@ CANCELLED                ├──refuse(lý do)──▶ RETURNING ──markRe
 | `restock(order)` | áo 1 + quần 1 + áo 1, hub áo 3 quần 5 | áo 5, quần 6 (**G7**) | `restocksOrderQuantities` |
 | `restock(order)` | một dòng có product không có trong hub | `ProductNotFoundException`, stock không đổi | `restockAllOrNothing` |
 | `ShipmentService.markReturned` / `cancel` / `deliver` | đơn áo × 2 | stock +2 / +2 / không đổi (**G7**) | `returnRestocks`, `cancelRestocks`, `deliverDoesNotRestock` |
-| `ShipmentService.create` | đơn đã có vận đơn `IN_TRANSIT`; vận đơn cũ `CANCELLED` | ISE; tạo được (**G8**) | `rejectsSecondActiveShipment`, `allowsNewAfterCancelled` |
+| `ShipmentService.create` | đơn đã có vận đơn `IN_TRANSIT` / `DELIVERED`; vận đơn cũ `CANCELLED` / `RETURNED` | ISE; tạo được (**G8**) | `rejectsSecondActiveShipment`, `rejectsAfterDelivered`, `allowsNewAfterCancelled`, `allowsNewAfterReturned` |
 
 Ngoài spec: trả hàng **sau khi đã giao** (`DELIVERED → RETURNING`, luồng đổi trả riêng), hoàn tiền (`PaymentGateway` hiện chỉ đọc), timestamp / `Clock` cho event, nhiều kiện cho một đơn, giao từng phần, phí ship cộng vào `finalAmount` của `Order`, tích hợp API hãng vận chuyển thật (nối `ShipmentTracker` vào `ShipmentRepository` để sau).
 

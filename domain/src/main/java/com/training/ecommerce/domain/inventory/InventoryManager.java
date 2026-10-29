@@ -131,7 +131,16 @@ public class InventoryManager {
      * @throws ProductNotFoundException khi hub thiếu product nào đó; không product nào được cộng
      */
     public synchronized void restock(Order order) {
-        throw new UnsupportedOperationException("TODO S07-extra");
+        if (order == null) {
+            throw new IllegalArgumentException("order không được null");
+        }
+        // Bước 1: tra hết product trước, thiếu cái nào thì ném ở đây và chưa cộng gì
+        Map<Product, Integer> returned = new LinkedHashMap<>();
+        order.quantitiesByProductId().forEach((productId, quantity) -> returned.put(findStored(productId), quantity));
+        // Bước 2: đủ product mới cộng. Quantity của line luôn > 0 nên bước này không thể lỗi
+        for (Map.Entry<Product, Integer> entry : returned.entrySet()) {
+            entry.getKey().increaseStock(entry.getValue());
+        }
     }
 
     private Product findStored(String id) {

@@ -30,9 +30,7 @@ public class InMemoryStockStore implements StockStore {
         if (order == null) {
             throw new IllegalArgumentException("order không được null");
         }
-        Map<Product, Integer> required = new LinkedHashMap<>();
-        order.quantitiesByProductId().forEach((id, quantity) ->
-                required.put(products.findById(id).orElseThrow(() -> new ProductNotFoundException(id)), quantity));
+        Map<Product, Integer> required = resolve(order);
         for (Map.Entry<Product, Integer> entry : required.entrySet()) {
             if (entry.getValue() > entry.getKey().getStock()) {
                 throw new OutOfStockException(entry.getKey().getId(), entry.getValue(), entry.getKey().getStock());
@@ -41,5 +39,24 @@ public class InMemoryStockStore implements StockStore {
         for (Map.Entry<Product, Integer> entry : required.entrySet()) {
             entry.getKey().decreaseStock(entry.getValue());
         }
+    }
+
+    /** Đối xứng {@link #decreaseStock}: tra hết product trước, đủ rồi mới cộng nên product thiếu thì không ai bị đổi. */
+    @Override
+    public synchronized void increaseStock(Order order) {
+        if (order == null) {
+            throw new IllegalArgumentException("order không được null");
+        }
+        for (Map.Entry<Product, Integer> entry : resolve(order).entrySet()) {
+            entry.getKey().increaseStock(entry.getValue());
+        }
+    }
+
+    /** Tra hết product của đơn trước khi đổi gì; thiếu product nào thì ném ngay, chưa ai bị đổi. */
+    private Map<Product, Integer> resolve(Order order) {
+        Map<Product, Integer> resolved = new LinkedHashMap<>();
+        order.quantitiesByProductId().forEach((id, quantity) ->
+                resolved.put(products.findById(id).orElseThrow(() -> new ProductNotFoundException(id)), quantity));
+        return resolved;
     }
 }

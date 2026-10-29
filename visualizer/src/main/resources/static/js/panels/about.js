@@ -106,11 +106,19 @@ const STAGES = [
       'Kịch bản giỏ hàng và tổng quan có thêm bước new DiscountCode(SALE10) và đường nối orders ↔ pricing; catalog hiện sẵn mọi Product của hub ngay từ đầu.',
     ],
   },
+  {
+    title: 'Vận đơn và giao hàng',
+    why: 'Domain thêm Shipment (vòng đời CREATED → IN_TRANSIT → DELIVERED / RETURNING → RETURNED / CANCELLED), ShippingFeeCalculator và InventoryManager.restock; bản đồ chưa có chỗ cho object sinh ra lúc chạy trong domain.shipping.',
+    what: [
+      'Hai kịch bản: giao thành công (kho không hoàn) và giao thất bại 3 lần → trả hàng → restock, tồn kho hub về như trước khi đặt; có một thao tác sai (cancel khi đang giao) để thấy IllegalShipmentTransitionException.',
+      'Shipment hiện thành khối con của domain.shipping với ô status / failed / fee / tracking, diff cho thấy trạng thái đổi qua từng bước; đường nối mới orders → shipping, hoàn kho đi lại đường shipping → hub.',
+    ],
+  },
 ];
 
 const PRODUCT = [
   '5 vùng package, khối object / collection / area, ô computed tách khỏi state.',
-  '10 kịch bản: tổng quan một lượt mua từ kho tới đơn, giỏ hàng → đơn, giá theo loại sản phẩm, trừ kho thành công / thất bại, chuyển kho, chuyển kho song song không deadlock, tranh nhau món hàng cuối, phí ship, nhập hàng kho → hub.',
+  '12 kịch bản: tổng quan một lượt mua từ kho tới đơn, giỏ hàng → đơn, giá theo loại sản phẩm, trừ kho thành công / thất bại, chuyển kho, chuyển kho song song không deadlock, tranh nhau món hàng cuối, phí ship, nhập hàng kho → hub, vận đơn giao thành công / bị trả về.',
   'Run / Pause / Step / Back / Reset, tốc độ 0.5–2×, call log có badge thread, diff before → after, bảng chú thích khi click khối.',
   'Banner cảnh báo khi visualizer lệch với domain + skill visualizer-sync; không sửa một dòng nào trong domain/ hay app/.',
 ];
