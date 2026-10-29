@@ -37,6 +37,7 @@ function fit(node, text, maxPx, basePx, minPx = 6.5) {
   return len <= maxPx && t.length === String(text).length;
 }
 const CHILD_HEADER = 0.9; // dải đầu khối con: tiêu đề + sub + khe ≥ 4px // lưới khối con trong container
+const KIND_LABEL = { area: 'package' }; // nhãn loại ở cuối dòng sub; vùng gốc là một package domain
 const FRAME = { // kiểu viền theo loại khối
   object: { fill: 0.05 },
   collection: { fill: 0.12, dash: '6 4' },
@@ -145,7 +146,8 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   function setHead(b, title, sub) {
     const mx = (b.rect.w - (b.small ? 0.22 : 0.3)) * CELL, base = b.small ? 7.5 : 9;
     fit(b.titleEl, title, mx, b.small ? 8.5 : 11);
-    const full = b.small ? sub : (sub ? `${sub} · ${b.kind}` : b.kind);
+    const label = KIND_LABEL[b.kind] ?? b.kind;
+    const full = b.small || sub === label ? sub : (sub ? `${sub} · ${label}` : label);
     if (!fit(b.subEl, full, mx, base)) { /* không đủ chỗ cho nhãn: bỏ nhãn */
       if (full !== sub) fit(b.subEl, sub, mx, base);
     }
