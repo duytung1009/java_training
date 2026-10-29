@@ -12,7 +12,7 @@ export function createPlayer({ scene, els, onState }) {
   let gen = 0; // tăng mỗi lần reset/đổi run để bước đang chờ tự huỷ
 
   const events = () => run?.events ?? [];
-  const notify = () => onState?.({ playing, busy, loaded: !!run, done: cursor >= events().length });
+  const notify = () => onState?.({ playing, busy, loaded: !!run, done: cursor >= events().length, atStart: cursor === 0 });
 
   function render() {
     const done = events().slice(0, cursor);
@@ -57,6 +57,15 @@ export function createPlayer({ scene, els, onState }) {
     return true;
   }
 
+  // Lùi một bước: bỏ event cuối đã phát, bản đồ về worldAfter của bước trước (hoặc worldBefore), không chạy flow
+  function back() {
+    if (busy || playing || !run || cursor === 0) return false;
+    cursor--; selected = cursor - 1;
+    scene.sync(cursor > 0 ? events()[cursor - 1].worldAfter : run.worldBefore, { speed });
+    render();
+    return true;
+  }
+
   async function play() {
     if (playing || busy || !run) return;
     if (cursor >= events().length) reset();
@@ -78,5 +87,5 @@ export function createPlayer({ scene, els, onState }) {
     document.documentElement.style.setProperty('--spd', s);
   }
 
-  return { load, reset, step, play, pause, setSpeed };
+  return { load, reset, step, back, play, pause, setSpeed };
 }

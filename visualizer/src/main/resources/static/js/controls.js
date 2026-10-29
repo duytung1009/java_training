@@ -12,14 +12,16 @@ export function initControls({ player, scenarios, onScenario }) {
   sel.onchange = () => onScenario(sel.value);
   $('run').onclick = () => player.play();
   $('pause').onclick = () => player.pause();
+  $('back').onclick = () => player.back();
   $('step').onclick = () => player.step();
   $('reset').onclick = () => player.reset();
   $('speed').onchange = e => player.setSpeed(Number(e.target.value));
 
   // Bật/tắt nút theo trạng thái player
-  return ({ playing, busy, loaded, done }) => {
+  return ({ playing, busy, loaded, done, atStart }) => {
     $('run').disabled = !loaded || playing || busy;
     $('pause').disabled = !playing;
+    $('back').disabled = !loaded || playing || busy || atStart;
     $('step').disabled = !loaded || playing || busy || done;
     $('reset').disabled = !loaded;
   };
