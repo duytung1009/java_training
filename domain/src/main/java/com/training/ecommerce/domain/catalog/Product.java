@@ -73,6 +73,15 @@ public abstract class Product implements Identifiable<String> {
         stock -= quantity;
     }
 
+    /**
+     * Tăng tồn kho (nhập hàng từ kho lên hub). Chỉ InventoryManager nên gọi method này.
+     *
+     * @throws IllegalArgumentException khi quantity &lt;= 0
+     */
+    public void increaseStock(int quantity) {
+        throw new UnsupportedOperationException("TODO S07-extra");
+    }
+
     @Override
     public String getId() { return id; }
     public String getName() { return name; }

@@ -97,6 +97,18 @@ public class InventoryManager {
         }
     }
 
+    /**
+     * Nhập quantity của productId từ kho from lên hub, all-or-nothing: không ai thấy trạng thái
+     * "kho đã trừ, hub chưa cộng".
+     *
+     * @throws IllegalArgumentException khi from / productId null hoặc quantity &lt;= 0
+     * @throws ProductNotFoundException khi hub chưa có product này; kho giữ nguyên
+     * @throws OutOfStockException      khi kho from không đủ hàng; hai bên giữ nguyên
+     */
+    public void replenish(Warehouse from, String productId, int quantity) {
+        throw new UnsupportedOperationException("TODO S07-extra");
+    }
+
     private Product findStored(String id) {
         return findById(id).orElseThrow(() -> new ProductNotFoundException(id));
     }

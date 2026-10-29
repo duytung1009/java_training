@@ -410,8 +410,8 @@ API (quyết định đề xuất 30/10):
 | `replenish` | HN có 3, nhập 4; HN chưa có product | `OutOfStockException`, hai bên giữ nguyên | `notEnoughInWarehouse`, `unknownProductInWarehouse` |
 | `replenish` | productId không có trên hub | `ProductNotFoundException`, kho giữ nguyên (**D4**) | `productNotInHub` |
 | `replenish` | `null` (from / productId); quantity 0 / −5 | IAE, hai bên giữ nguyên | `rejectsNulls`, `rejectsNonPositiveQuantity` |
-| song song | `replenish` HN → hub + `transfer` HN ↔ HCM hai chiều + `decreaseStock` đơn 1 cái, mỗi luồng 5000 lần (×5) | xong trong 10 giây (không deadlock); hub + HN + HCM + số đã bán = tổng ban đầu | `replenishTransferSell_conserveTotal` |
-| song song | hub còn 0; 1 thread `replenish` 1 cái, 100 thread mua (×20) | số lần mua thành công ≤ 1, stock không âm | `replenishWhileBuyingLastItem` |
+| song song | `replenish` HN → hub + `transfer` HN ↔ HCM hai chiều + `decreaseStock` đơn 1 cái, mỗi luồng 5000 lần (×5) | xong trong 10 giây (không deadlock); không thread nào ném exception khác `OutOfStockException`; hub + HN + HCM + số đã bán = tổng ban đầu | `replenishTransferSell_conserveTotal` |
+| song song | hub còn 0; 1 thread `replenish` 1 cái, 100 thread mua (×20) | replenish thành công, HN còn 0; số lần mua thành công + stock hub = 1 (tối đa 1 người mua được, không âm) | `replenishWhileBuyingLastItem` |
 
 Ngoài spec: trả hàng hub → kho, tự động nhập khi hub sắp hết, chọn kho cho từng đơn, lưu xuống DB (`StockStore` ở `app` chưa đụng), tràn `int`.
 
