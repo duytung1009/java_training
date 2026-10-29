@@ -18,6 +18,7 @@ function tileColor(rootId, key) {
 const EPS = 1e-6;
 const specOf = id => ROOTS[id] ?? PLACED[id]; // area hoặc thành viên cố định
 const CELL = 35.78; // độ dài 1 ô lưới dọc trục x trên màn hình (px)
+const ZOOM_MIN = 0.4, ZOOM_MAX = 3;
 
 // Vừa chữ vào maxPx: thu font xuống tối thiểu minPx, vẫn dài thì cắt và thêm "…". Trả về true nếu giữ nguyên chữ gốc.
 function fit(node, text, maxPx, basePx, minPx = 6.5) {
@@ -52,6 +53,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   const blocks = new Map(); // id (root hoặc con) → { id, root, kind, color, small, g, frame, head, titleEl, subEl, rect, more }
   let world = null, selected = null, nodes = new Map();
   let layout = null, layoutKey = '', groundKey = '', wirePaths = [];
+  let zoom = 1, natW = 0, natH = 0; // kích thước tự nhiên theo viewBox; width/height = nat × zoom
   const warnedLayout = new Set();
   const tiles = new Map(); // `${blockId}/${key}` → { g, polygon, text, name, val, title, value, pre, anim }
 
@@ -114,14 +116,51 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     const M = 24, x0 = Math.min(...pts.map(q => q[0])) - M, y0 = Math.min(...pts.map(q => q[1])) - M;
     const vw = Math.max(...pts.map(q => q[0])) + M - x0, vh = Math.max(...pts.map(q => q[1])) + M - y0;
     svg.setAttribute('viewBox', `${x0} ${y0} ${vw} ${vh}`);
-    svg.setAttribute('width', Math.round(vw)); svg.setAttribute('height', Math.round(vh));
-    svg.style.setProperty('--nat-w', Math.round(vw) + 'px'); // min-width trong CSS: hẹp thì cuộn ngang
+    natW = vw; natH = vh;
+    applyZoom();
     const gk = `${maxX}|${maxY}`;
     if (gk !== groundKey) {
       groundKey = gk; layers.ground.textContent = '';
       for (let x = -0.5; x < maxX; x++) for (let y = -0.5; y < maxY; y++)
         el('polygon', { points: diamond(x, y, 1, 1), fill: 'none', stroke: '#1b1f27' }, layers.ground);
     }
+  }
+
+  // Giữ viewBox, chỉ nhân width/height: thanh cuộn của .map-view giãn theo nên pan vẫn chạy bằng scroll
+  function applyZoom() {
+    const w = Math.round(natW * zoom), h = Math.round(natH * zoom);
+    svg.setAttribute('width', w); svg.setAttribute('height', h);
+    svg.style.setProperty('--nat-w', w + 'px'); // min-width trong CSS: hẹp thì cuộn ngang
+  }
+
+  // Zoom quanh điểm (clientX, clientY): điểm dưới con trỏ đứng yên
+  function zoomAt(next, clientX, clientY) {
+    const box = svg.parentElement, r = box.getBoundingClientRect();
+    next = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next));
+    if (next === zoom) return;
+    const px = clientX - r.left, py = clientY - r.top, k = next / zoom;
+    const sl = (box.scrollLeft + px) * k - px, st = (box.scrollTop + py) * k - py;
+    zoom = next; applyZoom();
+    box.scrollLeft = sl; box.scrollTop = st;
+  }
+
+  // Pinch trackpad: Chrome/Firefox/Edge gửi wheel + ctrlKey, Safari gửi gesture* với e.scale.
+  // Cuộn 2 ngón (wheel không ctrlKey) để mặc định = pan. Double-click về 100%.
+  function enableZoom(box) {
+    box.addEventListener('wheel', e => {
+      if (!e.ctrlKey) return;
+      e.preventDefault(); // chặn trình duyệt zoom cả trang
+      zoomAt(zoom * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY);
+    }, { passive: false });
+    let base = 1;
+    box.addEventListener('gesturestart', e => { e.preventDefault(); base = zoom; });
+    box.addEventListener('gesturechange', e => { e.preventDefault(); zoomAt(base * e.scale, e.clientX, e.clientY); });
+    box.addEventListener('gestureend', e => e.preventDefault());
+    box.addEventListener('dblclick', e => {
+      if (zoom === 1) return;
+      const r = box.getBoundingClientRect();
+      zoomAt(1, r.left + box.clientWidth / 2, r.top + box.clientHeight / 2);
+    });
   }
 
   // Dựng khung + tiêu đề một khối (root hoặc con). Con: tiêu đề nhỏ hơn, không có nhãn loại
@@ -354,6 +393,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   }
 
   enablePan(svg.parentElement);
+  enableZoom(svg.parentElement);
   build();
   return { sync, flash, flow, reset, select };
 }
