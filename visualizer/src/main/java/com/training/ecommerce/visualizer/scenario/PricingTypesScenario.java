@@ -8,6 +8,7 @@ import com.training.ecommerce.domain.catalog.SubscriptionProduct;
 import com.training.ecommerce.domain.pricing.DiscountCode;
 import com.training.ecommerce.domain.pricing.PricingRule;
 import com.training.ecommerce.visualizer.trace.TraceRecorder;
+import com.training.ecommerce.visualizer.world.ItemView;
 import com.training.ecommerce.visualizer.world.MoneyFormat;
 import com.training.ecommerce.visualizer.world.World;
 import com.training.ecommerce.visualizer.world.WorldSnapshotter;
@@ -17,8 +18,6 @@ import java.util.List;
 
 /** S03: đa hình calculateFinalPrice của 4 loại product, PricingRule.andThen/chain và DiscountCode. */
 public class PricingTypesScenario implements Scenario {
-
-    private static final List<String> PRICING_PANEL = List.of(WorldSnapshotter.PRICING);
 
     @Override
     public String id() {
@@ -37,7 +36,7 @@ public class PricingTypesScenario implements Scenario {
 
     @Override
     public String description() {
-        return "calculateFinalPrice cho Physical / Digital / Subscription / Bundle, rồi PricingRule.andThen, chain và DiscountCode: mỗi giá hiện ở trạm pricing.";
+        return "calculateFinalPrice cho Physical / Digital / Subscription / Bundle, rồi PricingRule.andThen, chain và DiscountCode: mỗi giá hiện thành node con của domain.pricing.";
     }
 
     @Override
@@ -49,50 +48,72 @@ public class PricingTypesScenario implements Scenario {
                 new BigDecimal("100000"), 12, 100);
         BundleProduct bundle = new BundleProduct("COMBO", "Combo", 3, new BigDecimal("0.10"), physical, digital);
 
-        price(world, recorder, physical, "PHY");
-        price(world, recorder, digital, "DIG");
-        price(world, recorder, subscription, "SUB");
-        price(world, recorder, bundle, "BUN");
+        price(world, recorder, physical);
+        price(world, recorder, digital);
+        price(world, recorder, subscription);
+        price(world, recorder, bundle);
 
         BigDecimal tenPercent = new BigDecimal("0.10");
         BigDecimal fixedOff = new BigDecimal("500000");
         PricingRule percentThenAmount = PricingRule.percentOff(tenPercent).andThen(PricingRule.amountOff(fixedOff));
         recorder.call("PricingRule", "andThen", List.of("percentOff(10%)", "amountOff(500 000)", "20 000 000"),
-                null, PRICING_PANEL, () -> {
+                null, pricingPanels("pricing:rule:then"), () -> {
                     BigDecimal result = percentThenAmount.apply(physical.calculateFinalPrice());
-                    world.putPricing("THEN", "PricingRule", MoneyFormat.shortOf(result));
+                    showRule(world, "pricing:rule:then", percentThenAmount, "percentOff(10%)→amountOff(500k)",
+                            physical.calculateFinalPrice(), result);
                     return MoneyFormat.full(result);
                 });
 
         PricingRule chained = PricingRule.chain(List.of(PricingRule.percentOff(tenPercent),
                 PricingRule.amountOff(fixedOff)));
         recorder.call("PricingRule", "chain", List.of("percentOff(10%)", "amountOff(500 000)", "99 000"),
-                null, PRICING_PANEL, () -> {
+                null, pricingPanels("pricing:rule:chain"), () -> {
                     BigDecimal result = chained.apply(digital.calculateFinalPrice());
-                    world.putPricing("CHAIN", "PricingRule", MoneyFormat.shortOf(result));
+                    showRule(world, "pricing:rule:chain", chained, "chain[percentOff(10%), amountOff(500k)]",
+                            digital.calculateFinalPrice(), result);
                     return MoneyFormat.full(result);
                 });
 
         // DiscountCode không override toString: giữ object qua holder, log trả chuỗi dễ đọc
         DiscountCode[] holder = new DiscountCode[1];
-        recorder.call("DiscountCode", "new", List.of("SALE20", "0.20"), null, PRICING_PANEL, () -> {
-            holder[0] = new DiscountCode("SALE20", new BigDecimal("0.20"));
-            String rate = "-" + MoneyFormat.percent(holder[0].getRate());
-            world.putPricing(holder[0].getCode(), "DiscountCode", rate);
-            return holder[0].getCode() + " " + rate;
-        });
+        recorder.call("DiscountCode", "new", List.of("SALE20", "0.20"), null, pricingPanels("pricing:code:SALE20"),
+                () -> {
+                    holder[0] = new DiscountCode("SALE20", new BigDecimal("0.20"));
+                    world.registerPricingObject("pricing:code:" + holder[0].getCode(), holder[0], null);
+                    return holder[0].getCode() + " -" + MoneyFormat.percent(holder[0].getRate());
+                });
         DiscountCode code = holder[0];
-        recorder.call("PricingRule", "percentOff", List.of("SALE20", "20 000 000"), null, PRICING_PANEL, () -> {
-            BigDecimal result = PricingRule.percentOff(code.getRate()).apply(physical.calculateFinalPrice());
-            return MoneyFormat.full(result);
-        });
+        recorder.call("PricingRule", "percentOff", List.of("SALE20", "20 000 000"), null,
+                pricingPanels("pricing:rule:sale20"), () -> {
+                    PricingRule rule = PricingRule.percentOff(code.getRate());
+                    BigDecimal base = physical.calculateFinalPrice();
+                    BigDecimal result = rule.apply(base);
+                    showRule(world, "pricing:rule:sale20", rule,
+                            "percentOff(" + MoneyFormat.percent(code.getRate()) + ")", base, result);
+                    return MoneyFormat.full(result);
+                });
     }
 
-    private static void price(World world, TraceRecorder recorder, Product product, String key) {
+    private static List<String> pricingPanels(String childId) {
+        return List.of(WorldSnapshotter.PRICING, childId);
+    }
+
+    /** Đăng ký node rule và ghi kết quả apply (hàm thuần, computed). */
+    private static void showRule(World world, String nodeId, PricingRule rule, String sub, BigDecimal input,
+                                 BigDecimal result) {
+        world.registerPricingObject(nodeId, rule, sub);
+        String label = "apply(" + MoneyFormat.shortOf(input) + ")";
+        world.putComputed(nodeId, new ItemView("apply", label, MoneyFormat.shortOf(result), "BigDecimal", true));
+    }
+
+    private static void price(World world, TraceRecorder recorder, Product product) {
+        String nodeId = "pricing:product:" + product.getId();
         recorder.call(product.getClass().getSimpleName(), "calculateFinalPrice", List.of(product.getId()), null,
-                PRICING_PANEL, () -> {
+                pricingPanels(nodeId), () -> {
                     BigDecimal price = product.calculateFinalPrice();
-                    world.putPricing(key, "Product", MoneyFormat.shortOf(price));
+                    world.registerPricingObject(nodeId, product, null);
+                    world.putComputed(nodeId, new ItemView("finalPrice", "= finalPrice", MoneyFormat.shortOf(price),
+                            "BigDecimal", true));
                     return MoneyFormat.full(price);
                 });
     }

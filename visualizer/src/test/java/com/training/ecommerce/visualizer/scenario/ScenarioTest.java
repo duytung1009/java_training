@@ -4,6 +4,8 @@ import com.training.ecommerce.visualizer.trace.Flow;
 import com.training.ecommerce.visualizer.trace.Outcome;
 import com.training.ecommerce.visualizer.trace.TraceEvent;
 import com.training.ecommerce.visualizer.trace.TraceRecorder;
+import com.training.ecommerce.visualizer.world.ItemView;
+import com.training.ecommerce.visualizer.world.NodeView;
 import com.training.ecommerce.visualizer.world.World;
 import com.training.ecommerce.visualizer.world.WorldFactory;
 import com.training.ecommerce.visualizer.world.WorldSnapshotter;
@@ -46,9 +48,9 @@ class ScenarioTest {
 
     @Test
     void coDungTamKichBanTheoThuTu() {
-        assertThat(all().map(Scenario::id)).containsExactly("cart-to-order", "pricing-types",
-                "decrease-stock-ok", "decrease-stock-fail", "transfer", "transfer-deadlock-safe",
-                "last-item-race", "shipping-fee");
+        assertThat(all().map(Scenario::id)).containsExactly("cart-to-order", "shipping-fee",
+                "pricing-types", "decrease-stock-ok", "decrease-stock-fail", "transfer", "transfer-deadlock-safe",
+                "last-item-race");
     }
 
     @ParameterizedTest
@@ -72,25 +74,57 @@ class ScenarioTest {
         TraceEvent toOrder = run.events().stream().filter(e -> e.method().equals("toOrder")).findFirst().orElseThrow();
         assertThat(toOrder.changes().getFirst().before()).isNull();
         assertThat(toOrder.result()).startsWith("Order ");
-        assertThat(toOrder.flows()).containsExactly(
-                new Flow(WorldSnapshotter.PRICING, WorldSnapshotter.CART),
-                new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDER));
+        assertThat(toOrder.flows()).containsExactly(new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDERS));
+        String orderNode = WorldSnapshotter.orderNodeId(run.world().orders().getFirst());
+        assertThat(toOrder.panels()).containsExactly(WorldSnapshotter.CART, WorldSnapshotter.ORDERS, orderNode);
+        var orderNodes = run.events().getLast().worldAfter().nodes().stream()
+                .filter(n -> n.id().startsWith("order:")).toList();
+        assertThat(orderNodes).hasSize(1);
+        assertThat(orderNodes.getFirst().parent()).isEqualTo("orders");
+        assertThat(orderNodes.getFirst().id()).isEqualTo(orderNode);
+        assertThat(orderNodes.getFirst().items()).hasSize(2)
+                .allSatisfy(i -> {
+                    assertThat(i.type()).isEqualTo("OrderLine");
+                    assertThat(i.computed()).isFalse();
+                });
         // Cart không trừ kho: sau add/changeQuantity/remove/toOrder tồn kho vẫn như seed (LAPTOP 5, PHONE 8)
         TraceEvent decrease = run.events().getLast();
         assertThat(decrease.method()).isEqualTo("decreaseStock");
         assertThat(run.events()).filteredOn(e -> !e.method().equals("decreaseStock"))
                 .allSatisfy(e -> assertThat(e.changes()).noneMatch(c -> c.ref().startsWith("Product")));
-        assertThat(decrease.flows()).containsExactly(new Flow(WorldSnapshotter.ORDER, WorldSnapshotter.HUB));
+        assertThat(decrease.flows()).containsExactly(new Flow(orderNode, WorldSnapshotter.HUB));
         // chỉ InventoryManager.decreaseStock(order) trừ: LAPTOP 5 → 4, PHONE 8 → 7
         assertThat(run.world().product("LAPTOP").getStock()).isEqualTo(4);
         assertThat(run.world().product("PHONE").getStock()).isEqualTo(7);
     }
 
     @Test
-    void pricingTypesGhiGiaVaoPanelPricing() {
+    void pricingTypesTaoNodeConCuaPricing() {
         Run run = run("pricing-types");
-        assertThat(run.events().getLast().worldAfter().panels().get(4).items())
-                .extracting(i -> i.key()).containsExactly("DISC", "TAX", "PHY", "DIG", "SUB", "BUN", "THEN", "CHAIN", "SALE20");
+        var nodes = run.events().getLast().worldAfter().nodes();
+        var children = nodes.stream().filter(n -> "pricing".equals(n.parent())).toList();
+        assertThat(children).extracting(NodeView::id).containsExactly(
+                "pricing:product:LAPTOP-X", "pricing:product:EBOOK", "pricing:product:NEWS",
+                "pricing:product:COMBO", "pricing:rule:then", "pricing:rule:chain", "pricing:code:SALE20",
+                "pricing:rule:sale20");
+        assertThat(children).extracting(NodeView::cls).containsExactly(
+                "PhysicalProduct", "DigitalProduct", "SubscriptionProduct", "BundleProduct", "PricingRule",
+                "PricingRule", "DiscountCode", "PricingRule");
+        children.stream().filter(n -> n.id().startsWith("pricing:product:")).forEach(n -> {
+            assertThat(n.items()).extracting(ItemView::key).containsExactly("basePrice", "finalPrice");
+            assertThat(n.items()).extracting(ItemView::computed).containsExactly(false, true);
+        });
+        NodeView rule = children.stream().filter(n -> n.id().equals("pricing:rule:sale20")).findFirst().orElseThrow();
+        assertThat(rule.items()).singleElement().satisfies(i -> {
+            assertThat(i.computed()).isTrue();
+            assertThat(i.label()).startsWith("apply(");
+        });
+        NodeView code = children.stream().filter(n -> n.id().equals("pricing:code:SALE20")).findFirst().orElseThrow();
+        assertThat(code.items()).extracting(ItemView::key, ItemView::value)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("code", "SALE20"),
+                        org.assertj.core.groups.Tuple.tuple("rate", "20%"));
+        // giá là hàm thuần: bước tính giá của rule không tạo diff cho chính rule/giá
+        assertThat(run.events().getLast().changes()).isEmpty();
     }
 
     @Test
@@ -148,8 +182,15 @@ class ScenarioTest {
         assertThat(fees).extracting(e -> e.flows().getFirst())
                 .containsExactly(new Flow(WorldSnapshotter.HUB, "zone:INNER_CITY"),
                         new Flow(WorldSnapshotter.HUB, "zone:OTHER_CITY"));
-        var panels = run.events().getLast().worldAfter().panels();
-        assertThat(panels.get(6).items()).extracting(i -> i.value()).containsExactly("30.0k");
-        assertThat(panels.get(7).items()).extracting(i -> i.value()).containsExactly("37.0k");
+        var nodes = run.events().getLast().worldAfter().nodes().stream()
+                .filter(n -> n.id().startsWith("zone:")).toList();
+        assertThat(nodes).extracting(NodeView::cls).containsOnly("ShippingZone");
+        nodes.forEach(n -> {
+            assertThat(n.items().getFirst().key()).isEqualTo("baseFee");
+            assertThat(n.items().getFirst().computed()).isFalse();
+            assertThat(n.items().subList(1, n.items().size())).allSatisfy(i -> assertThat(i.computed()).isTrue());
+        });
+        assertThat(nodes.get(0).items().subList(1, 2)).extracting(i -> i.value()).containsExactly("30.0k");
+        assertThat(nodes.get(1).items().subList(1, 2)).extracting(i -> i.value()).containsExactly("37.0k");
     }
 }

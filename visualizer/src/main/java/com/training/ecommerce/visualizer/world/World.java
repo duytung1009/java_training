@@ -6,11 +6,9 @@ import com.training.ecommerce.domain.inventory.InventoryManager;
 import com.training.ecommerce.domain.inventory.Warehouse;
 import com.training.ecommerce.domain.order.Cart;
 import com.training.ecommerce.domain.order.Order;
-import com.training.ecommerce.domain.shipping.ShippingZone;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +16,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Thế giới của một lượt chạy: các object domain thật mà kịch bản thao tác, cộng với vài mục chỉ để hiển thị
- * (bảng giá, phí ship vừa tính). Mỗi lượt chạy dùng một World mới ({@link WorldFactory}).
+ * (object pricing đã tạo, kết quả hàm thuần như phí ship). Mỗi lượt chạy dùng một World mới ({@link WorldFactory}).
  */
 public class World {
 
@@ -28,8 +26,8 @@ public class World {
     private final List<Order> orders = new CopyOnWriteArrayList<>();
     /** Warehouse không liệt kê được sản phẩm, nên snapshot phải biết trước danh sách productId cần hỏi. */
     private final List<String> productIds = new CopyOnWriteArrayList<>();
-    private final Map<String, ItemView> pricing = new LinkedHashMap<>();               // guarded by this.pricing
-    private final Map<ShippingZone, Map<String, String>> shippingFees = new EnumMap<>(ShippingZone.class);
+    private final Map<String, PricingEntry> pricingObjects = new LinkedHashMap<>();     // guarded by this.pricingObjects
+    private final Map<String, Map<String, ItemView>> computed = new LinkedHashMap<>();  // guarded by this.computed
 
     /**
      * @param warehouses các kho theo thứ tự hiển thị
@@ -42,9 +40,6 @@ public class World {
         Map<String, Warehouse> byId = new LinkedHashMap<>();
         warehouses.forEach(w -> byId.put(w.getId(), w));
         this.warehouses = Collections.unmodifiableMap(byId);
-        for (ShippingZone zone : ShippingZone.values()) {
-            shippingFees.put(zone, new LinkedHashMap<>());
-        }
     }
 
     /**
@@ -120,46 +115,58 @@ public class World {
     }
 
     /**
-     * Ghi một mục hiển thị ở panel pricing (chỉ để xem, không phải state của domain).
+     * Đăng ký một object domain (Product, PricingRule, DiscountCode) làm node con của area pricing.
+     * Field của node được đọc từ chính object này lúc snapshot. Đăng ký lại cùng nodeId thì thay object.
      *
-     * @param type tên class mà mục này đại diện (vd. PricingRule, DiscountCode)
-     * @throws IllegalArgumentException nếu key, type hoặc value null
+     * @param nodeId id node, vd. "pricing:code:SALE20"
+     * @param sub    chú thích ngắn của node, null nếu không có
+     * @throws IllegalArgumentException nếu nodeId hoặc domainObject null
      */
-    public void putPricing(String key, String type, String value) {
-        if (key == null || type == null || value == null) {
-            throw new IllegalArgumentException("key, type và value không được null");
+    public void registerPricingObject(String nodeId, Object domainObject, String sub) {
+        if (nodeId == null || domainObject == null) {
+            throw new IllegalArgumentException("nodeId và domainObject không được null");
         }
-        synchronized (pricing) {
-            pricing.put(key, new ItemView(key, key, value, type));
+        synchronized (pricingObjects) {
+            pricingObjects.put(nodeId, new PricingEntry(nodeId, domainObject, sub));
         }
     }
 
-    /** Các mục pricing theo thứ tự ghi lần đầu. */
-    public List<ItemView> pricing() {
-        synchronized (pricing) {
-            return List.copyOf(pricing.values());
+    /** Các object pricing đã đăng ký, theo thứ tự đăng ký lần đầu. */
+    public List<PricingEntry> pricingObjects() {
+        synchronized (pricingObjects) {
+            return List.copyOf(pricingObjects.values());
         }
     }
 
     /**
-     * Ghi phí ship vừa tính cho một thành phố (chỉ để hiển thị ở ô zone).
+     * Ghi một kết quả hàm thuần để hiển thị trên node (không phải state). Cùng key thì ghi đè.
      *
-     * @throws IllegalArgumentException nếu tham số null
+     * @throws IllegalArgumentException nếu nodeId hoặc item null
      */
-    public void putShippingFee(ShippingZone zone, String city, String fee) {
-        if (zone == null || city == null || fee == null) {
-            throw new IllegalArgumentException("zone, city và fee không được null");
+    public void putComputed(String nodeId, ItemView item) {
+        if (nodeId == null || item == null) {
+            throw new IllegalArgumentException("nodeId và item không được null");
         }
-        Map<String, String> fees = shippingFees.get(zone);
-        synchronized (fees) {
-            fees.put(city, fee);
+        synchronized (computed) {
+            computed.computeIfAbsent(nodeId, k -> new LinkedHashMap<>()).put(item.key(), item);
         }
     }
 
-    public Map<String, String> shippingFees(ShippingZone zone) {
-        Map<String, String> fees = shippingFees.get(zone);
-        synchronized (fees) {
-            return new LinkedHashMap<>(fees);
+    /** Các ô computed của một node theo thứ tự ghi lần đầu; rỗng nếu chưa có. */
+    public List<ItemView> computed(String nodeId) {
+        synchronized (computed) {
+            Map<String, ItemView> items = computed.get(nodeId);
+            return items == null ? List.of() : List.copyOf(items.values());
         }
+    }
+
+    /**
+     * Một object domain đăng ký dưới area pricing.
+     *
+     * @param nodeId       id node
+     * @param domainObject object thật để đọc field
+     * @param sub          chú thích ngắn, có thể null
+     */
+    public record PricingEntry(String nodeId, Object domainObject, String sub) {
     }
 }

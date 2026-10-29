@@ -25,14 +25,18 @@
 <div class="legend">
   <span><i style="border-color:var(--wh)"></i>Warehouse</span>
   <span><i style="border-color:var(--hub)"></i>InventoryManager</span>
-  <span><i style="border-color:var(--price)"></i>Pricing</span>
+  <span><i style="border-color:var(--price)"></i>domain.pricing</span>
   <span><i style="border-color:var(--store)"></i>Cart / Order</span>
-  <span><i style="border-color:var(--zone)"></i>ShippingZone</span>
+  <span><i style="border-color:var(--zone)"></i>domain.shipping</span>
+  <span><i style="border-color:var(--muted)"></i>object</span>
+  <span><i class="k-coll" style="border-color:var(--muted)"></i>collection</span>
+  <span><i class="k-area" style="border-color:var(--muted)"></i>package (area)</span>
+  <span><i class="k-calc" style="border-color:var(--muted)"></i>ô tính ra</span>
   <span><i style="border-color:var(--err)"></i>Exception</span>
 </div>
 <div id="sync" class="sync" role="alert" hidden></div>
 <main>
-  <section class="panel map"><h2>BẢN ĐỒ 2.5D · domain/ <span>· click một khối để xem chú thích</span></h2><div class="map-view"><svg id="map" role="img" aria-label="Bản đồ isometric các domain object"></svg></div><aside id="info" class="info" hidden></aside></section>
+  <section class="panel map"><h2>BẢN ĐỒ 2.5D · domain/ <span>· click một khối (kể cả khối con) để xem chú thích</span></h2><div class="map-view"><svg id="map" role="img" aria-label="Bản đồ isometric các domain object"></svg></div><aside id="info" class="info" hidden></aside></section>
   <div class="right">
     <section class="panel log"><h2>CALL LOG</h2><ol id="log"></ol></section>
     <section class="panel diff"><h2>STATE CHANGES · before → after</h2><div class="body" id="diff"></div></section>

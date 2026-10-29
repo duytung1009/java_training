@@ -3,6 +3,9 @@ package com.training.ecommerce.visualizer.world;
 import com.training.ecommerce.domain.catalog.Product;
 import com.training.ecommerce.domain.inventory.Warehouse;
 import com.training.ecommerce.domain.order.Order;
+import com.training.ecommerce.domain.order.OrderLine;
+import com.training.ecommerce.domain.pricing.DiscountCode;
+import com.training.ecommerce.domain.pricing.PricingRule;
 import com.training.ecommerce.domain.shipping.ShippingZone;
 import org.springframework.stereotype.Component;
 
@@ -21,15 +24,21 @@ public class WorldSnapshotter {
 
     public static final String HUB = "hub";
     public static final String CART = "cart";
+    public static final String ORDERS = "orders";
     public static final String PRICING = "pricing";
-    public static final String ORDER = "order";
+    public static final String SHIPPING = "shipping";
 
     public static String warehousePanelId(String warehouseId) {
         return "warehouse:" + warehouseId;
     }
 
-    public static String zonePanelId(ShippingZone zone) {
+    public static String zoneNodeId(ShippingZone zone) {
         return "zone:" + zone.name();
+    }
+
+    /** Node id của một order, vd. "order:a1f3" (con của {@link #ORDERS}). */
+    public static String orderNodeId(Order order) {
+        return "order:" + shortId(order);
     }
 
     /**
@@ -42,7 +51,7 @@ public class WorldSnapshotter {
             throw new IllegalArgumentException("world không được null");
         }
         Map<String, Map<String, Object>> objects = new LinkedHashMap<>();
-        List<PanelView> panels = new ArrayList<>();
+        List<NodeView> nodes = new ArrayList<>();
 
         for (Warehouse warehouse : world.warehouses()) {
             Map<String, Object> quantities = new LinkedHashMap<>();
@@ -54,8 +63,9 @@ public class WorldSnapshotter {
             }
             objects.put("Warehouse " + warehouse.getId(), quantities);
             // Warehouse chỉ giữ Map<String, Integer>: mỗi ô là một entry productId → qty, không phải object Product
-            panels.add(new PanelView(warehousePanelId(warehouse.getId()), "warehouse",
-                    "Warehouse " + warehouse.getId(), countItems(quantities, "Map.Entry")));
+            nodes.add(new NodeView(warehousePanelId(warehouse.getId()), NodeView.OBJECT, "Warehouse",
+                    "Warehouse " + warehouse.getId(), "Map<productId, qty>", null,
+                    countItems(quantities, "Map.Entry")));
         }
 
         Map<String, Object> stocks = new LinkedHashMap<>();
@@ -66,33 +76,87 @@ public class WorldSnapshotter {
                 objects.put("Product " + product.getId(), Map.of("stock", stock));
             });
         }
-        panels.add(new PanelView(HUB, "hub", "InventoryManager", countItems(stocks, "Product")));
+        nodes.add(new NodeView(HUB, NodeView.OBJECT, "InventoryManager", "InventoryManager",
+                "catalog: Product.stock", null, countItems(stocks, "Product")));
 
         Map<String, Object> cartItems = new LinkedHashMap<>();
         for (Map.Entry<Product, Integer> entry : world.cart().getItems().entrySet()) {
             cartItems.put(entry.getKey().getId(), entry.getValue());
         }
         objects.put("Cart", cartItems);
-        panels.add(new PanelView(CART, "cart", "Cart", countItems(cartItems, "Product")));
+        nodes.add(new NodeView(CART, NodeView.OBJECT, "Cart", "Cart", "Map<Product, qty>", null,
+                countItems(cartItems, "Product")));
 
-        panels.add(new PanelView(PRICING, "pricing", "Pricing", world.pricing()));
-
-        List<ItemView> orderItems = new ArrayList<>();
+        nodes.add(new NodeView(ORDERS, NodeView.COLLECTION, "List<Order>", "List<Order> · World", "đơn đã tạo",
+                null, List.of()));
         for (Order order : world.orders()) {
             String shortId = shortId(order);
             objects.put("Order " + shortId, orderFields(order));
-            orderItems.add(new ItemView(shortId, shortId, MoneyFormat.shortOf(order.finalAmount()), "Order"));
+            nodes.add(new NodeView(orderNodeId(order), NodeView.OBJECT, "Order", "Order " + shortId,
+                    "-" + MoneyFormat.percent(order.getDiscountRate()) + " +" + MoneyFormat.percent(order.getTaxRate())
+                            + " = " + MoneyFormat.shortOf(order.finalAmount()), ORDERS, orderLineItems(order)));
         }
-        panels.add(new PanelView(ORDER, "order", "Order", orderItems));
 
-        // Phí ship chỉ để hiển thị (hàm thuần), không đưa vào objects nên không sinh diff
-        for (ShippingZone zone : ShippingZone.values()) {
-            List<ItemView> feeItems = new ArrayList<>();
-            // Ô = Address.city → phí do ShippingZone.feeFor tính
-            world.shippingFees(zone).forEach((city, fee) -> feeItems.add(new ItemView(city, city, fee, "Address")));
-            panels.add(new PanelView(zonePanelId(zone), "zone", zone.name(), feeItems));
+        nodes.add(new NodeView(PRICING, NodeView.AREA, "domain.pricing", "domain.pricing",
+                "PricingRule · DiscountCode · Product giá", null, List.of()));
+        for (World.PricingEntry entry : world.pricingObjects()) {
+            nodes.add(pricingNode(world, entry, objects));
         }
-        return new WorldSnapshot(new WorldView(List.copyOf(panels)), objects);
+
+        nodes.add(new NodeView(SHIPPING, NodeView.AREA, "domain.shipping", "domain.shipping",
+                "ShippingZone · Address", null, List.of()));
+        // Phí ship là hàm thuần (computed), không đưa vào objects nên không sinh diff
+        for (ShippingZone zone : ShippingZone.values()) {
+            List<ItemView> items = new ArrayList<>();
+            items.add(new ItemView("baseFee", "baseFee", MoneyFormat.shortOf(zone.getBaseFee()), "BigDecimal"));
+            items.addAll(world.computed(zoneNodeId(zone)));
+            nodes.add(new NodeView(zoneNodeId(zone), NodeView.OBJECT, "ShippingZone", "ShippingZone." + zone.name(),
+                    null, SHIPPING, items));
+        }
+        return new WorldSnapshot(new WorldView(List.copyOf(nodes)), objects);
+    }
+
+    /** Node con của pricing: field đọc từ object thật, computed lấy từ world. */
+    private static NodeView pricingNode(World world, World.PricingEntry entry,
+                                        Map<String, Map<String, Object>> objects) {
+        Object object = entry.domainObject();
+        String name = entry.nodeId().substring(entry.nodeId().lastIndexOf(':') + 1);
+        List<ItemView> items = new ArrayList<>();
+        String cls = object.getClass().getSimpleName();
+        String title;
+        switch (object) {
+            case Product product -> {
+                title = cls + " " + product.getId();
+                items.add(new ItemView("basePrice", "basePrice", MoneyFormat.shortOf(product.getBasePrice()),
+                        "BigDecimal"));
+                objects.put(title, Map.of("basePrice", MoneyFormat.full(product.getBasePrice())));
+            }
+            case DiscountCode code -> {
+                title = "DiscountCode " + code.getCode();
+                String rate = MoneyFormat.percent(code.getRate());
+                items.add(new ItemView("code", "code", code.getCode(), "String"));
+                items.add(new ItemView("rate", "rate", rate, "BigDecimal"));
+                objects.put(title, Map.of("code", code.getCode(), "rate", rate));
+            }
+            case PricingRule rule -> {
+                cls = "PricingRule";   // lambda/class ẩn danh: dùng tên interface cho dễ đọc
+                title = "PricingRule " + name;
+            }
+            default -> title = cls + " " + name;
+        }
+        items.addAll(world.computed(entry.nodeId()));
+        return new NodeView(entry.nodeId(), NodeView.OBJECT, cls, title, entry.sub(), PRICING, items);
+    }
+
+    private static List<ItemView> orderLineItems(Order order) {
+        List<ItemView> items = new ArrayList<>();
+        OrderLine[] lines = order.getLines();
+        for (int i = 0; i < lines.length; i++) {
+            String productId = lines[i].getProduct().getId();
+            items.add(new ItemView(i + ":" + productId, label(productId) + " ×" + lines[i].getQuantity(),
+                    MoneyFormat.shortOf(lines[i].getUnitPrice()), "OrderLine"));
+        }
+        return items;
     }
 
     /** Ref dễ đọc của một order, vd. "Order a1f3". */

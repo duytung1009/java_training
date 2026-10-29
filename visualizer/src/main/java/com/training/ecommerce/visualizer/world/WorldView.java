@@ -3,9 +3,9 @@ package com.training.ecommerce.visualizer.world;
 import java.util.List;
 
 /**
- * Ảnh chụp thế giới để vẽ: danh sách panel theo thứ tự cố định.
+ * Ảnh chụp thế giới để vẽ: cây node dạng phẳng, pre-order (mỗi node gốc rồi các con ngay sau nó).
  *
- * @param panels các panel theo thứ tự cố định
+ * @param nodes các node theo thứ tự cố định
  */
-public record WorldView(List<PanelView> panels) {
+public record WorldView(List<NodeView> nodes) {
 }

@@ -39,7 +39,7 @@ public class DecreaseStockOkScenario implements Scenario {
         OrderSteps.addLine(recorder, order, laptop, 1);
         OrderSteps.addLine(recorder, order, laptop, 2);
         recorder.run("InventoryManager", "decreaseStock", List.of(WorldSnapshotter.orderRef(order)),
-                new Flow(WorldSnapshotter.ORDER, WorldSnapshotter.HUB), List.of(WorldSnapshotter.HUB),
+                new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.HUB), List.of(WorldSnapshotter.HUB),
                 () -> world.hub().decreaseStock(order));
     }
 }

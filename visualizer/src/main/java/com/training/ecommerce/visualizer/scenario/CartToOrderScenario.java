@@ -10,6 +10,7 @@ import com.training.ecommerce.visualizer.world.WorldSnapshotter;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** S02/S04: giỏ hàng thêm, đổi số lượng, xoá rồi chốt thành Order. */
@@ -51,19 +52,21 @@ public class CartToOrderScenario implements Scenario {
                 () -> cart.changeQuantity(phone, 1));
         recorder.run("Cart", "remove", List.of("BOOK"), null, cartPanel, () -> cart.remove(book));
         AtomicReference<Order> created = new AtomicReference<>();
+        // toOrder không dùng domain.pricing: đơn giá lấy từ Product.calculateFinalPrice trong OrderLine.
+        // Danh sách panel được ghi nhận sau action nên thêm node con của đơn vào ngay khi đơn có id.
+        List<String> toOrderPanels = new CopyOnWriteArrayList<>(List.of(WorldSnapshotter.CART, WorldSnapshotter.ORDERS));
         recorder.callFlows("Cart", "toOrder", List.of("0.10", "0.08"),
-                List.of(new Flow(WorldSnapshotter.PRICING, WorldSnapshotter.CART),
-                        new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDER)),
-                List.of(WorldSnapshotter.PRICING, WorldSnapshotter.CART, WorldSnapshotter.ORDER), () -> {
+                List.of(new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDERS)), toOrderPanels, () -> {
                     Order order = cart.toOrder(new BigDecimal("0.10"), new BigDecimal("0.08"));
                     world.addOrder(order);
                     created.set(order);
+                    toOrderPanels.add(WorldSnapshotter.orderNodeId(order));
                     return WorldSnapshotter.orderRef(order);
                 });
         Order order = created.get();
         // Cart không trừ kho; kho chỉ giảm khi InventoryManager.decreaseStock(order)
         recorder.run("InventoryManager", "decreaseStock", List.of(WorldSnapshotter.orderRef(order)),
-                new Flow(WorldSnapshotter.ORDER, WorldSnapshotter.HUB), List.of(WorldSnapshotter.HUB),
+                new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.HUB), List.of(WorldSnapshotter.HUB),
                 () -> world.hub().decreaseStock(order));
     }
 }

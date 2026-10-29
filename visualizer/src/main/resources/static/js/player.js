@@ -47,7 +47,7 @@ export function createPlayer({ scene, els, onState }) {
     cursor++; selected = cursor - 1;
     render();
     for (const f of e.flows ?? (e.flow ? [e.flow] : [])) {
-      await scene.flow(f, ok, FLOW_MS / speed);
+      await scene.flow(f, ok, FLOW_MS / speed, e.worldAfter);
       if (g !== gen) return false;
     }
     scene.sync(e.worldAfter, { speed });

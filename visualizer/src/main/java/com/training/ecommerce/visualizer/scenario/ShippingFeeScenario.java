@@ -5,6 +5,7 @@ import com.training.ecommerce.domain.shipping.Shippable;
 import com.training.ecommerce.domain.shipping.ShippingZone;
 import com.training.ecommerce.visualizer.trace.Flow;
 import com.training.ecommerce.visualizer.trace.TraceRecorder;
+import com.training.ecommerce.visualizer.world.ItemView;
 import com.training.ecommerce.visualizer.world.MoneyFormat;
 import com.training.ecommerce.visualizer.world.World;
 import com.training.ecommerce.visualizer.world.WorldSnapshotter;
@@ -47,13 +48,14 @@ public class ShippingFeeScenario implements Scenario {
         ShippingZone zone = recorder.call("ShippingZone", "of", List.of(addressText), null, List.of(),
                 () -> ShippingZone.of(address));
         // Product (nằm trong hub) tự tính phí qua Shippable; hàm thuần nên changes rỗng,
-        // phí được ghi vào world chỉ để ô zone hiện ra
+        // phí được ghi vào world (computed) chỉ để ô zone hiện ra
         Shippable product = (Shippable) world.product(productId);
         recorder.call("PhysicalProduct", "calculateShipping", List.of(productId, addressText),
-                new Flow(WorldSnapshotter.HUB, WorldSnapshotter.zonePanelId(zone)),
-                List.of(WorldSnapshotter.HUB, WorldSnapshotter.zonePanelId(zone)), () -> {
+                new Flow(WorldSnapshotter.HUB, WorldSnapshotter.zoneNodeId(zone)),
+                List.of(WorldSnapshotter.HUB, WorldSnapshotter.zoneNodeId(zone)), () -> {
                     BigDecimal fee = product.calculateShipping(address);
-                    world.putShippingFee(zone, address.getCity(), MoneyFormat.shortOf(fee));
+                    world.putComputed(WorldSnapshotter.zoneNodeId(zone), new ItemView(address.getCity(), address.getCity(),
+                            MoneyFormat.shortOf(fee), "Address", true));
                     return zone.name() + " · " + MoneyFormat.full(fee);
                 });
     }

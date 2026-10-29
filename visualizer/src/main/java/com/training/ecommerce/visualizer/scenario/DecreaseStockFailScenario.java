@@ -43,7 +43,7 @@ public class DecreaseStockFailScenario implements Scenario {
         OrderSteps.addLineUnchecked(recorder, order, phone, 99);
         try {
             recorder.run("InventoryManager", "decreaseStock", List.of(WorldSnapshotter.orderRef(order)),
-                    new Flow(WorldSnapshotter.ORDER, WorldSnapshotter.HUB), List.of(WorldSnapshotter.HUB),
+                    new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.HUB), List.of(WorldSnapshotter.HUB),
                     () -> world.hub().decreaseStock(order));
         } catch (OutOfStockException expected) {
             // đã được recorder ghi lại thành event THROWN; đây là điều kịch bản muốn cho thấy

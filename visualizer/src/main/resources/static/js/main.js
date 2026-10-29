@@ -8,7 +8,7 @@ import { renderSync } from './panels/sync.js';
 const $ = id => document.getElementById(id);
 let setButtons = () => {};
 
-const scene = createScene($('map'), { onSelect: (id, panel) => renderInfo($('info'), id, panel) });
+const scene = createScene($('map'), { onSelect: (id, node) => renderInfo($('info'), id, node) });
 $('info').addEventListener('click', e => { if (e.target.closest('.close')) scene.select(null); });
 
 const player = createPlayer({

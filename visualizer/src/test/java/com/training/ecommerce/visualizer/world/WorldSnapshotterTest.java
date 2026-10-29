@@ -12,27 +12,31 @@ class WorldSnapshotterTest {
     private final WorldSnapshotter snapshotter = new WorldSnapshotter();
 
     @Test
-    void panelIdVaThuTuCoDinh() {
+    void nodeIdThuTuVaChaCoDinh() {
         WorldView view = snapshotter.snapshot(new WorldFactory().create()).view();
 
-        assertThat(view.panels()).extracting(PanelView::id).containsExactly(
-                "warehouse:WH-HN", "warehouse:WH-HCM", "hub", "cart", "pricing", "order",
+        assertThat(view.nodes()).extracting(NodeView::id).containsExactly(
+                "warehouse:WH-HN", "warehouse:WH-HCM", "hub", "cart", "orders", "pricing", "shipping",
                 "zone:INNER_CITY", "zone:OTHER_CITY");
+        assertThat(view.nodes()).extracting(NodeView::kind).containsExactly(
+                "object", "object", "object", "object", "collection", "area", "area", "object", "object");
+        assertThat(view.nodes()).extracting(NodeView::parent).containsExactly(
+                null, null, null, null, null, null, null, "shipping", "shipping");
+        assertThat(view.nodes().stream().filter(n -> !n.kind().equals("object")))
+                .allSatisfy(n -> assertThat(n.items()).isEmpty());
     }
 
     @Test
     void soLuongLaIntegerVaTienLaString() {
         WorldView view = snapshotter.snapshot(new WorldFactory().create()).view();
 
-        PanelView hn = view.panels().getFirst();
+        NodeView hn = view.nodes().getFirst();
         assertThat(hn.items()).extracting(ItemView::key, ItemView::label, ItemView::value)
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple("LAPTOP", "LAP", 10),
                         org.assertj.core.groups.Tuple.tuple("PHONE", "PHO", 6),
                         org.assertj.core.groups.Tuple.tuple("HEADPHONE", "HDP", 4));
         assertThat(hn.items().getFirst().value()).isInstanceOf(Integer.class);
-        PanelView pricing = view.panels().get(4);
-        assertThat(pricing.items()).extracting(ItemView::value).containsExactly("-10%", "+8%");
     }
 
     @Test

@@ -1,565 +1,172 @@
 {
- "scenarioId": "fixture-demo",
- "title": "Fixture tổng hợp (dữ liệu tay)",
+ "scenarioId": "cart-to-order",
+ "title": "Gi\u1ecf h\u00e0ng \u2192 \u0110\u01a1n h\u00e0ng",
  "concurrent": false,
  "worldBefore": {
-  "panels": [
+  "nodes": [
    {
     "id": "warehouse:WH-HN",
-    "type": "warehouse",
+    "kind": "object",
+    "cls": "Warehouse",
     "title": "Warehouse WH-HN",
+    "sub": "Map<productId, qty>",
+    "parent": null,
     "items": [
      {
       "key": "LAPTOP",
       "label": "LAP",
-      "value": 10
+      "value": 10,
+      "type": "Map.Entry",
+      "computed": false
      },
      {
       "key": "PHONE",
       "label": "PHO",
-      "value": 6
+      "value": 6,
+      "type": "Map.Entry",
+      "computed": false
      },
      {
       "key": "HEADPHONE",
       "label": "HDP",
-      "value": 4
+      "value": 4,
+      "type": "Map.Entry",
+      "computed": false
      }
     ]
    },
    {
     "id": "warehouse:WH-HCM",
-    "type": "warehouse",
+    "kind": "object",
+    "cls": "Warehouse",
     "title": "Warehouse WH-HCM",
+    "sub": "Map<productId, qty>",
+    "parent": null,
     "items": [
      {
       "key": "LAPTOP",
       "label": "LAP",
-      "value": 2
+      "value": 2,
+      "type": "Map.Entry",
+      "computed": false
      },
      {
       "key": "PHONE",
       "label": "PHO",
-      "value": 4
+      "value": 4,
+      "type": "Map.Entry",
+      "computed": false
      }
     ]
    },
    {
     "id": "hub",
-    "type": "hub",
+    "kind": "object",
+    "cls": "InventoryManager",
     "title": "InventoryManager",
+    "sub": "catalog: Product.stock",
+    "parent": null,
     "items": [
      {
       "key": "LAPTOP",
       "label": "LAP",
-      "value": 5
+      "value": 5,
+      "type": "Product",
+      "computed": false
      },
      {
       "key": "PHONE",
       "label": "PHO",
-      "value": 8
+      "value": 8,
+      "type": "Product",
+      "computed": false
      },
      {
       "key": "BOOK",
       "label": "BOK",
-      "value": 12
+      "value": 12,
+      "type": "Product",
+      "computed": false
      }
     ]
    },
    {
     "id": "cart",
-    "type": "cart",
+    "kind": "object",
+    "cls": "Cart",
     "title": "Cart",
+    "sub": "Map<Product, qty>",
+    "parent": null,
+    "items": []
+   },
+   {
+    "id": "orders",
+    "kind": "collection",
+    "cls": "List<Order>",
+    "title": "List<Order> \u00b7 World",
+    "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+    "parent": null,
     "items": []
    },
    {
     "id": "pricing",
-    "type": "pricing",
-    "title": "Pricing",
-    "items": [
-     {
-      "key": "DISC",
-      "label": "DISC",
-      "value": "-10%"
-     },
-     {
-      "key": "TAX",
-      "label": "TAX",
-      "value": "+8%"
-     }
-    ]
+    "kind": "area",
+    "cls": "domain.pricing",
+    "title": "domain.pricing",
+    "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+    "parent": null,
+    "items": []
    },
    {
-    "id": "order",
-    "type": "order",
-    "title": "Order",
+    "id": "shipping",
+    "kind": "area",
+    "cls": "domain.shipping",
+    "title": "domain.shipping",
+    "sub": "ShippingZone \u00b7 Address",
+    "parent": null,
     "items": []
    },
    {
     "id": "zone:INNER_CITY",
-    "type": "zone",
-    "title": "INNER_CITY",
-    "items": []
+    "kind": "object",
+    "cls": "ShippingZone",
+    "title": "ShippingZone.INNER_CITY",
+    "sub": null,
+    "parent": "shipping",
+    "items": [
+     {
+      "key": "baseFee",
+      "label": "baseFee",
+      "value": "20.0k",
+      "type": "BigDecimal",
+      "computed": false
+     }
+    ]
    },
    {
     "id": "zone:OTHER_CITY",
-    "type": "zone",
-    "title": "OTHER_CITY",
-    "items": []
+    "kind": "object",
+    "cls": "ShippingZone",
+    "title": "ShippingZone.OTHER_CITY",
+    "sub": null,
+    "parent": "shipping",
+    "items": [
+     {
+      "key": "baseFee",
+      "label": "baseFee",
+      "value": "35.0k",
+      "type": "BigDecimal",
+      "computed": false
+     }
+    ]
    }
   ]
  },
  "events": [
   {
    "seq": 1,
-   "at": "2026-11-01T10:00:00.237Z",
-   "thread": "main",
-   "className": "WarehouseTransferService",
-   "method": "transfer",
-   "args": [
-    "WH-HN",
-    "WH-HCM",
-    "LAPTOP",
-    "3"
-   ],
-   "outcome": "OK",
-   "result": null,
-   "exception": null,
-   "flows": [
-    {
-     "from": "warehouse:WH-HN",
-     "to": "warehouse:WH-HCM"
-    }
-   ],
-   "panels": [
-    "warehouse:WH-HN",
-    "warehouse:WH-HCM"
-   ],
-   "changes": [
-    {
-     "ref": "Warehouse WH-HN",
-     "before": {
-      "LAPTOP": 10
-     },
-     "after": {
-      "LAPTOP": 7
-     }
-    },
-    {
-     "ref": "Warehouse WH-HCM",
-     "before": {
-      "LAPTOP": 2
-     },
-     "after": {
-      "LAPTOP": 5
-     }
-    }
-   ],
-   "worldAfter": {
-    "panels": [
-     {
-      "id": "warehouse:WH-HN",
-      "type": "warehouse",
-      "title": "Warehouse WH-HN",
-      "items": [
-       {
-        "key": "LAPTOP",
-        "label": "LAP",
-        "value": 7
-       },
-       {
-        "key": "PHONE",
-        "label": "PHO",
-        "value": 6
-       },
-       {
-        "key": "HEADPHONE",
-        "label": "HDP",
-        "value": 4
-       }
-      ]
-     },
-     {
-      "id": "warehouse:WH-HCM",
-      "type": "warehouse",
-      "title": "Warehouse WH-HCM",
-      "items": [
-       {
-        "key": "LAPTOP",
-        "label": "LAP",
-        "value": 5
-       },
-       {
-        "key": "PHONE",
-        "label": "PHO",
-        "value": 4
-       }
-      ]
-     },
-     {
-      "id": "hub",
-      "type": "hub",
-      "title": "InventoryManager",
-      "items": [
-       {
-        "key": "LAPTOP",
-        "label": "LAP",
-        "value": 5
-       },
-       {
-        "key": "PHONE",
-        "label": "PHO",
-        "value": 8
-       },
-       {
-        "key": "BOOK",
-        "label": "BOK",
-        "value": 12
-       }
-      ]
-     },
-     {
-      "id": "cart",
-      "type": "cart",
-      "title": "Cart",
-      "items": []
-     },
-     {
-      "id": "pricing",
-      "type": "pricing",
-      "title": "Pricing",
-      "items": [
-       {
-        "key": "DISC",
-        "label": "DISC",
-        "value": "-10%"
-       },
-       {
-        "key": "TAX",
-        "label": "TAX",
-        "value": "+8%"
-       }
-      ]
-     },
-     {
-      "id": "order",
-      "type": "order",
-      "title": "Order",
-      "items": []
-     },
-     {
-      "id": "zone:INNER_CITY",
-      "type": "zone",
-      "title": "INNER_CITY",
-      "items": []
-     },
-     {
-      "id": "zone:OTHER_CITY",
-      "type": "zone",
-      "title": "OTHER_CITY",
-      "items": []
-     }
-    ]
-   }
-  },
-  {
-   "seq": 2,
-   "at": "2026-11-01T10:00:00.374Z",
-   "thread": "main",
-   "className": "WarehouseTransferService",
-   "method": "transfer",
-   "args": [
-    "WH-HN",
-    "WH-HCM",
-    "HEADPHONE",
-    "2"
-   ],
-   "outcome": "OK",
-   "result": null,
-   "exception": null,
-   "flows": [
-    {
-     "from": "warehouse:WH-HN",
-     "to": "warehouse:WH-HCM"
-    }
-   ],
-   "panels": [
-    "warehouse:WH-HN",
-    "warehouse:WH-HCM"
-   ],
-   "changes": [
-    {
-     "ref": "Warehouse WH-HN",
-     "before": {
-      "HEADPHONE": 4
-     },
-     "after": {
-      "HEADPHONE": 2
-     }
-    },
-    {
-     "ref": "Warehouse WH-HCM",
-     "before": {},
-     "after": {
-      "HEADPHONE": 2
-     }
-    }
-   ],
-   "worldAfter": {
-    "panels": [
-     {
-      "id": "warehouse:WH-HN",
-      "type": "warehouse",
-      "title": "Warehouse WH-HN",
-      "items": [
-       {
-        "key": "LAPTOP",
-        "label": "LAP",
-        "value": 7
-       },
-       {
-        "key": "PHONE",
-        "label": "PHO",
-        "value": 6
-       },
-       {
-        "key": "HEADPHONE",
-        "label": "HDP",
-        "value": 2
-       }
-      ]
-     },
-     {
-      "id": "warehouse:WH-HCM",
-      "type": "warehouse",
-      "title": "Warehouse WH-HCM",
-      "items": [
-       {
-        "key": "LAPTOP",
-        "label": "LAP",
-        "value": 5
-       },
-       {
-        "key": "PHONE",
-        "label": "PHO",
-        "value": 4
-       },
-       {
-        "key": "HEADPHONE",
-        "label": "HDP",
-        "value": 2
-       }
-      ]
-     },
-     {
-      "id": "hub",
-      "type": "hub",
-      "title": "InventoryManager",
-      "items": [
-       {
-        "key": "LAPTOP",
-        "label": "LAP",
-        "value": 5
-       },
-       {
-        "key": "PHONE",
-        "label": "PHO",
-        "value": 8
-       },
-       {
-        "key": "BOOK",
-        "label": "BOK",
-        "value": 12
-       }
-      ]
-     },
-     {
-      "id": "cart",
-      "type": "cart",
-      "title": "Cart",
-      "items": []
-     },
-     {
-      "id": "pricing",
-      "type": "pricing",
-      "title": "Pricing",
-      "items": [
-       {
-        "key": "DISC",
-        "label": "DISC",
-        "value": "-10%"
-       },
-       {
-        "key": "TAX",
-        "label": "TAX",
-        "value": "+8%"
-       }
-      ]
-     },
-     {
-      "id": "order",
-      "type": "order",
-      "title": "Order",
-      "items": []
-     },
-     {
-      "id": "zone:INNER_CITY",
-      "type": "zone",
-      "title": "INNER_CITY",
-      "items": []
-     },
-     {
-      "id": "zone:OTHER_CITY",
-      "type": "zone",
-      "title": "OTHER_CITY",
-      "items": []
-     }
-    ]
-   }
-  },
-  {
-   "seq": 3,
-   "at": "2026-11-01T10:00:00.511Z",
-   "thread": "pool-1-thread-2",
-   "className": "WarehouseTransferService",
-   "method": "transfer",
-   "args": [
-    "WH-HCM",
-    "WH-HN",
-    "PHONE",
-    "9"
-   ],
-   "outcome": "THROWN",
-   "result": null,
-   "exception": {
-    "type": "OutOfStockException",
-    "message": "PHONE: cần 9, còn 4"
-   },
-   "flows": [
-    {
-     "from": "warehouse:WH-HCM",
-     "to": "warehouse:WH-HN"
-    }
-   ],
-   "panels": [
-    "warehouse:WH-HCM"
-   ],
-   "changes": [],
-   "worldAfter": {
-    "panels": [
-     {
-      "id": "warehouse:WH-HN",
-      "type": "warehouse",
-      "title": "Warehouse WH-HN",
-      "items": [
-       {
-        "key": "LAPTOP",
-        "label": "LAP",
-        "value": 7
-       },
-       {
-        "key": "PHONE",
-        "label": "PHO",
-        "value": 6
-       },
-       {
-        "key": "HEADPHONE",
-        "label": "HDP",
-        "value": 2
-       }
-      ]
-     },
-     {
-      "id": "warehouse:WH-HCM",
-      "type": "warehouse",
-      "title": "Warehouse WH-HCM",
-      "items": [
-       {
-        "key": "LAPTOP",
-        "label": "LAP",
-        "value": 5
-       },
-       {
-        "key": "PHONE",
-        "label": "PHO",
-        "value": 4
-       },
-       {
-        "key": "HEADPHONE",
-        "label": "HDP",
-        "value": 2
-       }
-      ]
-     },
-     {
-      "id": "hub",
-      "type": "hub",
-      "title": "InventoryManager",
-      "items": [
-       {
-        "key": "LAPTOP",
-        "label": "LAP",
-        "value": 5
-       },
-       {
-        "key": "PHONE",
-        "label": "PHO",
-        "value": 8
-       },
-       {
-        "key": "BOOK",
-        "label": "BOK",
-        "value": 12
-       }
-      ]
-     },
-     {
-      "id": "cart",
-      "type": "cart",
-      "title": "Cart",
-      "items": []
-     },
-     {
-      "id": "pricing",
-      "type": "pricing",
-      "title": "Pricing",
-      "items": [
-       {
-        "key": "DISC",
-        "label": "DISC",
-        "value": "-10%"
-       },
-       {
-        "key": "TAX",
-        "label": "TAX",
-        "value": "+8%"
-       }
-      ]
-     },
-     {
-      "id": "order",
-      "type": "order",
-      "title": "Order",
-      "items": []
-     },
-     {
-      "id": "zone:INNER_CITY",
-      "type": "zone",
-      "title": "INNER_CITY",
-      "items": []
-     },
-     {
-      "id": "zone:OTHER_CITY",
-      "type": "zone",
-      "title": "OTHER_CITY",
-      "items": []
-     }
-    ]
-   }
-  },
-  {
-   "seq": 4,
-   "at": "2026-11-01T10:00:00.648Z",
-   "thread": "main",
+   "at": "2026-10-29T16:32:59.845550Z",
+   "thread": "http-nio-8084-exec-2",
    "className": "Cart",
    "method": "add",
    "args": [
@@ -588,132 +195,183 @@
     }
    ],
    "worldAfter": {
-    "panels": [
+    "nodes": [
      {
       "id": "warehouse:WH-HN",
-      "type": "warehouse",
+      "kind": "object",
+      "cls": "Warehouse",
       "title": "Warehouse WH-HN",
+      "sub": "Map<productId, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 7
+        "value": 10,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 6
+        "value": 6,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "HEADPHONE",
         "label": "HDP",
-        "value": 2
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
        }
       ]
      },
      {
       "id": "warehouse:WH-HCM",
-      "type": "warehouse",
+      "kind": "object",
+      "cls": "Warehouse",
       "title": "Warehouse WH-HCM",
+      "sub": "Map<productId, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 5
+        "value": 2,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 4
-       },
-       {
-        "key": "HEADPHONE",
-        "label": "HDP",
-        "value": 2
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
        }
       ]
      },
      {
       "id": "hub",
-      "type": "hub",
+      "kind": "object",
+      "cls": "InventoryManager",
       "title": "InventoryManager",
+      "sub": "catalog: Product.stock",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 5
+        "value": 5,
+        "type": "Product",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 8
+        "value": 8,
+        "type": "Product",
+        "computed": false
        },
        {
         "key": "BOOK",
         "label": "BOK",
-        "value": 12
+        "value": 12,
+        "type": "Product",
+        "computed": false
        }
       ]
      },
      {
       "id": "cart",
-      "type": "cart",
+      "kind": "object",
+      "cls": "Cart",
       "title": "Cart",
+      "sub": "Map<Product, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 1
+        "value": 1,
+        "type": "Product",
+        "computed": false
        }
       ]
+     },
+     {
+      "id": "orders",
+      "kind": "collection",
+      "cls": "List<Order>",
+      "title": "List<Order> \u00b7 World",
+      "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+      "parent": null,
+      "items": []
      },
      {
       "id": "pricing",
-      "type": "pricing",
-      "title": "Pricing",
-      "items": [
-       {
-        "key": "DISC",
-        "label": "DISC",
-        "value": "-10%"
-       },
-       {
-        "key": "TAX",
-        "label": "TAX",
-        "value": "+8%"
-       }
-      ]
+      "kind": "area",
+      "cls": "domain.pricing",
+      "title": "domain.pricing",
+      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "parent": null,
+      "items": []
      },
      {
-      "id": "order",
-      "type": "order",
-      "title": "Order",
+      "id": "shipping",
+      "kind": "area",
+      "cls": "domain.shipping",
+      "title": "domain.shipping",
+      "sub": "ShippingZone \u00b7 Address",
+      "parent": null,
       "items": []
      },
      {
       "id": "zone:INNER_CITY",
-      "type": "zone",
-      "title": "INNER_CITY",
-      "items": []
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.INNER_CITY",
+      "sub": null,
+      "parent": "shipping",
+      "items": [
+       {
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "20.0k",
+        "type": "BigDecimal",
+        "computed": false
+       }
+      ]
      },
      {
       "id": "zone:OTHER_CITY",
-      "type": "zone",
-      "title": "OTHER_CITY",
-      "items": []
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.OTHER_CITY",
+      "sub": null,
+      "parent": "shipping",
+      "items": [
+       {
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "35.0k",
+        "type": "BigDecimal",
+        "computed": false
+       }
+      ]
      }
     ]
    }
   },
   {
-   "seq": 5,
-   "at": "2026-11-01T10:00:00.785Z",
-   "thread": "main",
+   "seq": 2,
+   "at": "2026-10-29T16:32:59.846021Z",
+   "thread": "http-nio-8084-exec-2",
    "className": "Cart",
    "method": "add",
    "args": [
-    "BOOK",
-    "1"
+    "PHONE",
+    "2"
    ],
    "outcome": "OK",
    "result": null,
@@ -732,137 +390,615 @@
      "ref": "Cart",
      "before": {},
      "after": {
-      "BOOK": 1
+      "PHONE": 2
      }
     }
    ],
    "worldAfter": {
-    "panels": [
+    "nodes": [
      {
       "id": "warehouse:WH-HN",
-      "type": "warehouse",
+      "kind": "object",
+      "cls": "Warehouse",
       "title": "Warehouse WH-HN",
+      "sub": "Map<productId, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 7
+        "value": 10,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 6
+        "value": 6,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "HEADPHONE",
         "label": "HDP",
-        "value": 2
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
        }
       ]
      },
      {
       "id": "warehouse:WH-HCM",
-      "type": "warehouse",
+      "kind": "object",
+      "cls": "Warehouse",
       "title": "Warehouse WH-HCM",
+      "sub": "Map<productId, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 5
+        "value": 2,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 4
-       },
-       {
-        "key": "HEADPHONE",
-        "label": "HDP",
-        "value": 2
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
        }
       ]
      },
      {
       "id": "hub",
-      "type": "hub",
+      "kind": "object",
+      "cls": "InventoryManager",
       "title": "InventoryManager",
+      "sub": "catalog: Product.stock",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 5
+        "value": 5,
+        "type": "Product",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 8
+        "value": 8,
+        "type": "Product",
+        "computed": false
        },
        {
         "key": "BOOK",
         "label": "BOK",
-        "value": 12
+        "value": 12,
+        "type": "Product",
+        "computed": false
        }
       ]
      },
      {
       "id": "cart",
-      "type": "cart",
+      "kind": "object",
+      "cls": "Cart",
       "title": "Cart",
+      "sub": "Map<Product, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 1
+        "value": 1,
+        "type": "Product",
+        "computed": false
        },
        {
-        "key": "BOOK",
-        "label": "BOK",
-        "value": 1
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 2,
+        "type": "Product",
+        "computed": false
        }
       ]
+     },
+     {
+      "id": "orders",
+      "kind": "collection",
+      "cls": "List<Order>",
+      "title": "List<Order> \u00b7 World",
+      "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+      "parent": null,
+      "items": []
      },
      {
       "id": "pricing",
-      "type": "pricing",
-      "title": "Pricing",
-      "items": [
-       {
-        "key": "DISC",
-        "label": "DISC",
-        "value": "-10%"
-       },
-       {
-        "key": "TAX",
-        "label": "TAX",
-        "value": "+8%"
-       }
-      ]
+      "kind": "area",
+      "cls": "domain.pricing",
+      "title": "domain.pricing",
+      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "parent": null,
+      "items": []
      },
      {
-      "id": "order",
-      "type": "order",
-      "title": "Order",
+      "id": "shipping",
+      "kind": "area",
+      "cls": "domain.shipping",
+      "title": "domain.shipping",
+      "sub": "ShippingZone \u00b7 Address",
+      "parent": null,
       "items": []
      },
      {
       "id": "zone:INNER_CITY",
-      "type": "zone",
-      "title": "INNER_CITY",
-      "items": []
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.INNER_CITY",
+      "sub": null,
+      "parent": "shipping",
+      "items": [
+       {
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "20.0k",
+        "type": "BigDecimal",
+        "computed": false
+       }
+      ]
      },
      {
       "id": "zone:OTHER_CITY",
-      "type": "zone",
-      "title": "OTHER_CITY",
-      "items": []
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.OTHER_CITY",
+      "sub": null,
+      "parent": "shipping",
+      "items": [
+       {
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "35.0k",
+        "type": "BigDecimal",
+        "computed": false
+       }
+      ]
      }
     ]
    }
   },
   {
-   "seq": 6,
-   "at": "2026-11-01T10:00:00.922Z",
-   "thread": "main",
+   "seq": 3,
+   "at": "2026-10-29T16:32:59.846153Z",
+   "thread": "http-nio-8084-exec-2",
+   "className": "Cart",
+   "method": "add",
+   "args": [
+    "BOOK",
+    "3"
+   ],
+   "outcome": "OK",
+   "result": null,
+   "exception": null,
+   "flows": [
+    {
+     "from": "hub",
+     "to": "cart"
+    }
+   ],
+   "panels": [
+    "cart"
+   ],
+   "changes": [
+    {
+     "ref": "Cart",
+     "before": {},
+     "after": {
+      "BOOK": 3
+     }
+    }
+   ],
+   "worldAfter": {
+    "nodes": [
+     {
+      "id": "warehouse:WH-HN",
+      "kind": "object",
+      "cls": "Warehouse",
+      "title": "Warehouse WH-HN",
+      "sub": "Map<productId, qty>",
+      "parent": null,
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 10,
+        "type": "Map.Entry",
+        "computed": false
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 6,
+        "type": "Map.Entry",
+        "computed": false
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
+       }
+      ]
+     },
+     {
+      "id": "warehouse:WH-HCM",
+      "kind": "object",
+      "cls": "Warehouse",
+      "title": "Warehouse WH-HCM",
+      "sub": "Map<productId, qty>",
+      "parent": null,
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 2,
+        "type": "Map.Entry",
+        "computed": false
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
+       }
+      ]
+     },
+     {
+      "id": "hub",
+      "kind": "object",
+      "cls": "InventoryManager",
+      "title": "InventoryManager",
+      "sub": "catalog: Product.stock",
+      "parent": null,
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5,
+        "type": "Product",
+        "computed": false
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 8,
+        "type": "Product",
+        "computed": false
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 12,
+        "type": "Product",
+        "computed": false
+       }
+      ]
+     },
+     {
+      "id": "cart",
+      "kind": "object",
+      "cls": "Cart",
+      "title": "Cart",
+      "sub": "Map<Product, qty>",
+      "parent": null,
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 1,
+        "type": "Product",
+        "computed": false
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 2,
+        "type": "Product",
+        "computed": false
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 3,
+        "type": "Product",
+        "computed": false
+       }
+      ]
+     },
+     {
+      "id": "orders",
+      "kind": "collection",
+      "cls": "List<Order>",
+      "title": "List<Order> \u00b7 World",
+      "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+      "parent": null,
+      "items": []
+     },
+     {
+      "id": "pricing",
+      "kind": "area",
+      "cls": "domain.pricing",
+      "title": "domain.pricing",
+      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "parent": null,
+      "items": []
+     },
+     {
+      "id": "shipping",
+      "kind": "area",
+      "cls": "domain.shipping",
+      "title": "domain.shipping",
+      "sub": "ShippingZone \u00b7 Address",
+      "parent": null,
+      "items": []
+     },
+     {
+      "id": "zone:INNER_CITY",
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.INNER_CITY",
+      "sub": null,
+      "parent": "shipping",
+      "items": [
+       {
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "20.0k",
+        "type": "BigDecimal",
+        "computed": false
+       }
+      ]
+     },
+     {
+      "id": "zone:OTHER_CITY",
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.OTHER_CITY",
+      "sub": null,
+      "parent": "shipping",
+      "items": [
+       {
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "35.0k",
+        "type": "BigDecimal",
+        "computed": false
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "seq": 4,
+   "at": "2026-10-29T16:32:59.846321Z",
+   "thread": "http-nio-8084-exec-2",
+   "className": "Cart",
+   "method": "changeQuantity",
+   "args": [
+    "PHONE",
+    "1"
+   ],
+   "outcome": "OK",
+   "result": null,
+   "exception": null,
+   "flows": [],
+   "panels": [
+    "cart"
+   ],
+   "changes": [
+    {
+     "ref": "Cart",
+     "before": {
+      "PHONE": 2
+     },
+     "after": {
+      "PHONE": 1
+     }
+    }
+   ],
+   "worldAfter": {
+    "nodes": [
+     {
+      "id": "warehouse:WH-HN",
+      "kind": "object",
+      "cls": "Warehouse",
+      "title": "Warehouse WH-HN",
+      "sub": "Map<productId, qty>",
+      "parent": null,
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 10,
+        "type": "Map.Entry",
+        "computed": false
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 6,
+        "type": "Map.Entry",
+        "computed": false
+       },
+       {
+        "key": "HEADPHONE",
+        "label": "HDP",
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
+       }
+      ]
+     },
+     {
+      "id": "warehouse:WH-HCM",
+      "kind": "object",
+      "cls": "Warehouse",
+      "title": "Warehouse WH-HCM",
+      "sub": "Map<productId, qty>",
+      "parent": null,
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 2,
+        "type": "Map.Entry",
+        "computed": false
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
+       }
+      ]
+     },
+     {
+      "id": "hub",
+      "kind": "object",
+      "cls": "InventoryManager",
+      "title": "InventoryManager",
+      "sub": "catalog: Product.stock",
+      "parent": null,
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 5,
+        "type": "Product",
+        "computed": false
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 8,
+        "type": "Product",
+        "computed": false
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 12,
+        "type": "Product",
+        "computed": false
+       }
+      ]
+     },
+     {
+      "id": "cart",
+      "kind": "object",
+      "cls": "Cart",
+      "title": "Cart",
+      "sub": "Map<Product, qty>",
+      "parent": null,
+      "items": [
+       {
+        "key": "LAPTOP",
+        "label": "LAP",
+        "value": 1,
+        "type": "Product",
+        "computed": false
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 1,
+        "type": "Product",
+        "computed": false
+       },
+       {
+        "key": "BOOK",
+        "label": "BOK",
+        "value": 3,
+        "type": "Product",
+        "computed": false
+       }
+      ]
+     },
+     {
+      "id": "orders",
+      "kind": "collection",
+      "cls": "List<Order>",
+      "title": "List<Order> \u00b7 World",
+      "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+      "parent": null,
+      "items": []
+     },
+     {
+      "id": "pricing",
+      "kind": "area",
+      "cls": "domain.pricing",
+      "title": "domain.pricing",
+      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "parent": null,
+      "items": []
+     },
+     {
+      "id": "shipping",
+      "kind": "area",
+      "cls": "domain.shipping",
+      "title": "domain.shipping",
+      "sub": "ShippingZone \u00b7 Address",
+      "parent": null,
+      "items": []
+     },
+     {
+      "id": "zone:INNER_CITY",
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.INNER_CITY",
+      "sub": null,
+      "parent": "shipping",
+      "items": [
+       {
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "20.0k",
+        "type": "BigDecimal",
+        "computed": false
+       }
+      ]
+     },
+     {
+      "id": "zone:OTHER_CITY",
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.OTHER_CITY",
+      "sub": null,
+      "parent": "shipping",
+      "items": [
+       {
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "35.0k",
+        "type": "BigDecimal",
+        "computed": false
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "seq": 5,
+   "at": "2026-10-29T16:32:59.846482Z",
+   "thread": "http-nio-8084-exec-2",
    "className": "Cart",
    "method": "remove",
    "args": [
@@ -879,133 +1015,191 @@
     {
      "ref": "Cart",
      "before": {
-      "BOOK": 1
+      "BOOK": 3
      },
      "after": {}
     }
    ],
    "worldAfter": {
-    "panels": [
+    "nodes": [
      {
       "id": "warehouse:WH-HN",
-      "type": "warehouse",
+      "kind": "object",
+      "cls": "Warehouse",
       "title": "Warehouse WH-HN",
+      "sub": "Map<productId, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 7
+        "value": 10,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 6
+        "value": 6,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "HEADPHONE",
         "label": "HDP",
-        "value": 2
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
        }
       ]
      },
      {
       "id": "warehouse:WH-HCM",
-      "type": "warehouse",
+      "kind": "object",
+      "cls": "Warehouse",
       "title": "Warehouse WH-HCM",
+      "sub": "Map<productId, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 5
+        "value": 2,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 4
-       },
-       {
-        "key": "HEADPHONE",
-        "label": "HDP",
-        "value": 2
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
        }
       ]
      },
      {
       "id": "hub",
-      "type": "hub",
+      "kind": "object",
+      "cls": "InventoryManager",
       "title": "InventoryManager",
+      "sub": "catalog: Product.stock",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 5
+        "value": 5,
+        "type": "Product",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 8
+        "value": 8,
+        "type": "Product",
+        "computed": false
        },
        {
         "key": "BOOK",
         "label": "BOK",
-        "value": 12
+        "value": 12,
+        "type": "Product",
+        "computed": false
        }
       ]
      },
      {
       "id": "cart",
-      "type": "cart",
+      "kind": "object",
+      "cls": "Cart",
       "title": "Cart",
+      "sub": "Map<Product, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 1
+        "value": 1,
+        "type": "Product",
+        "computed": false
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 1,
+        "type": "Product",
+        "computed": false
        }
       ]
+     },
+     {
+      "id": "orders",
+      "kind": "collection",
+      "cls": "List<Order>",
+      "title": "List<Order> \u00b7 World",
+      "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+      "parent": null,
+      "items": []
      },
      {
       "id": "pricing",
-      "type": "pricing",
-      "title": "Pricing",
-      "items": [
-       {
-        "key": "DISC",
-        "label": "DISC",
-        "value": "-10%"
-       },
-       {
-        "key": "TAX",
-        "label": "TAX",
-        "value": "+8%"
-       }
-      ]
+      "kind": "area",
+      "cls": "domain.pricing",
+      "title": "domain.pricing",
+      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "parent": null,
+      "items": []
      },
      {
-      "id": "order",
-      "type": "order",
-      "title": "Order",
+      "id": "shipping",
+      "kind": "area",
+      "cls": "domain.shipping",
+      "title": "domain.shipping",
+      "sub": "ShippingZone \u00b7 Address",
+      "parent": null,
       "items": []
      },
      {
       "id": "zone:INNER_CITY",
-      "type": "zone",
-      "title": "INNER_CITY",
-      "items": []
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.INNER_CITY",
+      "sub": null,
+      "parent": "shipping",
+      "items": [
+       {
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "20.0k",
+        "type": "BigDecimal",
+        "computed": false
+       }
+      ]
      },
      {
       "id": "zone:OTHER_CITY",
-      "type": "zone",
-      "title": "OTHER_CITY",
-      "items": []
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.OTHER_CITY",
+      "sub": null,
+      "parent": "shipping",
+      "items": [
+       {
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "35.0k",
+        "type": "BigDecimal",
+        "computed": false
+       }
+      ]
      }
     ]
    }
   },
   {
-   "seq": 7,
-   "at": "2026-11-01T10:00:01.059Z",
-   "thread": "main",
+   "seq": 6,
+   "at": "2026-10-29T16:32:59.848384Z",
+   "thread": "http-nio-8084-exec-2",
    "className": "Cart",
    "method": "toOrder",
    "args": [
@@ -1013,170 +1207,247 @@
     "0.08"
    ],
    "outcome": "OK",
-   "result": "Order a1f3",
+   "result": "Order 3529",
    "exception": null,
    "flows": [
     {
      "from": "cart",
-     "to": "order"
+     "to": "orders"
     }
    ],
    "panels": [
-    "pricing",
-    "order"
+    "cart",
+    "orders",
+    "order:3529"
    ],
    "changes": [
     {
-     "ref": "Order a1f3",
+     "ref": "Order 3529",
      "before": null,
      "after": {
-      "lines": 1,
-      "subtotal": "20 000 000",
-      "discount": "2 000 000",
-      "tax": "1 440 000",
-      "final": "19 440 000"
+      "lines": 2,
+      "subtotal": "32 000 000",
+      "discount": "3 200 000",
+      "tax": "2 304 000",
+      "final": "31 104 000"
      }
     }
    ],
    "worldAfter": {
-    "panels": [
+    "nodes": [
      {
       "id": "warehouse:WH-HN",
-      "type": "warehouse",
+      "kind": "object",
+      "cls": "Warehouse",
       "title": "Warehouse WH-HN",
+      "sub": "Map<productId, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 7
+        "value": 10,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 6
+        "value": 6,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "HEADPHONE",
         "label": "HDP",
-        "value": 2
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
        }
       ]
      },
      {
       "id": "warehouse:WH-HCM",
-      "type": "warehouse",
+      "kind": "object",
+      "cls": "Warehouse",
       "title": "Warehouse WH-HCM",
+      "sub": "Map<productId, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 5
+        "value": 2,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 4
-       },
-       {
-        "key": "HEADPHONE",
-        "label": "HDP",
-        "value": 2
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
        }
       ]
      },
      {
       "id": "hub",
-      "type": "hub",
+      "kind": "object",
+      "cls": "InventoryManager",
       "title": "InventoryManager",
+      "sub": "catalog: Product.stock",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 5
+        "value": 5,
+        "type": "Product",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 8
+        "value": 8,
+        "type": "Product",
+        "computed": false
        },
        {
         "key": "BOOK",
         "label": "BOK",
-        "value": 12
+        "value": 12,
+        "type": "Product",
+        "computed": false
        }
       ]
      },
      {
       "id": "cart",
-      "type": "cart",
+      "kind": "object",
+      "cls": "Cart",
       "title": "Cart",
+      "sub": "Map<Product, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 1
+        "value": 1,
+        "type": "Product",
+        "computed": false
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 1,
+        "type": "Product",
+        "computed": false
+       }
+      ]
+     },
+     {
+      "id": "orders",
+      "kind": "collection",
+      "cls": "List<Order>",
+      "title": "List<Order> \u00b7 World",
+      "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+      "parent": null,
+      "items": []
+     },
+     {
+      "id": "order:3529",
+      "kind": "object",
+      "cls": "Order",
+      "title": "Order 3529",
+      "sub": "-10% +8% = 31.1tr",
+      "parent": "orders",
+      "items": [
+       {
+        "key": "0:LAPTOP",
+        "label": "LAP \u00d71",
+        "value": "20.0tr",
+        "type": "OrderLine",
+        "computed": false
+       },
+       {
+        "key": "1:PHONE",
+        "label": "PHO \u00d71",
+        "value": "12.0tr",
+        "type": "OrderLine",
+        "computed": false
        }
       ]
      },
      {
       "id": "pricing",
-      "type": "pricing",
-      "title": "Pricing",
-      "items": [
-       {
-        "key": "DISC",
-        "label": "DISC",
-        "value": "-10%"
-       },
-       {
-        "key": "TAX",
-        "label": "TAX",
-        "value": "+8%"
-       }
-      ]
+      "kind": "area",
+      "cls": "domain.pricing",
+      "title": "domain.pricing",
+      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "parent": null,
+      "items": []
      },
      {
-      "id": "order",
-      "type": "order",
-      "title": "Order",
-      "items": [
-       {
-        "key": "a1f3",
-        "label": "a1f3",
-        "value": "19.4tr"
-       }
-      ]
+      "id": "shipping",
+      "kind": "area",
+      "cls": "domain.shipping",
+      "title": "domain.shipping",
+      "sub": "ShippingZone \u00b7 Address",
+      "parent": null,
+      "items": []
      },
      {
       "id": "zone:INNER_CITY",
-      "type": "zone",
-      "title": "INNER_CITY",
-      "items": []
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.INNER_CITY",
+      "sub": null,
+      "parent": "shipping",
+      "items": [
+       {
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "20.0k",
+        "type": "BigDecimal",
+        "computed": false
+       }
+      ]
      },
      {
       "id": "zone:OTHER_CITY",
-      "type": "zone",
-      "title": "OTHER_CITY",
-      "items": []
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.OTHER_CITY",
+      "sub": null,
+      "parent": "shipping",
+      "items": [
+       {
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "35.0k",
+        "type": "BigDecimal",
+        "computed": false
+       }
+      ]
      }
     ]
    }
   },
   {
-   "seq": 8,
-   "at": "2026-11-01T10:00:01.196Z",
-   "thread": "main",
+   "seq": 7,
+   "at": "2026-10-29T16:32:59.849832Z",
+   "thread": "http-nio-8084-exec-2",
    "className": "InventoryManager",
    "method": "decreaseStock",
    "args": [
-    "Order a1f3"
+    "Order 3529"
    ],
    "outcome": "OK",
    "result": null,
    "exception": null,
    "flows": [
     {
-     "from": "order",
+     "from": "order:3529",
      "to": "hub"
     }
    ],
@@ -1192,281 +1463,213 @@
      "after": {
       "stock": 4
      }
-    }
-   ],
-   "worldAfter": {
-    "panels": [
-     {
-      "id": "warehouse:WH-HN",
-      "type": "warehouse",
-      "title": "Warehouse WH-HN",
-      "items": [
-       {
-        "key": "LAPTOP",
-        "label": "LAP",
-        "value": 7
-       },
-       {
-        "key": "PHONE",
-        "label": "PHO",
-        "value": 6
-       },
-       {
-        "key": "HEADPHONE",
-        "label": "HDP",
-        "value": 2
-       }
-      ]
-     },
-     {
-      "id": "warehouse:WH-HCM",
-      "type": "warehouse",
-      "title": "Warehouse WH-HCM",
-      "items": [
-       {
-        "key": "LAPTOP",
-        "label": "LAP",
-        "value": 5
-       },
-       {
-        "key": "PHONE",
-        "label": "PHO",
-        "value": 4
-       },
-       {
-        "key": "HEADPHONE",
-        "label": "HDP",
-        "value": 2
-       }
-      ]
-     },
-     {
-      "id": "hub",
-      "type": "hub",
-      "title": "InventoryManager",
-      "items": [
-       {
-        "key": "LAPTOP",
-        "label": "LAP",
-        "value": 4
-       },
-       {
-        "key": "PHONE",
-        "label": "PHO",
-        "value": 8
-       },
-       {
-        "key": "BOOK",
-        "label": "BOK",
-        "value": 12
-       }
-      ]
-     },
-     {
-      "id": "cart",
-      "type": "cart",
-      "title": "Cart",
-      "items": [
-       {
-        "key": "LAPTOP",
-        "label": "LAP",
-        "value": 1
-       }
-      ]
-     },
-     {
-      "id": "pricing",
-      "type": "pricing",
-      "title": "Pricing",
-      "items": [
-       {
-        "key": "DISC",
-        "label": "DISC",
-        "value": "-10%"
-       },
-       {
-        "key": "TAX",
-        "label": "TAX",
-        "value": "+8%"
-       }
-      ]
-     },
-     {
-      "id": "order",
-      "type": "order",
-      "title": "Order",
-      "items": [
-       {
-        "key": "a1f3",
-        "label": "a1f3",
-        "value": "19.4tr"
-       }
-      ]
-     },
-     {
-      "id": "zone:INNER_CITY",
-      "type": "zone",
-      "title": "INNER_CITY",
-      "items": []
-     },
-     {
-      "id": "zone:OTHER_CITY",
-      "type": "zone",
-      "title": "OTHER_CITY",
-      "items": []
-     }
-    ]
-   }
-  },
-  {
-   "seq": 9,
-   "at": "2026-11-01T10:00:01.333Z",
-   "thread": "main",
-   "className": "ShippingZone",
-   "method": "feeFor",
-   "args": [
-    "Address(Hà Nội)",
-    "1.5"
-   ],
-   "outcome": "OK",
-   "result": "INNER_CITY · 27 500",
-   "exception": null,
-   "flows": [
+    },
     {
-     "from": "order",
-     "to": "zone:INNER_CITY"
+     "ref": "Product PHONE",
+     "before": {
+      "stock": 8
+     },
+     "after": {
+      "stock": 7
+     }
     }
    ],
-   "panels": [
-    "zone:INNER_CITY"
-   ],
-   "changes": [],
    "worldAfter": {
-    "panels": [
+    "nodes": [
      {
       "id": "warehouse:WH-HN",
-      "type": "warehouse",
+      "kind": "object",
+      "cls": "Warehouse",
       "title": "Warehouse WH-HN",
+      "sub": "Map<productId, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 7
+        "value": 10,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 6
+        "value": 6,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "HEADPHONE",
         "label": "HDP",
-        "value": 2
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
        }
       ]
      },
      {
       "id": "warehouse:WH-HCM",
-      "type": "warehouse",
+      "kind": "object",
+      "cls": "Warehouse",
       "title": "Warehouse WH-HCM",
+      "sub": "Map<productId, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 5
+        "value": 2,
+        "type": "Map.Entry",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 4
-       },
-       {
-        "key": "HEADPHONE",
-        "label": "HDP",
-        "value": 2
+        "value": 4,
+        "type": "Map.Entry",
+        "computed": false
        }
       ]
      },
      {
       "id": "hub",
-      "type": "hub",
+      "kind": "object",
+      "cls": "InventoryManager",
       "title": "InventoryManager",
+      "sub": "catalog: Product.stock",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 4
+        "value": 4,
+        "type": "Product",
+        "computed": false
        },
        {
         "key": "PHONE",
         "label": "PHO",
-        "value": 8
+        "value": 7,
+        "type": "Product",
+        "computed": false
        },
        {
         "key": "BOOK",
         "label": "BOK",
-        "value": 12
+        "value": 12,
+        "type": "Product",
+        "computed": false
        }
       ]
      },
      {
       "id": "cart",
-      "type": "cart",
+      "kind": "object",
+      "cls": "Cart",
       "title": "Cart",
+      "sub": "Map<Product, qty>",
+      "parent": null,
       "items": [
        {
         "key": "LAPTOP",
         "label": "LAP",
-        "value": 1
+        "value": 1,
+        "type": "Product",
+        "computed": false
+       },
+       {
+        "key": "PHONE",
+        "label": "PHO",
+        "value": 1,
+        "type": "Product",
+        "computed": false
+       }
+      ]
+     },
+     {
+      "id": "orders",
+      "kind": "collection",
+      "cls": "List<Order>",
+      "title": "List<Order> \u00b7 World",
+      "sub": "\u0111\u01a1n \u0111\u00e3 t\u1ea1o",
+      "parent": null,
+      "items": []
+     },
+     {
+      "id": "order:3529",
+      "kind": "object",
+      "cls": "Order",
+      "title": "Order 3529",
+      "sub": "-10% +8% = 31.1tr",
+      "parent": "orders",
+      "items": [
+       {
+        "key": "0:LAPTOP",
+        "label": "LAP \u00d71",
+        "value": "20.0tr",
+        "type": "OrderLine",
+        "computed": false
+       },
+       {
+        "key": "1:PHONE",
+        "label": "PHO \u00d71",
+        "value": "12.0tr",
+        "type": "OrderLine",
+        "computed": false
        }
       ]
      },
      {
       "id": "pricing",
-      "type": "pricing",
-      "title": "Pricing",
-      "items": [
-       {
-        "key": "DISC",
-        "label": "DISC",
-        "value": "-10%"
-       },
-       {
-        "key": "TAX",
-        "label": "TAX",
-        "value": "+8%"
-       }
-      ]
+      "kind": "area",
+      "cls": "domain.pricing",
+      "title": "domain.pricing",
+      "sub": "PricingRule \u00b7 DiscountCode \u00b7 Product gi\u00e1",
+      "parent": null,
+      "items": []
      },
      {
-      "id": "order",
-      "type": "order",
-      "title": "Order",
-      "items": [
-       {
-        "key": "a1f3",
-        "label": "a1f3",
-        "value": "19.4tr"
-       }
-      ]
+      "id": "shipping",
+      "kind": "area",
+      "cls": "domain.shipping",
+      "title": "domain.shipping",
+      "sub": "ShippingZone \u00b7 Address",
+      "parent": null,
+      "items": []
      },
      {
       "id": "zone:INNER_CITY",
-      "type": "zone",
-      "title": "INNER_CITY",
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.INNER_CITY",
+      "sub": null,
+      "parent": "shipping",
       "items": [
        {
-        "key": "Hà Nội",
-        "label": "Hà Nội",
-        "value": "27.5k"
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "20.0k",
+        "type": "BigDecimal",
+        "computed": false
        }
       ]
      },
      {
       "id": "zone:OTHER_CITY",
-      "type": "zone",
-      "title": "OTHER_CITY",
-      "items": []
+      "kind": "object",
+      "cls": "ShippingZone",
+      "title": "ShippingZone.OTHER_CITY",
+      "sub": null,
+      "parent": "shipping",
+      "items": [
+       {
+        "key": "baseFee",
+        "label": "baseFee",
+        "value": "35.0k",
+        "type": "BigDecimal",
+        "computed": false
+       }
+      ]
      }
     ]
    }

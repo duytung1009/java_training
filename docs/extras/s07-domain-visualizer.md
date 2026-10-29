@@ -102,24 +102,26 @@ Kịch bản đa luồng: snapshot chụp ngoài lock của domain, nên `change
 - `changes` chỉ chứa field **có đổi**.
 - FE dùng `worldAfter` để đồng bộ ô (pop-in / pop-out / đếm số); dùng `changes` cho panel diff.
 
-### 4.3 Panel id và cặp flow
+### 4.3 Node và cặp flow
 
-| Panel id | Class domain | Item |
-|---|---|---|
-| `warehouse:WH-HN`, `warehouse:WH-HCM` | `Warehouse` | productId → qty |
-| `hub` | `InventoryManager` | productId → `Product.stock` |
-| `cart` | `Cart` | productId → qty |
-| `pricing` | `PricingRule`, `DiscountCode`, `calculateFinalPrice` | tên quy tắc / mã → giá trị |
-| `order` | `Order` | id ngắn (4 ký tự đầu) → `finalAmount` |
-| `zone:INNER_CITY`, `zone:OTHER_CITY` | `ShippingZone`, `Address` | thành phố → phí |
+`WorldView` là cây node `{id, kind, cls, title, sub, parent, items[]}`; `kind`: `object` (một instance thật), `collection` (danh sách chứa object), `area` (package/khái niệm, không có class). Ô `computed=true` là kết quả hàm thuần để hiển thị, không phải state.
 
-Flow FE hỗ trợ (chiều ngược tự đảo): `warehouse:WH-HN ↔ warehouse:WH-HCM`, `hub → cart`, `cart → order` (qua pricing), `pricing → cart`, `order → hub`, `hub → zone:INNER_CITY`, `hub → zone:OTHER_CITY` (phí ship do `PhysicalProduct.calculateShipping` tính; `Order` không liên quan tới `ShippingZone`).
+| Node | Kind | Class / ý nghĩa | Ô |
+|---|---|---|---|
+| `warehouse:WH-HN`, `warehouse:WH-HCM` | object | `Warehouse` | `Map.Entry` productId → qty |
+| `hub` | object | `InventoryManager` | `Product` → stock |
+| `cart` | object | `Cart` | `Product` → qty |
+| `orders` | collection | `List<Order>` do `World` của visualizer giữ (domain không có object này) | con `order:<id>`: `OrderLine` sản phẩm × qty → đơn giá snapshot; dòng phụ: giảm giá, thuế, thành tiền |
+| `pricing` | area | package `domain.pricing` | con (chỉ khi kịch bản tạo): `pricing:product:*` (basePrice, `= finalPrice`), `pricing:rule:*` (`= apply(...)`), `pricing:code:*` (code, rate) |
+| `shipping` | area | package `domain.shipping` | con `zone:INNER_CITY`, `zone:OTHER_CITY` (enum): baseFee + phí theo thành phố (computed) |
+
+Wire chỉ nối node gốc (chiều ngược tự đảo): `warehouse:WH-HN ↔ warehouse:WH-HCM`, `hub → cart`, `cart → orders`, `orders → hub`, `hub → shipping`. Flow tới node con đi về node gốc chứa nó. `toOrder` không dùng `domain.pricing` (tỉ lệ do người gọi truyền, đơn giá lấy từ `Product.calculateFinalPrice` trong `OrderLine`); phí ship do `PhysicalProduct.calculateShipping` tính, `Order` không liên quan `ShippingZone`.
 
 ## 5. Kịch bản
 
 | id | Buổi | Nội dung | Điểm cần thấy trên UI |
 |---|---|---|---|
-| `cart-to-order` | S02/S04 | `Cart.add` ×3, `changeQuantity`, `remove`, `toOrder(discount, tax)`, `decreaseStock(order)` | Ô cart pop-in / đổi số / pop-out; toOrder chạy pricing → cart → order; kho chỉ giảm ở bước `decreaseStock` (Cart không trừ kho) |
+| `cart-to-order` | S02/S04 | `Cart.add` ×3, `changeQuantity`, `remove`, `toOrder(discount, tax)`, `decreaseStock(order)` | Ô cart pop-in / đổi số / pop-out; toOrder tạo khối `Order` con trong `orders`; kho chỉ giảm ở bước `decreaseStock` (Cart không trừ kho) |
 | `pricing-types` | S03 | `calculateFinalPrice` cho Physical / Digital / Subscription / Bundle; `PricingRule.andThen`; `DiscountCode` | Ô giá từng loại hiện ở trạm giá (đa hình) |
 | `decrease-stock-ok` | S04 | `InventoryManager.decreaseStock(order)` có 2 dòng cùng một sản phẩm | Cộng dồn theo product, trừ đúng một lần |
 | `decrease-stock-fail` | S04 | Đơn có một dòng thiếu hàng | `THROWN OutOfStockException`, `changes` rỗng |

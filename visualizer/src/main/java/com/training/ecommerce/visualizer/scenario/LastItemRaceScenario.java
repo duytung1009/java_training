@@ -63,7 +63,7 @@ public class LastItemRaceScenario implements Scenario {
         List<Runnable> tasks = orders.stream().map(order -> (Runnable) () -> {
             try {
                 recorder.run("InventoryManager", "decreaseStock", List.of(WorldSnapshotter.orderRef(order)),
-                        new Flow(WorldSnapshotter.ORDER, WorldSnapshotter.HUB), List.of(WorldSnapshotter.HUB),
+                        new Flow(WorldSnapshotter.ORDERS, WorldSnapshotter.HUB), List.of(WorldSnapshotter.HUB),
                         () -> world.hub().decreaseStock(order));
             } catch (OutOfStockException expected) {
                 // thread thua cuộc: đã ghi thành THROWN

@@ -16,6 +16,8 @@ button:disabled { opacity: .4; cursor: default; }
 .badge { font-size: 11px; color: var(--price); border: 1px solid var(--price); padding: 0 6px; }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 8px 16px; color: var(--muted); border-bottom: 1px solid var(--line); }
 .legend i { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border: 1.5px solid; }
+.legend i.k-coll { border-style: dashed; background: rgba(214, 216, 222, .12); } .legend i.k-area { border-style: dotted; }
+.legend i.k-calc { border-style: dashed; width: 7px; height: 7px; }
 .sync { padding: 8px 16px; border: 1px solid var(--dec); color: var(--dec); }
 .sync strong { font-weight: 600; } .sync details { margin-top: 6px; max-height: 220px; overflow: auto; }
 .sync summary { cursor: pointer; } .sync .add { color: var(--ok); } .sync .del { color: var(--err); } .sync .more { color: var(--muted); }
@@ -32,6 +34,7 @@ svg { display: block; width: 100%; height: auto; }
 .info { position: absolute; right: 8px; bottom: 8px; width: min(260px, calc(100% - 16px)); max-height: 60%; overflow: auto;
   background: rgba(18, 20, 26, .94); border: 1px solid var(--c); padding: 6px 9px; font-size: 10.5px; line-height: 1.4; }
 .info .t { color: var(--c); font-weight: 600; letter-spacing: .06em; padding-right: 16px; }
+.info .t .kind { color: var(--muted); font-weight: 400; font-size: 9px; letter-spacing: 0; }
 .info .cls { color: var(--text); } .info .cls span, .info .empty { color: var(--muted); }
 .info p { margin: 6px 0; color: var(--text); }
 .info .h { color: var(--c); margin-top: 6px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
@@ -55,13 +58,17 @@ footer { padding: 6px 16px 16px; color: var(--muted); }
 /* ---- Bản đồ ---- */
 .zone-title { font-size: 11px; font-weight: 600; }
 .zone { cursor: pointer; } .zone-head { pointer-events: none; }
-.zone:hover .zone-frame { fill-opacity: .12; }
+.zone-frame:hover { fill-opacity: .12; }
 .zone-frame.sel { stroke-width: 3; fill-opacity: .14; }
 .zone-sub { font-size: 9px; fill: var(--muted); }
+.zone-kind { font-size: 7px; fill: var(--muted); opacity: .7; letter-spacing: .06em; }
+.zone-head.area .zone-title { font-style: italic; font-weight: 400; }
+.zone-head.small .zone-title { font-size: 8.5px; } .zone-head.small .zone-sub { font-size: 7.5px; }
+.child .tile text { font-size: 8px; } .child .tile .val { font-size: 9px; } .child .tile .typ { font-size: 5.5px; }
 .tile text { font-size: 10px; font-weight: 600; pointer-events: none; }
 .tile .val { font-size: 11px; }
 .tile .typ { font-size: 6.5px; font-weight: 400; opacity: .75; }
-.tile, .zone-frame { transform-box: fill-box; transform-origin: center; }
+.tile, .zone-frame, .child { transform-box: fill-box; transform-origin: center; }
 .pop-in { animation: popIn calc(.45s / var(--spd)) cubic-bezier(.3, 1.6, .5, 1) both; }
 .pop-out { animation: popOut calc(.35s / var(--spd)) ease-in both; }
 .bump-up polygon { animation: bumpUp calc(.6s / var(--spd)) ease-out; }
