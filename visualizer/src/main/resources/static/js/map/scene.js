@@ -187,12 +187,12 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
         const color = tileColor(b.root, it.key);
         const polygon = el('polygon', { points: diamond(tx, ty, tw, td), fill: color, 'fill-opacity': 0.06, stroke: color, 'stroke-width': 1.5 }, g);
         if (dash) polygon.setAttribute('stroke-dasharray', dash);
-        // Ô 2 dòng: tên trên, số dưới; có type thì thêm dòng nhỏ tên class ở trên cùng
-        const text = el('text', { transform: flat(cx, cy), 'text-anchor': 'middle', fill: color }, g);
-        const dy = it.type ? 2.5 : 0;
-        const typ = it.type ? el('tspan', { x: 0, y: -8.5, class: 'typ' }, text) : null;
-        const name = el('tspan', { x: 0, y: -1.5 + dy }, text);
-        const val = el('tspan', { x: 0, y: 9.5 + dy, class: 'val' }, text);
+        // Ô 2 dòng: tên trên, số dưới; có type thì thêm dòng nhỏ tên class ở trên cùng. Căn trái, cách mép 2px
+        const text = el('text', { transform: flat(cx, cy), 'text-anchor': 'start', fill: color }, g);
+        const dy = it.type ? 2.5 : 0, left = -tw * CELL / 2 + 2;
+        const typ = it.type ? el('tspan', { x: left, y: -8.5, class: 'typ' }, text) : null;
+        const name = el('tspan', { x: left, y: -1.5 + dy }, text);
+        const val = el('tspan', { x: left, y: 9.5 + dy, class: 'val' }, text);
         const ttl = el('title', {}, g);
         ttl.textContent = tip;
         t = { g, polygon, text, name, val, typ, title: ttl, value: it.value, pre: prefix(it), anim: 0, maxPx, valBase };
