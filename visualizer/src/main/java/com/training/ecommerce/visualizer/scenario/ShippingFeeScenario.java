@@ -43,7 +43,8 @@ public class ShippingFeeScenario implements Scenario {
         ship(world, recorder, "PHONE", new Address("5 Lê Lợi", "Đà Nẵng"));
     }
 
-    private static void ship(World world, TraceRecorder recorder, String productId, Address address) {
+    /** Tính phí ship qua recorder; dùng chung với kịch bản tổng quan. */
+    static void ship(World world, TraceRecorder recorder, String productId, Address address) {
         String addressText = "Address(" + address.getCity() + ")";
         ShippingZone zone = recorder.call("ShippingZone", "of", List.of(addressText), null, List.of(),
                 () -> ShippingZone.of(address));

@@ -10,7 +10,7 @@ import com.training.ecommerce.visualizer.world.WorldSnapshotter;
 
 import java.util.List;
 
-/** S07-extra: nhập hàng từ kho (dự trữ) lên hub (sẵn bán), gồm hai ca thất bại. */
+/** S07: nhập hàng từ kho (dự trữ) lên hub (sẵn bán), gồm hai ca thất bại. */
 public class ReplenishScenario implements Scenario {
 
     @Override
@@ -25,7 +25,7 @@ public class ReplenishScenario implements Scenario {
 
     @Override
     public String session() {
-        return "S07-extra";
+        return "S07";
     }
 
     @Override
@@ -50,7 +50,8 @@ public class ReplenishScenario implements Scenario {
         }
     }
 
-    private static void replenish(World world, TraceRecorder recorder, String warehouseId, String productId,
+    /** Gọi replenish qua recorder; dùng chung với kịch bản tổng quan. */
+    static void replenish(World world, TraceRecorder recorder, String warehouseId, String productId,
                                   int quantity) {
         String from = WorldSnapshotter.warehousePanelId(warehouseId);
         recorder.run("InventoryManager", "replenish",

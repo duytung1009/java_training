@@ -74,15 +74,7 @@ public class PricingTypesScenario implements Scenario {
                     return MoneyFormat.full(result);
                 });
 
-        // DiscountCode không override toString: giữ object qua holder, log trả chuỗi dễ đọc
-        DiscountCode[] holder = new DiscountCode[1];
-        recorder.call("DiscountCode", "new", List.of("SALE20", "0.20"), null, pricingPanels("pricing:code:SALE20"),
-                () -> {
-                    holder[0] = new DiscountCode("SALE20", new BigDecimal("0.20"));
-                    world.registerObject(WorldSnapshotter.PRICING, "pricing:code:" + holder[0].getCode(), holder[0], null);
-                    return holder[0].getCode() + " -" + MoneyFormat.percent(holder[0].getRate());
-                });
-        DiscountCode code = holder[0];
+        DiscountCode code = createCode(world, recorder, "SALE20", new BigDecimal("0.20"));
         recorder.call("PricingRule", "percentOff", List.of("SALE20", "20 000 000"), null,
                 pricingPanels("pricing:rule:sale20"), () -> {
                     PricingRule rule = PricingRule.percentOff(code.getRate());
@@ -92,6 +84,23 @@ public class PricingTypesScenario implements Scenario {
                             "percentOff(" + MoneyFormat.percent(code.getRate()) + ")", base, result);
                     return MoneyFormat.full(result);
                 });
+    }
+
+    /** Tạo DiscountCode và hiện thành khối dưới domain.pricing; dùng chung với kịch bản giỏ hàng. */
+    static DiscountCode createCode(World world, TraceRecorder recorder, String code, BigDecimal rate) {
+        String nodeId = codeNodeId(code);
+        // DiscountCode không override toString: giữ object qua holder, log trả chuỗi dễ đọc
+        DiscountCode[] holder = new DiscountCode[1];
+        recorder.call("DiscountCode", "new", List.of(code, rate.toPlainString()), null, pricingPanels(nodeId), () -> {
+            holder[0] = new DiscountCode(code, rate);
+            world.registerObject(WorldSnapshotter.PRICING, nodeId, holder[0], null);
+            return holder[0].getCode() + " -" + MoneyFormat.percent(holder[0].getRate());
+        });
+        return holder[0];
+    }
+
+    static String codeNodeId(String code) {
+        return "pricing:code:" + code;
     }
 
     private static List<String> pricingPanels(String childId) {
@@ -106,8 +115,9 @@ public class PricingTypesScenario implements Scenario {
         world.putComputed(nodeId, new ItemView("apply", label, MoneyFormat.shortOf(result), "BigDecimal", true));
     }
 
-    private static void price(World world, TraceRecorder recorder, Product product) {
-        String nodeId = "catalog:product:" + product.getId();
+    /** Tính giá cuối và hiện ô computed dưới domain.catalog; dùng chung với kịch bản tổng quan. */
+    static void price(World world, TraceRecorder recorder, Product product) {
+        String nodeId = WorldSnapshotter.productNodeId(product.getId());
         recorder.call(product.getClass().getSimpleName(), "calculateFinalPrice", List.of(product.getId()), null,
                 List.of(WorldSnapshotter.CATALOG, nodeId), () -> {
                     BigDecimal price = product.calculateFinalPrice();

@@ -1,5 +1,6 @@
 package com.training.ecommerce.visualizer.scenario;
 
+import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.visualizer.trace.Flow;
 import com.training.ecommerce.visualizer.trace.Outcome;
 import com.training.ecommerce.visualizer.trace.TraceEvent;
@@ -47,8 +48,8 @@ class ScenarioTest {
     }
 
     @Test
-    void coDungChinKichBanTheoThuTu() {
-        assertThat(all().map(Scenario::id)).containsExactly("cart-to-order", "shipping-fee",
+    void coDungMuoiKichBanTheoThuTu() {
+        assertThat(all().map(Scenario::id)).containsExactly("overview", "cart-to-order", "shipping-fee",
                 "pricing-types", "decrease-stock-ok", "decrease-stock-fail", "transfer", "transfer-deadlock-safe",
                 "last-item-race", "replenish");
     }
@@ -74,9 +75,22 @@ class ScenarioTest {
         TraceEvent toOrder = run.events().stream().filter(e -> e.method().equals("toOrder")).findFirst().orElseThrow();
         assertThat(toOrder.changes().getFirst().before()).isNull();
         assertThat(toOrder.result()).startsWith("Order ");
-        assertThat(toOrder.flows()).containsExactly(new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDERS));
+        // bước nhập mã SALE10 đứng ngay trước toOrder, mã hiện thành khối dưới domain.pricing
+        int toOrderIndex = run.events().indexOf(toOrder);
+        TraceEvent newCode = run.events().get(toOrderIndex - 1);
+        assertThat(newCode.className()).isEqualTo("DiscountCode");
+        assertThat(newCode.worldAfter().nodes()).anySatisfy(n -> {
+            assertThat(n.id()).isEqualTo("pricing:code:SALE10");
+            assertThat(n.parent()).isEqualTo(WorldSnapshotter.PRICING);
+        });
+        // toOrder(code, tax): flow giỏ → đơn và mã → đơn; Order chỉ giữ tỉ lệ 10% của mã
+        assertThat(toOrder.args()).containsExactly("SALE10", "0.08");
+        assertThat(toOrder.flows()).containsExactly(new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDERS),
+                new Flow("pricing:code:SALE10", WorldSnapshotter.ORDERS));
+        assertThat(run.world().orders().getFirst().getDiscountRate()).isEqualByComparingTo("0.10");
         String orderNode = WorldSnapshotter.orderNodeId(run.world().orders().getFirst());
-        assertThat(toOrder.panels()).containsExactly(WorldSnapshotter.CART, WorldSnapshotter.ORDERS, orderNode);
+        assertThat(toOrder.panels()).containsExactly(WorldSnapshotter.CART, WorldSnapshotter.ORDERS,
+                WorldSnapshotter.PRICING, "pricing:code:SALE10", orderNode);
         var orderNodes = run.events().getLast().worldAfter().nodes().stream()
                 .filter(n -> n.id().startsWith("order:")).toList();
         assertThat(orderNodes).hasSize(1);
@@ -105,7 +119,11 @@ class ScenarioTest {
     void pricingTypesTaoNodeConCuaPricing() {
         Run run = run("pricing-types");
         var nodes = run.events().getLast().worldAfter().nodes();
-        var products = nodes.stream().filter(n -> "catalog".equals(n.parent())).toList();
+        // 3 product của hub có sẵn trong catalog, 4 product kịch bản tự tạo đứng sau
+        var catalog = nodes.stream().filter(n -> "catalog".equals(n.parent())).toList();
+        assertThat(catalog).extracting(NodeView::id).startsWith(
+                "catalog:product:LAPTOP", "catalog:product:PHONE", "catalog:product:BOOK");
+        var products = catalog.subList(3, catalog.size());
         assertThat(products).extracting(NodeView::id).containsExactly(
                 "catalog:product:LAPTOP-X", "catalog:product:EBOOK", "catalog:product:NEWS",
                 "catalog:product:COMBO");
@@ -158,6 +176,34 @@ class ScenarioTest {
         assertThat(run.events().getLast().outcome()).isEqualTo(Outcome.THROWN);
         assertThat(run.events().getLast().changes()).isEmpty();
         assertThat(run.events().get(1).changes().get(1).before()).isEmpty();
+    }
+
+    @Test
+    void overviewDiQuaMoiChangVaTonKhoKhop() {
+        Run run = run("overview");
+        World w = run.world();
+
+        assertThat(run.events()).extracting(TraceEvent::outcome).containsOnly(Outcome.OK);
+        assertThat(run.events()).extracting(TraceEvent::method).containsExactly("transfer", "replenish",
+                "calculateFinalPrice", "add", "add", "new", "toOrder", "decreaseStock", "of", "calculateShipping");
+        // HCM 2 → 0, HN 10 + 2 − 3 = 9, hub LAPTOP 5 + 3 − 2 = 6, PHONE 8 − 1 = 7
+        assertThat(w.warehouse(WorldFactory.WH_HCM).stockOf("LAPTOP")).isZero();
+        assertThat(w.warehouse(WorldFactory.WH_HN).stockOf("LAPTOP")).isEqualTo(9);
+        assertThat(w.product("LAPTOP").getStock()).isEqualTo(6);
+        assertThat(w.product("PHONE").getStock()).isEqualTo(7);
+        assertThat(w.orders()).hasSize(1);
+        Order order = w.orders().getFirst();
+        assertThat(order.getDiscountRate()).isEqualByComparingTo("0.10");
+        // flow đi lần lượt kho → kho → hub → giỏ → đơn (cùng mã → đơn) → hub → vùng ship
+        assertThat(run.events().stream().flatMap(e -> e.flows().stream())).containsExactly(
+                new Flow(WorldSnapshotter.warehousePanelId(WorldFactory.WH_HCM), WorldSnapshotter.warehousePanelId(WorldFactory.WH_HN)),
+                new Flow(WorldSnapshotter.warehousePanelId(WorldFactory.WH_HN), WorldSnapshotter.HUB),
+                new Flow(WorldSnapshotter.HUB, WorldSnapshotter.CART),
+                new Flow(WorldSnapshotter.HUB, WorldSnapshotter.CART),
+                new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDERS),
+                new Flow("pricing:code:SALE10", WorldSnapshotter.ORDERS),
+                new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.HUB),
+                new Flow(WorldSnapshotter.HUB, "zone:INNER_CITY"));
     }
 
     @Test

@@ -102,6 +102,7 @@ method order.Cart#getQuantity(Product): int
 method order.Cart#isEmpty(): boolean
 method order.Cart#remove(Product): void
 method order.Cart#toOrder(BigDecimal, BigDecimal): Order
+method order.Cart#toOrder(DiscountCode, BigDecimal): Order
 method order.Order#addLine(OrderLine): void
 method order.Order#discountAmount(): BigDecimal
 method order.Order#finalAmount(): BigDecimal

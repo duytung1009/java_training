@@ -40,6 +40,10 @@ public class WorldSnapshotter {
     }
 
     /** Node id của một order, vd. "order:a1f3" (con của {@link #ORDERS}). */
+    public static String productNodeId(String productId) {
+        return "catalog:product:" + productId;
+    }
+
     public static String orderNodeId(Order order) {
         return "order:" + shortId(order);
     }

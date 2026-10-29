@@ -49,9 +49,10 @@ public class LastItemRaceScenario implements Scenario {
     public void run(World world, TraceRecorder recorder) {
         PhysicalProduct gift = new PhysicalProduct(PRODUCT_ID, "Quà cuối", new BigDecimal("100000"), 1,
                 new BigDecimal("0.1"));
-        // Ghi thành event để ô GIFT pop-in với stock 1 trước khi các thread tranh nhau
+        // Ghi thành event để ô GIFT (hub) và khối GIFT (catalog) pop-in với stock 1 trước khi các thread tranh nhau
         recorder.run("InventoryManager", "addProduct", List.of(PRODUCT_ID + ", stock 1"), null,
-                List.of(WorldSnapshotter.HUB), () -> world.registerProduct(gift));
+                List.of(WorldSnapshotter.HUB, WorldSnapshotter.CATALOG, WorldSnapshotter.productNodeId(PRODUCT_ID)),
+                () -> world.registerProduct(gift));
 
         // Dựng đơn trước khi các thread chạy: OrderLine kiểm tồn kho lúc tạo, lúc này còn đúng 1 cái.
         // Ghi thành một event và đưa vào world để các đơn hiện trong List<Order> trước khi tranh nhau

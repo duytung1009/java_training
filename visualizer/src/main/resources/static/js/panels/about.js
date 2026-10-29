@@ -90,11 +90,27 @@ const STAGES = [
       'Hub = hàng sẵn bán, kho = hàng dự trữ. Kịch bản replenish (thành công, hub không bán sản phẩm, kho không có hàng) và hai đường nối WH → hub nét liền thay cho nét chấm.',
     ],
   },
+  {
+    title: 'Kịch bản tổng quan',
+    why: 'Mỗi kịch bản chỉ soi một buổi học; thiếu một lượt chạy cho thấy các package nối với nhau thế nào.',
+    what: [
+      'Kịch bản overview đứng đầu danh sách: gom hàng giữa hai kho, nhập lên hub, tính giá, giỏ hàng, mã giảm giá, chốt đơn, trừ kho, phí ship — flow đi qua cả 5 vùng.',
+      'Ghép lại từ bước của các kịch bản theo buổi (OrderSteps.checkout / decreaseStock, transfer, replenish, price, ship), không viết lại logic gọi domain.',
+    ],
+  },
+  {
+    title: 'Chốt giỏ bằng mã giảm giá',
+    why: 'Cart.toOrder chỉ nhận tỉ lệ giảm giá trần, DiscountCode của domain.pricing không nối được vào đơn.',
+    what: [
+      'Domain thêm Cart.toOrder(code, taxRate): tương đương toOrder(code.getRate(), taxRate), Order chỉ giữ tỉ lệ, code null → IllegalArgumentException.',
+      'Kịch bản giỏ hàng và tổng quan có thêm bước new DiscountCode(SALE10) và đường nối orders ↔ pricing; catalog hiện sẵn mọi Product của hub ngay từ đầu.',
+    ],
+  },
 ];
 
 const PRODUCT = [
   '5 vùng package, khối object / collection / area, ô computed tách khỏi state.',
-  '9 kịch bản: giỏ hàng → đơn, giá theo loại sản phẩm, trừ kho thành công / thất bại, chuyển kho, chuyển kho song song không deadlock, tranh nhau món hàng cuối, phí ship, nhập hàng kho → hub.',
+  '10 kịch bản: tổng quan một lượt mua từ kho tới đơn, giỏ hàng → đơn, giá theo loại sản phẩm, trừ kho thành công / thất bại, chuyển kho, chuyển kho song song không deadlock, tranh nhau món hàng cuối, phí ship, nhập hàng kho → hub.',
   'Run / Pause / Step / Back / Reset, tốc độ 0.5–2×, call log có badge thread, diff before → after, bảng chú thích khi click khối.',
   'Banner cảnh báo khi visualizer lệch với domain + skill visualizer-sync; không sửa một dòng nào trong domain/ hay app/.',
 ];

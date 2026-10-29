@@ -31,6 +31,9 @@ export const WIRES = [
   // cart → orders (toOrder)
   { a: 'cart', b: 'orders', pts: [[14.7, 4.65], [14.7, 5.5]] },
   { a: 'orders', b: 'hub', pts: [[13, 8.5], [11.2, 8.5], [11.2, 4.5], [9.4, 4.5]] },
+  // Mã giảm giá (domain.pricing) áp vào đơn lúc Cart.toOrder(code, tax): ra từ cạnh phải orders (mép trên không bị
+  // đẩy khi orders giãn), đi ngoài khung order rồi xuống mép trên vùng pricing
+  { a: 'orders', b: 'pricing', pts: [[20.5, 6.5], [22, 6.5], [22, 12.7]] },
   // Phí ship: Product (trong hub) gọi ShippingZone qua PhysicalProduct.calculateShipping
   { a: 'hub', b: 'shipping', pts: [[7.7, 5.25], [7.7, 9.7]] },
 ];

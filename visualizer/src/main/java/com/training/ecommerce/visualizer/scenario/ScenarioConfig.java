@@ -12,6 +12,7 @@ public class ScenarioConfig {
     @Bean
     public ScenarioRegistry scenarioRegistry() {
         return new ScenarioRegistry(List.of(
+                new OverviewScenario(),
                 new CartToOrderScenario(),
                 new ShippingFeeScenario(),
                 new PricingTypesScenario(),

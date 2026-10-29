@@ -31,8 +31,8 @@ export const INFO = {
   },
   Cart: {
     cls: 'Cart', pkg: 'domain.order', session: 'S02',
-    desc: 'Giỏ hàng gom Product với số lượng. toOrder chốt giỏ thành Order kèm tỉ lệ giảm giá và thuế (không dùng domain.pricing).',
-    api: ['add(product, qty)', 'changeQuantity(product, qty)', 'remove(product)', 'toOrder(discountRate, taxRate)'],
+    desc: 'Giỏ hàng gom Product với số lượng. toOrder chốt giỏ thành Order kèm giảm giá và thuế: truyền tỉ lệ trực tiếp, hoặc truyền DiscountCode (domain.pricing) — Order chỉ giữ tỉ lệ của mã, không giữ mã.',
+    api: ['add(product, qty)', 'changeQuantity(product, qty)', 'remove(product)', 'toOrder(discountRate, taxRate)', 'toOrder(code, taxRate)'],
     items: 'productId → số lượng',
   },
   Order: {
@@ -55,7 +55,7 @@ export const INFO = {
   },
   'domain.order': {
     cls: 'domain.order', pkg: 'package', session: 'S02 · S04',
-    desc: 'Package đơn hàng: Cart chốt thành Order qua toOrder; Order giữ OrderLine với giá đã snapshot. Danh sách đơn là do visualizer (World) giữ.',
+    desc: 'Package đơn hàng: Cart chốt thành Order qua toOrder (theo tỉ lệ hoặc DiscountCode của domain.pricing); Order giữ OrderLine với giá đã snapshot. Danh sách đơn là do visualizer (World) giữ.',
     api: ['Cart', 'Order', 'OrderLine'],
     items: 'thành viên',
   },
@@ -83,7 +83,7 @@ export const INFO = {
   },
   DiscountCode: {
     cls: 'DiscountCode', pkg: 'domain.pricing', session: 'S03',
-    desc: 'Value object bất biến: mã và tỉ lệ giảm trong (0, 1].',
+    desc: 'Value object bất biến: mã và tỉ lệ giảm trong (0, 1]. Dùng để giảm giá từng sản phẩm (Discountable.applyDiscount) hoặc cả đơn lúc chốt giỏ (Cart.toOrder(code, taxRate)).',
     api: ['getCode()', 'getRate()'],
     items: 'code, rate',
   },
