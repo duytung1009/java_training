@@ -3,6 +3,7 @@ package com.training.ecommerce.domain.order;
 import com.training.ecommerce.domain.catalog.OutOfStockException;
 import com.training.ecommerce.domain.catalog.Product;
 import com.training.ecommerce.domain.catalog.ProductNotFoundException;
+import com.training.ecommerce.domain.pricing.DiscountCode;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -86,6 +87,19 @@ public class Cart {
             order.addLine(new OrderLine(item.getKey(), item.getValue()));
         }
         return order;
+    }
+
+    /**
+     * Tạo Order bằng mã giảm giá: tương đương {@code toOrder(code.getRate(), taxRate)}; Order chỉ giữ tỉ lệ, không giữ mã.
+     *
+     * @throws IllegalArgumentException khi code null (kiểm trước giỏ rỗng) hoặc taxRate không hợp lệ
+     * @throws IllegalStateException    khi giỏ rỗng
+     */
+    public Order toOrder(DiscountCode code, BigDecimal taxRate) {
+        if (code == null) {
+            throw new IllegalArgumentException("code không được null");
+        }
+        return toOrder(code.getRate(), taxRate);
     }
 
     private static void requireProduct(Product product) {

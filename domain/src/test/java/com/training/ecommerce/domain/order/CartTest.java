@@ -5,6 +5,7 @@ import com.training.ecommerce.domain.catalog.OutOfStockException;
 import com.training.ecommerce.domain.catalog.PhysicalProduct;
 import com.training.ecommerce.domain.catalog.Product;
 import com.training.ecommerce.domain.catalog.ProductNotFoundException;
+import com.training.ecommerce.domain.pricing.DiscountCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -261,6 +262,80 @@ class CartTest {
             cart.add(tshirt, 1);
 
             assertThrows(IllegalArgumentException.class, () -> cart.toOrder(new BigDecimal("1.5"), BigDecimal.ZERO));
+        }
+    }
+
+    // SPEC S07-extra – thêm 30/10: chốt giỏ bằng DiscountCode (D1 tương đương toOrder(rate, tax), D2 code null → IAE).
+    @Nested
+    @DisplayName("toOrder(DiscountCode, taxRate)")
+    class ToOrderWithDiscountCode {
+
+        private final DiscountCode sale10 = new DiscountCode("SALE10", new BigDecimal("0.10"));
+
+        @Test
+        @DisplayName("Mã SALE10 → giống toOrder(0.10, 0.08): 2 dòng theo thứ tự thêm, final 729000.00")
+        void appliesCodeRate() {
+            cart.add(tshirt, 1);
+            cart.add(jeans, 1);
+            cart.add(tshirt, 1);
+
+            Order order = cart.toOrder(sale10, new BigDecimal("0.08"));
+
+            OrderLine[] lines = order.getLines();
+            assertEquals(2, lines.length);
+            assertSame(tshirt, lines[0].getProduct());
+            assertEquals(2, lines[0].getQuantity());
+            assertSame(jeans, lines[1].getProduct());
+            assertEquals(0, new BigDecimal("0.10").compareTo(order.getDiscountRate()));
+            assertEquals(new BigDecimal("729000.00"), order.finalAmount());
+        }
+
+        @Test
+        @DisplayName("Chốt bằng mã cũng không trừ kho")
+        void doesNotDecreaseStockWithCode() {
+            cart.add(tshirt, 2);
+
+            cart.toOrder(sale10, BigDecimal.ZERO);
+
+            assertEquals(50, tshirt.getStock());
+        }
+
+        @Test
+        @DisplayName("Mã giảm 100% → final 0.00")
+        void fullDiscountCode() {
+            cart.add(jeans, 1);
+
+            Order order = cart.toOrder(new DiscountCode("FREE", BigDecimal.ONE), new BigDecimal("0.08"));
+
+            assertEquals(0, BigDecimal.ZERO.compareTo(order.finalAmount()));
+        }
+
+        @Test
+        @DisplayName("code null → IllegalArgumentException")
+        void rejectsNullCode() {
+            cart.add(tshirt, 1);
+
+            assertThrows(IllegalArgumentException.class, () -> cart.toOrder((DiscountCode) null, BigDecimal.ZERO));
+        }
+
+        @Test
+        @DisplayName("code null kiểm trước giỏ rỗng → IllegalArgumentException, không phải IllegalStateException")
+        void nullCodeCheckedBeforeEmptyCart() {
+            assertThrows(IllegalArgumentException.class, () -> cart.toOrder((DiscountCode) null, BigDecimal.ZERO));
+        }
+
+        @Test
+        @DisplayName("Giỏ rỗng với mã hợp lệ → IllegalStateException")
+        void rejectsEmptyCartWithCode() {
+            assertThrows(IllegalStateException.class, () -> cart.toOrder(sale10, BigDecimal.ZERO));
+        }
+
+        @Test
+        @DisplayName("taxRate âm → IllegalArgumentException (theo quy tắc của Order)")
+        void rejectsInvalidTaxWithCode() {
+            cart.add(tshirt, 1);
+
+            assertThrows(IllegalArgumentException.class, () -> cart.toOrder(sale10, new BigDecimal("-0.01")));
         }
     }
 }

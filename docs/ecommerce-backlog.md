@@ -416,3 +416,31 @@ API (quyết định đề xuất 30/10):
 Ngoài spec: trả hàng hub → kho, tự động nhập khi hub sắp hết, chọn kho cho từng đơn, lưu xuống DB (`StockStore` ở `app` chưa đụng), tràn `int`.
 
 **Kiểm khi review:** thứ tự khóa đúng **D2** ở mọi chỗ; kiểm tra (product có trên hub, kho đủ hàng) và cập nhật nằm trong cùng lock; `Product.increaseStock` chỉ được gọi khi đang giữ lock hub; không gọi IO / `sleep` khi giữ lock; `domain/` vẫn Java thuần; đã chạy `visualizer-sync`, banner lệch API không còn.
+
+---
+
+## Extra – Chốt giỏ bằng mã giảm giá: `Cart.toOrder(DiscountCode, taxRate)`
+**Nhánh:** `extra/warehouse-hub` · đề xuất 30/10, theo luồng spec đỏ
+
+Hiện `DiscountCode` (`domain.pricing`) chỉ dùng được qua `Discountable.applyDiscount` để giảm giá từng sản phẩm; giảm giá cả đơn thì `Cart.toOrder(discountRate, taxRate)` nhận một tỉ lệ trần, không biết tới mã. Visualizer (kịch bản `cart-to-order`) muốn có bước "nhập mã" rồi chốt đơn bằng mã đó.
+
+| # | Class/Task | Package | Ghi chú |
+|---|---|---|---|
+| 1 | `Cart.toOrder(DiscountCode code, BigDecimal taxRate)` | `domain/order` | overload mới; `order` phụ thuộc `pricing` (không vòng: `pricing` không import `order`) |
+| 2 | Visualizer: bước `new DiscountCode("SALE10", 10%)` trong `cart-to-order`, chốt đơn bằng mã, wire `pricing → orders` | `visualizer` | sau khi domain xanh, chạy skill `visualizer-sync` |
+
+**Spec hành vi** (đề xuất 30/10, test: nhóm `ToOrderWithDiscountCode` trong `domain/src/test/java/com/training/ecommerce/domain/order/CartTest.java`)
+
+- **D1** Tương đương `toOrder(code.getRate(), taxRate)`: `Order` chỉ giữ `discountRate`, không giữ mã (mã là chuyện của lúc chốt, đơn đã lưu không cần biết).
+- **D2** `code` null → IAE (giống `Discountable.applyDiscount`), kiểm trước khi kiểm giỏ rỗng; không coi null là "không giảm giá" — muốn không giảm thì gọi `toOrder(BigDecimal.ZERO, taxRate)`.
+- Giỏ rỗng → `IllegalStateException`; taxRate không hợp lệ → IAE (theo quy tắc của `Order`), như overload cũ.
+
+| Method | Input | Kết quả mong đợi | Test |
+|---|---|---|---|
+| `toOrder(code, tax)` | áo 1, quần 1, áo 1; mã SALE10 (0.10), tax 0.08 | như `toOrder(0.10, 0.08)`: 2 dòng theo thứ tự thêm, `discountRate` 0.10, final `729000.00`; không trừ kho | `appliesCodeRate`, `doesNotDecreaseStockWithCode` |
+| `toOrder(code, tax)` | mã giảm 100% (rate 1) | final `0.00` | `fullDiscountCode` |
+| `toOrder(code, tax)` | code `null` (giỏ có hàng và giỏ rỗng); giỏ rỗng với mã hợp lệ; tax −0.01 | IAE (**D2**); `IllegalStateException`; IAE | `rejectsNullCode`, `nullCodeCheckedBeforeEmptyCart`, `rejectsEmptyCartWithCode`, `rejectsInvalidTaxWithCode` |
+
+Ngoài spec: mã hết hạn / giới hạn số lần dùng, cộng dồn nhiều mã, mã chỉ áp cho một số sản phẩm, lưu mã vào `Order` hay DB.
+
+**Kiểm khi review:** overload mới gọi lại overload cũ (không lặp logic tạo dòng); `domain/` vẫn Java thuần; đã chạy `visualizer-sync`.
