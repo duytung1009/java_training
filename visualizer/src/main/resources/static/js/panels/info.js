@@ -10,8 +10,8 @@ const WAREHOUSE = {
 
 const ZONE = {
   cls: 'ShippingZone', pkg: 'domain.shipping', session: 'S02',
-  desc: 'Enum vùng giao hàng. Phí = baseFee + FEE_PER_KG × cân nặng, làm tròn HALF_UP.',
-  api: ['ShippingZone.of(address)', 'feeFor(weightKg)', 'getBaseFee()'],
+  desc: 'Enum vùng giao hàng. Phí = baseFee + FEE_PER_KG × cân nặng, làm tròn HALF_UP. PhysicalProduct (Shippable) gọi vào đây để tính phí theo cân nặng của chính nó; Order không biết gì về phí ship.',
+  api: ['ShippingZone.of(address)', 'feeFor(weightKg)', 'getBaseFee()', 'PhysicalProduct.calculateShipping(address)'],
   items: 'thành phố → phí ship',
 };
 

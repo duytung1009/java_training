@@ -13,12 +13,13 @@ public class ScenarioConfig {
     public ScenarioRegistry scenarioRegistry() {
         return new ScenarioRegistry(List.of(
                 new CartToOrderScenario(),
+                new ShippingFeeScenario(),
                 new PricingTypesScenario(),
                 new DecreaseStockOkScenario(),
                 new DecreaseStockFailScenario(),
                 new TransferScenario(),
                 new TransferDeadlockSafeScenario(),
-                new LastItemRaceScenario(),
-                new ShippingFeeScenario()));
+                new LastItemRaceScenario()
+        ));
     }
 }

@@ -24,7 +24,7 @@ diff visualizer/src/main/resources/domain-api.txt "$TMPDIR/domain-api.now.txt"
 | Domain đổi | Sửa ở visualizer |
 |---|---|
 | Method bị đổi tên/xoá, đổi tham số | Các `scenario/*Scenario.java` gọi nó; nhãn `recorder.call/run("Class", "method", ...)` phải khớp tên thật |
-| Trạng thái mới cần thấy (field, collection, stock…) | `world/WorldSnapshotter` (panel item + object diff), có thể cả `world/World`, `WorldFactory` (seed) |
+| Trạng thái mới cần thấy (field, collection, stock…) | `world/WorldSnapshotter` (panel item + object diff; `ItemView.type` = class mà ô đại diện, hiện thành nhãn nhỏ trên ô — ghi đúng kiểu trong code, vd. `Map.Entry` nếu domain chỉ giữ id), có thể cả `world/World`, `WorldFactory` (seed) |
 | Hành vi mới đáng demo (use case, exception, concurrency) | Thêm `scenario/<Tên>Scenario.java`, đăng ký trong `ScenarioRegistry`, thêm test bất biến trong `ScenarioTest` |
 | Domain object mới cần một khối trên bản đồ | `static/js/map/layout.js`: `PANELS` (toạ độ ô lưới), `WIRES` nếu có flow; panel id khớp `WorldSnapshotter`; màu ở `styles.css` + legend `index.html` |
 | Mô tả, API chính, buổi học đổi | `static/js/panels/info.js` (bảng chú thích khi click khối) — mô tả phải đúng với code domain, đối chiếu lại |

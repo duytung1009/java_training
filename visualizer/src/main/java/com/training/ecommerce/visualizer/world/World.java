@@ -28,7 +28,7 @@ public class World {
     private final List<Order> orders = new CopyOnWriteArrayList<>();
     /** Warehouse không liệt kê được sản phẩm, nên snapshot phải biết trước danh sách productId cần hỏi. */
     private final List<String> productIds = new CopyOnWriteArrayList<>();
-    private final Map<String, String> pricing = new LinkedHashMap<>();                 // guarded by this.pricing
+    private final Map<String, ItemView> pricing = new LinkedHashMap<>();               // guarded by this.pricing
     private final Map<ShippingZone, Map<String, String>> shippingFees = new EnumMap<>(ShippingZone.class);
 
     /**
@@ -122,20 +122,22 @@ public class World {
     /**
      * Ghi một mục hiển thị ở panel pricing (chỉ để xem, không phải state của domain).
      *
-     * @throws IllegalArgumentException nếu key hoặc value null
+     * @param type tên class mà mục này đại diện (vd. PricingRule, DiscountCode)
+     * @throws IllegalArgumentException nếu key, type hoặc value null
      */
-    public void putPricing(String key, String value) {
-        if (key == null || value == null) {
-            throw new IllegalArgumentException("key và value không được null");
+    public void putPricing(String key, String type, String value) {
+        if (key == null || type == null || value == null) {
+            throw new IllegalArgumentException("key, type và value không được null");
         }
         synchronized (pricing) {
-            pricing.put(key, value);
+            pricing.put(key, new ItemView(key, key, value, type));
         }
     }
 
-    public Map<String, String> pricing() {
+    /** Các mục pricing theo thứ tự ghi lần đầu. */
+    public List<ItemView> pricing() {
         synchronized (pricing) {
-            return new LinkedHashMap<>(pricing);
+            return List.copyOf(pricing.values());
         }
     }
 

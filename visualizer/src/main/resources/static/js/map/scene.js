@@ -124,11 +124,13 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
           const g = el('g', { class: animate ? 'tile pop-in' : 'tile' }, groups[id]);
           const color = tileColor(id, it.key);
           const polygon = el('polygon', { points: diamond(tx, ty, tw, td), fill: color, 'fill-opacity': 0.06, stroke: color, 'stroke-width': 1.5 }, g);
-          // Ô 2 dòng: tên trên, số dưới; panel valueOnly chỉ có số
+          // Ô 2 dòng: tên trên, số dưới; có type thì thêm dòng nhỏ tên class ở trên cùng; panel valueOnly chỉ có số
           const text = el('text', { transform: flat(cx, cy), 'text-anchor': 'middle', fill: color }, g);
-          const name = p.valueOnly ? null : el('tspan', { x: 0, y: -1.5 }, text);
+          const dy = it.type ? 2.5 : 0;
+          if (it.type) el('tspan', { x: 0, y: -8.5, class: 'typ' }, text).textContent = it.type;
+          const name = p.valueOnly ? null : el('tspan', { x: 0, y: -1.5 + dy }, text);
           if (name) name.textContent = it.label ?? it.key;
-          const val = el('tspan', { x: 0, y: p.valueOnly ? 3.5 : 9.5, class: 'val' }, text);
+          const val = el('tspan', { x: 0, y: (p.valueOnly ? 3.5 : 9.5) + dy, class: 'val' }, text);
           val.textContent = String(it.value);
           const title = el('title', {}, g);
           title.textContent = tip;

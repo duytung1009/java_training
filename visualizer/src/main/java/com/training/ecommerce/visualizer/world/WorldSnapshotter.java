@@ -53,8 +53,9 @@ public class WorldSnapshotter {
                 }
             }
             objects.put("Warehouse " + warehouse.getId(), quantities);
+            // Warehouse chỉ giữ Map<String, Integer>: mỗi ô là một entry productId → qty, không phải object Product
             panels.add(new PanelView(warehousePanelId(warehouse.getId()), "warehouse",
-                    "Warehouse " + warehouse.getId(), countItems(quantities)));
+                    "Warehouse " + warehouse.getId(), countItems(quantities, "Map.Entry")));
         }
 
         Map<String, Object> stocks = new LinkedHashMap<>();
@@ -65,31 +66,30 @@ public class WorldSnapshotter {
                 objects.put("Product " + product.getId(), Map.of("stock", stock));
             });
         }
-        panels.add(new PanelView(HUB, "hub", "InventoryManager", countItems(stocks)));
+        panels.add(new PanelView(HUB, "hub", "InventoryManager", countItems(stocks, "Product")));
 
         Map<String, Object> cartItems = new LinkedHashMap<>();
         for (Map.Entry<Product, Integer> entry : world.cart().getItems().entrySet()) {
             cartItems.put(entry.getKey().getId(), entry.getValue());
         }
         objects.put("Cart", cartItems);
-        panels.add(new PanelView(CART, "cart", "Cart", countItems(cartItems)));
+        panels.add(new PanelView(CART, "cart", "Cart", countItems(cartItems, "Product")));
 
-        List<ItemView> pricingItems = new ArrayList<>();
-        world.pricing().forEach((key, value) -> pricingItems.add(new ItemView(key, key, value)));
-        panels.add(new PanelView(PRICING, "pricing", "Pricing", pricingItems));
+        panels.add(new PanelView(PRICING, "pricing", "Pricing", world.pricing()));
 
         List<ItemView> orderItems = new ArrayList<>();
         for (Order order : world.orders()) {
             String shortId = shortId(order);
             objects.put("Order " + shortId, orderFields(order));
-            orderItems.add(new ItemView(shortId, shortId, MoneyFormat.shortOf(order.finalAmount())));
+            orderItems.add(new ItemView(shortId, shortId, MoneyFormat.shortOf(order.finalAmount()), "Order"));
         }
         panels.add(new PanelView(ORDER, "order", "Order", orderItems));
 
         // Phí ship chỉ để hiển thị (hàm thuần), không đưa vào objects nên không sinh diff
         for (ShippingZone zone : ShippingZone.values()) {
             List<ItemView> feeItems = new ArrayList<>();
-            world.shippingFees(zone).forEach((city, fee) -> feeItems.add(new ItemView(city, city, fee)));
+            // Ô = Address.city → phí do ShippingZone.feeFor tính
+            world.shippingFees(zone).forEach((city, fee) -> feeItems.add(new ItemView(city, city, fee, "Address")));
             panels.add(new PanelView(zonePanelId(zone), "zone", zone.name(), feeItems));
         }
         return new WorldSnapshot(new WorldView(List.copyOf(panels)), objects);
@@ -126,9 +126,10 @@ public class WorldSnapshotter {
         return fields;
     }
 
-    private static List<ItemView> countItems(Map<String, Object> quantities) {
+    private static List<ItemView> countItems(Map<String, Object> quantities, String type) {
         List<ItemView> items = new ArrayList<>();
-        quantities.forEach((productId, quantity) -> items.add(new ItemView(productId, label(productId), quantity)));
+        quantities.forEach((productId, quantity) ->
+                items.add(new ItemView(productId, label(productId), quantity, type)));
         return items;
     }
 }

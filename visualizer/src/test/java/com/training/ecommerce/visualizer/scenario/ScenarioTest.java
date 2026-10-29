@@ -143,10 +143,13 @@ class ScenarioTest {
         Run run = run("shipping-fee");
         List<TraceEvent> zones = run.events().stream().filter(e -> e.method().equals("of")).toList();
         assertThat(zones).extracting(TraceEvent::result).containsExactly("INNER_CITY", "OTHER_CITY");
-        assertThat(run.events().stream().filter(e -> e.method().equals("feeFor")))
-                .allSatisfy(e -> assertThat(e.changes()).isEmpty());
+        List<TraceEvent> fees = run.events().stream().filter(e -> e.method().equals("calculateShipping")).toList();
+        assertThat(fees).hasSize(2).allSatisfy(e -> assertThat(e.changes()).isEmpty());
+        assertThat(fees).extracting(e -> e.flows().getFirst())
+                .containsExactly(new Flow(WorldSnapshotter.HUB, "zone:INNER_CITY"),
+                        new Flow(WorldSnapshotter.HUB, "zone:OTHER_CITY"));
         var panels = run.events().getLast().worldAfter().panels();
-        assertThat(panels.get(6).items()).extracting(i -> i.value()).containsExactly("27.5k");
-        assertThat(panels.get(7).items()).extracting(i -> i.value()).containsExactly("42.5k");
+        assertThat(panels.get(6).items()).extracting(i -> i.value()).containsExactly("30.0k");
+        assertThat(panels.get(7).items()).extracting(i -> i.value()).containsExactly("37.0k");
     }
 }

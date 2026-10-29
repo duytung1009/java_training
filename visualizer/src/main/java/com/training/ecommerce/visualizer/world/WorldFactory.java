@@ -37,8 +37,8 @@ public class WorldFactory {
         world.registerProduct(new PhysicalProduct("BOOK", "Sách", new BigDecimal("150000"), 12,
                 new BigDecimal("0.5")));
 
-        world.putPricing("DISC", "-10%");
-        world.putPricing("TAX", "+8%");
+        world.putPricing("DISC", "BigDecimal", "-10%");   // discountRate truyền vào Cart.toOrder
+        world.putPricing("TAX", "BigDecimal", "+8%");     // taxRate
         return world;
     }
 }

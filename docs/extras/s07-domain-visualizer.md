@@ -113,7 +113,7 @@ Kịch bản đa luồng: snapshot chụp ngoài lock của domain, nên `change
 | `order` | `Order` | id ngắn (4 ký tự đầu) → `finalAmount` |
 | `zone:INNER_CITY`, `zone:OTHER_CITY` | `ShippingZone`, `Address` | thành phố → phí |
 
-Flow FE hỗ trợ (chiều ngược tự đảo): `warehouse:WH-HN ↔ warehouse:WH-HCM`, `hub → cart`, `cart → order` (qua pricing), `pricing → cart`, `order → hub`, `order → zone:INNER_CITY`, `order → zone:OTHER_CITY`.
+Flow FE hỗ trợ (chiều ngược tự đảo): `warehouse:WH-HN ↔ warehouse:WH-HCM`, `hub → cart`, `cart → order` (qua pricing), `pricing → cart`, `order → hub`, `hub → zone:INNER_CITY`, `hub → zone:OTHER_CITY` (phí ship do `PhysicalProduct.calculateShipping` tính; `Order` không liên quan tới `ShippingZone`).
 
 ## 5. Kịch bản
 
@@ -126,7 +126,7 @@ Flow FE hỗ trợ (chiều ngược tự đảo): `warehouse:WH-HN ↔ warehous
 | `transfer` | S06 | `transfer` thành công, sang kho chưa có loại hàng (pop-in), và thất bại | Line chạy giữa hai kho; lần thất bại không kho nào đổi |
 | `transfer-deadlock-safe` | S06 | 2 thread chuyển A→B và B→A song song (`ExecutorService` kịch bản tự tạo và đóng) | Log xen kẽ hai thread; tổng hàng không đổi |
 | `last-item-race` | S06 | N thread cùng `decreaseStock` sản phẩm còn 1 cái | Đúng một `OK`; stock không âm |
-| `shipping-fee` | S02/S03 | `ShippingZone.of(address)` + `feeFor(weight)` cho Hà Nội và tỉnh khác | Ô phí pop-in ở đúng vùng |
+| `shipping-fee` | S02/S03 | `ShippingZone.of(address)` + `PhysicalProduct.calculateShipping(address)`: LAPTOP → Hà Nội, PHONE → Đà Nẵng | Flow hub → zone; ô phí pop-in ở đúng vùng |
 
 ## 6. Thiết kế UI (đã duyệt Gate 1)
 
@@ -163,6 +163,11 @@ Ràng buộc chung: Java 25; `domain/` không đổi; service nhận dependency 
 - [ ] `last-item-race`: đúng 1 thành công, stock không âm
 - [ ] Reset đưa bản đồ về dữ liệu mẫu
 - [ ] `./mvnw test` toàn repo vẫn xanh; `git diff main -- domain/` rỗng
+
+## 8b. Việc để sau
+
+- **Ghi nhận đúng từng bước ở kịch bản song song** (`transfer-deadlock-safe`, `last-item-race`). Hiện `TraceRecorder` chụp before → action → after ngoài mọi lock, nên thread khác chen giữa làm dòng log OK mà ô không đổi; snapshot đọc từng kho riêng nên có thể "rách" (tổng PHONE = 9). Domain đúng, lỗi ở cách ghi.
+  Hướng đã chọn (chưa làm): ByteBuddy `Advice` inline vào các method mutator của domain (bảng cấu hình class/method), chạy trong lock của domain → chụp riêng object vừa đổi, cấp seq toàn cục, ghi journal; `TraceRecorder` gom thay đổi theo ngữ cảnh thread-local của lần gọi; `worldAfter` dựng lại từ journal. Cần `byte-buddy` + `byte-buddy-agent` trong `visualizer/pom.xml`, `-javaagent` cho `spring-boot:run`/surefire (IntelliJ thêm VM option, không thì tự attach kèm cảnh báo JDK 25); kiểm tra agent trên JDK 25 trước tiên. Skill `visualizer-sync` thêm bước khai báo mutator cho domain mới.
 
 ## 9. Ngoài phạm vi
 

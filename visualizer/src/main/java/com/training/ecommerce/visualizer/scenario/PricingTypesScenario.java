@@ -60,7 +60,7 @@ public class PricingTypesScenario implements Scenario {
         recorder.call("PricingRule", "andThen", List.of("percentOff(10%)", "amountOff(500 000)", "20 000 000"),
                 null, PRICING_PANEL, () -> {
                     BigDecimal result = percentThenAmount.apply(physical.calculateFinalPrice());
-                    world.putPricing("THEN", MoneyFormat.shortOf(result));
+                    world.putPricing("THEN", "PricingRule", MoneyFormat.shortOf(result));
                     return MoneyFormat.full(result);
                 });
 
@@ -69,7 +69,7 @@ public class PricingTypesScenario implements Scenario {
         recorder.call("PricingRule", "chain", List.of("percentOff(10%)", "amountOff(500 000)", "99 000"),
                 null, PRICING_PANEL, () -> {
                     BigDecimal result = chained.apply(digital.calculateFinalPrice());
-                    world.putPricing("CHAIN", MoneyFormat.shortOf(result));
+                    world.putPricing("CHAIN", "PricingRule", MoneyFormat.shortOf(result));
                     return MoneyFormat.full(result);
                 });
 
@@ -78,7 +78,7 @@ public class PricingTypesScenario implements Scenario {
         recorder.call("DiscountCode", "new", List.of("SALE20", "0.20"), null, PRICING_PANEL, () -> {
             holder[0] = new DiscountCode("SALE20", new BigDecimal("0.20"));
             String rate = "-" + MoneyFormat.percent(holder[0].getRate());
-            world.putPricing(holder[0].getCode(), rate);
+            world.putPricing(holder[0].getCode(), "DiscountCode", rate);
             return holder[0].getCode() + " " + rate;
         });
         DiscountCode code = holder[0];
@@ -92,7 +92,7 @@ public class PricingTypesScenario implements Scenario {
         recorder.call(product.getClass().getSimpleName(), "calculateFinalPrice", List.of(product.getId()), null,
                 PRICING_PANEL, () -> {
                     BigDecimal price = product.calculateFinalPrice();
-                    world.putPricing(key, MoneyFormat.shortOf(price));
+                    world.putPricing(key, "Product", MoneyFormat.shortOf(price));
                     return MoneyFormat.full(price);
                 });
     }
