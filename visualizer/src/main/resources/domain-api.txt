@@ -16,6 +16,9 @@ class order.Cart
 class order.Order
 class order.OrderLine
 class pricing.DiscountCode
+class shipping.IllegalShipmentTransitionException
+class shipping.Shipment
+class shipping.ShippingFeeCalculator
 ctor catalog.BundleProduct(String, String, int, BigDecimal, Category, Product[])
 ctor catalog.BundleProduct(String, String, int, BigDecimal, Product[])
 ctor catalog.DigitalProduct(String, String, BigDecimal, int)
@@ -36,8 +39,13 @@ ctor order.Order(String, BigDecimal, BigDecimal)
 ctor order.OrderLine(Product, int)
 ctor order.OrderLine(Product, int, BigDecimal)
 ctor pricing.DiscountCode(String, BigDecimal)
+ctor shipping.IllegalShipmentTransitionException(String, ShipmentStatus, ShipmentStatus)
+ctor shipping.Shipment(String, Address, BigDecimal)
+ctor shipping.Shipment(String, String, Address, BigDecimal, String, ShipmentStatus, int, List<ShipmentEvent>)
+ctor shipping.ShipmentEvent(ShipmentStatus, String)
 enum catalog.Category
 enum catalog.ProductType
+enum shipping.ShipmentStatus
 enum shipping.ShippingZone
 field catalog.Category.ELECTRONICS: Category static
 field catalog.Category.FASHION: Category static
@@ -48,6 +56,13 @@ field catalog.ProductType.BUNDLE: ProductType static
 field catalog.ProductType.DIGITAL: ProductType static
 field catalog.ProductType.PHYSICAL: ProductType static
 field catalog.ProductType.SUBSCRIPTION: ProductType static
+field shipping.Shipment.MAX_ATTEMPTS: int static
+field shipping.ShipmentStatus.CANCELLED: ShipmentStatus static
+field shipping.ShipmentStatus.CREATED: ShipmentStatus static
+field shipping.ShipmentStatus.DELIVERED: ShipmentStatus static
+field shipping.ShipmentStatus.IN_TRANSIT: ShipmentStatus static
+field shipping.ShipmentStatus.RETURNED: ShipmentStatus static
+field shipping.ShipmentStatus.RETURNING: ShipmentStatus static
 field shipping.ShippingZone.INNER_CITY: ShippingZone static
 field shipping.ShippingZone.OTHER_CITY: ShippingZone static
 interface pricing.Discountable
@@ -88,6 +103,7 @@ method inventory.InventoryManager#addProduct(Product): void
 method inventory.InventoryManager#decreaseStock(Order): void
 method inventory.InventoryManager#findById(String): Optional<Product>
 method inventory.InventoryManager#replenish(Warehouse, String, int): void
+method inventory.InventoryManager#restock(Order): void
 method inventory.InventoryManager#search(Predicate<Product>): List<Product>
 method inventory.Warehouse#add(String, int): void
 method inventory.Warehouse#getId(): String
@@ -127,9 +143,36 @@ method pricing.PricingRule#apply(BigDecimal): BigDecimal
 method pricing.PricingRule#chain(List<PricingRule>): PricingRule static
 method pricing.PricingRule#identity(): PricingRule static
 method pricing.PricingRule#percentOff(BigDecimal): PricingRule static
+method shipping.IllegalShipmentTransitionException#getAction(): String
+method shipping.IllegalShipmentTransitionException#getCurrent(): ShipmentStatus
+method shipping.Shipment#cancel(): void
+method shipping.Shipment#failAttempt(String): void
+method shipping.Shipment#getAddress(): Address
+method shipping.Shipment#getFailedAttempts(): int
+method shipping.Shipment#getFee(): BigDecimal
+method shipping.Shipment#getId(): String
+method shipping.Shipment#getOrderId(): String
+method shipping.Shipment#getStatus(): ShipmentStatus
+method shipping.Shipment#getTrackingCode(): String
+method shipping.Shipment#history(): List<ShipmentEvent>
+method shipping.Shipment#markDelivered(): void
+method shipping.Shipment#markReturned(): void
+method shipping.Shipment#pickUp(): void
+method shipping.Shipment#refuse(String): void
+method shipping.ShipmentEvent#equals(Object): boolean
+method shipping.ShipmentEvent#hashCode(): int
+method shipping.ShipmentEvent#note(): String
+method shipping.ShipmentEvent#status(): ShipmentStatus
+method shipping.ShipmentEvent#toString(): String
+method shipping.ShipmentStatus#blocksNewShipment(): boolean
+method shipping.ShipmentStatus#isTerminal(): boolean
+method shipping.ShipmentStatus#valueOf(String): ShipmentStatus static
+method shipping.ShipmentStatus#values(): ShipmentStatus[] static
 method shipping.Shippable#calculateShipping(Address): BigDecimal
+method shipping.ShippingFeeCalculator#feeFor(Order, Address): BigDecimal static
 method shipping.ShippingZone#feeFor(BigDecimal): BigDecimal
 method shipping.ShippingZone#getBaseFee(): BigDecimal
 method shipping.ShippingZone#of(Address): ShippingZone static
 method shipping.ShippingZone#valueOf(String): ShippingZone static
 method shipping.ShippingZone#values(): ShippingZone[] static
+record shipping.ShipmentEvent

@@ -39,3 +39,30 @@ CREATE TABLE IF NOT EXISTS order_lines (
     unit_price NUMERIC(19,2) NOT NULL CHECK (unit_price >= 0),
     PRIMARY KEY (order_id, line_no)
 );
+
+-- Vận đơn: aggregate riêng, tham chiếu đơn. Địa chỉ lưu phẳng (street, city).
+CREATE TABLE IF NOT EXISTS shipments (
+    id              VARCHAR(64)   PRIMARY KEY,
+    seq             BIGINT GENERATED ALWAYS AS IDENTITY,
+    order_id        VARCHAR(64)   NOT NULL REFERENCES orders (id),
+    street          VARCHAR(255)  NOT NULL,
+    city            VARCHAR(128)  NOT NULL,
+    fee             NUMERIC(19,2) NOT NULL CHECK (fee >= 0),
+    tracking_code   VARCHAR(32)   NOT NULL UNIQUE,
+    status          VARCHAR(16)   NOT NULL CHECK (status IN ('CREATED', 'IN_TRANSIT', 'DELIVERED', 'RETURNING', 'RETURNED', 'CANCELLED')),
+    failed_attempts INT           NOT NULL CHECK (failed_attempts BETWEEN 0 AND 3),
+    created_at      TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+
+-- Mỗi đơn tối đa một vận đơn còn hiệu lực: lớp chặn cuối, điều kiện phải khớp ShipmentStatus.blocksNewShipment().
+CREATE UNIQUE INDEX IF NOT EXISTS ux_shipments_active_order ON shipments (order_id)
+    WHERE status NOT IN ('CANCELLED', 'RETURNED');
+
+-- Lịch sử vận đơn theo thứ tự (position).
+CREATE TABLE IF NOT EXISTS shipment_events (
+    shipment_id VARCHAR(64)  NOT NULL REFERENCES shipments (id) ON DELETE CASCADE,
+    position    INT          NOT NULL,
+    status      VARCHAR(16)  NOT NULL,
+    note        VARCHAR(500) NULL,
+    PRIMARY KEY (shipment_id, position)
+);

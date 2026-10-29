@@ -12,11 +12,11 @@ export function renderSync(el, sync) {
   el.replaceChildren();
   if (!sync || sync.inSync) { el.hidden = true; return; }
   const head = sync.message
-    ?? `Visualizer chưa đồng bộ với domain: +${sync.added.length} / −${sync.removed.length} chữ ký API thay đổi so với lần sync cuối.`;
+    ?? `Visualizer chưa đồng bộ với domain: +${sync.added.length} / −${sync.removed.length} API signature thay đổi so với lần sync cuối.`;
   const details = h('details');
   details.append(h('summary', null, 'Chi tiết'));
   addLines(details, sync.added, '+', 'add');
   addLines(details, sync.removed, '−', 'del');
-  el.append(h('strong', null, `⚠ ${head}`), ' Chạy skill visualizer-sync để cập nhật.', details);
+  el.append(h('strong', null, `⚠️ ${head}`), ' Chạy skill /visualizer-sync để cập nhật.', details);
   el.hidden = false;
 }

@@ -21,7 +21,9 @@ public class ScenarioConfig {
                 new TransferScenario(),
                 new TransferDeadlockSafeScenario(),
                 new LastItemRaceScenario(),
-                new ReplenishScenario()
+                new ReplenishScenario(),
+                new ShipmentDeliveredScenario(),
+                new ShipmentReturnedScenario()
         ));
     }
 }

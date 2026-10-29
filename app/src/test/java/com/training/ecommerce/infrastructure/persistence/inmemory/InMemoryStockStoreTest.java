@@ -80,4 +80,26 @@ class InMemoryStockStoreTest {
         assertThrows(IllegalArgumentException.class, () -> store.decreaseStock(null));
         assertThrows(IllegalArgumentException.class, () -> new InMemoryStockStore(null));
     }
+
+    @Test
+    void increasesEveryLineAndSumsDuplicates() {
+        store.increaseStock(order(line(a, 3), line(b, 2), line(a, 2)));
+
+        assertEquals(15, a.getStock());
+        assertEquals(7, b.getStock());
+    }
+
+    @Test
+    void increaseUnknownProductThrowsAndNothingChanges() {
+        Product ghost = new PhysicalProduct("GHOST", "G", BigDecimal.TEN, 5, BigDecimal.ONE);
+
+        assertThrows(ProductNotFoundException.class, () -> store.increaseStock(order(line(a, 1), line(ghost, 1))));
+
+        assertEquals(10, a.getStock());
+    }
+
+    @Test
+    void increaseRejectsNullOrder() {
+        assertThrows(IllegalArgumentException.class, () -> store.increaseStock(null));
+    }
 }

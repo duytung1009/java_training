@@ -18,13 +18,13 @@ class WorldSnapshotterTest {
         assertThat(view.nodes()).extracting(NodeView::id).containsExactly(
                 "inventory", "warehouse:WH-HN", "warehouse:WH-HCM", "hub",
                 "order", "cart", "orders", "catalog", "catalog:product:LAPTOP", "catalog:product:PHONE",
-                "catalog:product:BOOK", "pricing", "shipping", "zone:INNER_CITY", "zone:OTHER_CITY");
+                "catalog:product:BOOK", "pricing", "shipping", "zone:INNER_CITY", "zone:OTHER_CITY", "shipments");
         assertThat(view.nodes()).extracting(NodeView::kind).containsExactly(
                 "area", "object", "object", "object", "area", "object", "collection", "area",
-                "object", "object", "object", "area", "area", "object", "object");
+                "object", "object", "object", "area", "area", "object", "object", "collection");
         assertThat(view.nodes()).extracting(NodeView::parent).containsExactly(
                 null, "inventory", "inventory", "inventory", null, "order", "order", null,
-                "catalog", "catalog", "catalog", null, null, "shipping", "shipping");
+                "catalog", "catalog", "catalog", null, null, "shipping", "shipping", "shipping");
         assertThat(view.nodes().stream().filter(n -> !n.kind().equals("object")))
                 .allSatisfy(n -> assertThat(n.items()).isEmpty());
     }

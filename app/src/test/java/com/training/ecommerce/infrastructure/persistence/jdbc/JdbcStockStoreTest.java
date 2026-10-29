@@ -144,4 +144,23 @@ class JdbcStockStoreTest extends PostgresJdbcTestSupport {
         assertThat(results.stream().filter(r -> r == null)).hasSize(20);
         assertThat(stockOf("A")).isZero();
     }
+
+    @Test
+    void increaseStockAddsEveryLine() {
+        Product laptop = product("LAPTOP", 5);
+        Product phone = product("PHONE", 3);
+
+        store.increaseStock(order(line(laptop, 2), line(phone, 1), line(laptop, 1)));
+
+        assertThat(stockOf("LAPTOP")).isEqualTo(8);
+        assertThat(stockOf("PHONE")).isEqualTo(4);
+    }
+
+    @Test
+    void increaseStockThrowsProductNotFoundForUnknownProduct() {
+        Product ghost = new PhysicalProduct("GHOST", "Không có trong DB", new BigDecimal("1000"), 5, new BigDecimal("1"));
+
+        assertThatThrownBy(() -> store.increaseStock(order(line(ghost, 1))))
+                .isInstanceOf(ProductNotFoundException.class);
+    }
 }

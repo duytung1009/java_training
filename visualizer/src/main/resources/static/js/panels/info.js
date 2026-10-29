@@ -25,8 +25,8 @@ export const INFO = {
   },
   InventoryManager: {
     cls: 'InventoryManager', pkg: 'domain.inventory', session: 'S04 · S06',
-    desc: 'Hub: danh mục sản phẩm và hàng sẵn bán (Product.stock); kho Warehouse là hàng dự trữ. decreaseStock trừ cả đơn, replenish chuyển hàng từ một kho lên hub, đều all-or-nothing và synchronized. Thứ tự khoá toàn cục: hub trước, kho sau.',
-    api: ['addProduct(product)', 'findById(id)', 'search(predicate)', 'decreaseStock(order) throws OutOfStockException', 'replenish(from, id, qty) throws ProductNotFoundException, OutOfStockException'],
+    desc: 'Hub: danh mục sản phẩm và hàng sẵn bán (Product.stock); kho Warehouse là hàng dự trữ. decreaseStock trừ cả đơn, restock hoàn lại cả đơn (đối xứng, dùng khi vận đơn bị trả về), replenish chuyển hàng từ một kho lên hub, đều all-or-nothing và synchronized. Thứ tự khoá toàn cục: hub trước, kho sau.',
+    api: ['addProduct(product)', 'findById(id)', 'search(predicate)', 'decreaseStock(order) throws OutOfStockException', 'restock(order) throws ProductNotFoundException', 'replenish(from, id, qty) throws ProductNotFoundException, OutOfStockException'],
     items: 'productId → stock',
   },
   Cart: {
@@ -46,6 +46,12 @@ export const INFO = {
     desc: 'Danh sách đơn do visualizer (World) giữ để gom các Order đã tạo; domain không có object này. Mỗi khối con là một Order thật.',
     api: ['add(order)', 'size()'],
     items: 'các Order đã tạo',
+  },
+  'List<Shipment>': {
+    cls: 'List<Shipment>', pkg: 'java.util', session: 'S07',
+    desc: 'Danh sách vận đơn do visualizer (World) giữ để gom các Shipment đã tạo; domain không có object này. Mỗi khối con là một Shipment thật.',
+    api: ['add(shipment)', 'size()'],
+    items: 'các Shipment đã tạo',
   },
   'domain.inventory': {
     cls: 'domain.inventory', pkg: 'package', session: 'S04 · S06',
@@ -89,15 +95,27 @@ export const INFO = {
   },
   'domain.shipping': {
     cls: 'domain.shipping', pkg: 'package', session: 'S02',
-    desc: 'Package phí ship gồm Shippable và enum ShippingZone. Hai vùng luôn có mặt; không object nào trong package này đổi state.',
-    api: ['Shippable', 'ShippingZone'],
-    items: 'các vùng giao hàng',
+    desc: 'Package giao hàng: Shippable, enum ShippingZone, ShippingFeeCalculator (phí cả đơn) và Shipment (vận đơn, có vòng đời). Hai vùng luôn có mặt; vận đơn hiện ra trong List<Shipment> khi kịch bản tạo chúng.',
+    api: ['Shippable', 'ShippingZone', 'ShippingFeeCalculator', 'Shipment · ShipmentStatus · ShipmentEvent'],
+    items: 'các vùng giao hàng, vận đơn',
   },
   ShippingZone: {
     cls: 'ShippingZone', pkg: 'domain.shipping', session: 'S02',
     desc: 'Enum vùng giao hàng, không có state. Phí = baseFee + 5000/kg × cân nặng (HALF_UP), được PhysicalProduct.calculateShipping gọi; Order không biết gì về phí ship. Ô nét đứt là phí tính ra.',
     api: ['ShippingZone.of(address)', 'feeFor(weightKg)', 'getBaseFee()', 'PhysicalProduct.calculateShipping(address)'],
     items: 'baseFee, phí theo thành phố',
+  },
+  Shipment: {
+    cls: 'Shipment', pkg: 'domain.shipping', session: 'S07',
+    desc: 'Vận đơn: aggregate riêng, tham chiếu đơn qua orderId, giữ địa chỉ, phí ship (cố định lúc tạo) và trạng thái. Luồng: CREATED → IN_TRANSIT → DELIVERED; IN_TRANSIT → RETURNING (người nhận từ chối, hoặc giao thất bại lần thứ 3) → RETURNED; CREATED → CANCELLED. Chuyển sai luồng ném IllegalShipmentTransitionException và không đổi gì. Mỗi lần chuyển / giao thất bại thêm một ShipmentEvent vào history. Vận đơn không tự hoàn kho: hoàn hàng là InventoryManager.restock(order).',
+    api: ['pickUp()', 'markDelivered()', 'failAttempt(reason)', 'refuse(reason)', 'markReturned()', 'cancel()', 'getStatus() · getFailedAttempts() · history()'],
+    items: 'status, failedAttempts, fee, trackingCode',
+  },
+  ShippingFeeCalculator: {
+    cls: 'ShippingFeeCalculator', pkg: 'domain.shipping', session: 'S07',
+    desc: 'Hàm thuần tính phí ship cho cả đơn: ShippingZone.of(address).feeFor(tổng kg), baseFee của vùng chỉ cộng một lần cho cả đơn (không cộng calculateShipping từng dòng). Tổng kg = Σ weightKg × số lượng của dòng vật lý; BundleProduct cộng các item vật lý bên trong. Đơn không có hàng vật lý thì ném IllegalArgumentException.',
+    api: ['ShippingFeeCalculator.feeFor(order, address)'],
+    items: 'không có khối riêng (phí hiện ở ô fee của Shipment)',
   },
 };
 const KIND = { object: 'object', collection: 'collection', area: 'area (package)' };

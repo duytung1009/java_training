@@ -1,6 +1,8 @@
 package com.training.ecommerce.visualizer.scenario;
 
 import com.training.ecommerce.domain.order.Order;
+import com.training.ecommerce.domain.shipping.Shipment;
+import com.training.ecommerce.domain.shipping.ShipmentStatus;
 import com.training.ecommerce.visualizer.trace.Flow;
 import com.training.ecommerce.visualizer.trace.Outcome;
 import com.training.ecommerce.visualizer.trace.TraceEvent;
@@ -48,10 +50,10 @@ class ScenarioTest {
     }
 
     @Test
-    void coDungMuoiKichBanTheoThuTu() {
+    void coDungMuoiHaiKichBanTheoThuTu() {
         assertThat(all().map(Scenario::id)).containsExactly("overview", "cart-to-order", "shipping-fee",
                 "pricing-types", "decrease-stock-ok", "decrease-stock-fail", "transfer", "transfer-deadlock-safe",
-                "last-item-race", "replenish");
+                "last-item-race", "replenish", "shipment-delivered", "shipment-returned");
     }
 
     @ParameterizedTest
@@ -185,7 +187,8 @@ class ScenarioTest {
 
         assertThat(run.events()).extracting(TraceEvent::outcome).containsOnly(Outcome.OK);
         assertThat(run.events()).extracting(TraceEvent::method).containsExactly("transfer", "replenish",
-                "calculateFinalPrice", "add", "add", "new", "toOrder", "decreaseStock", "of", "calculateShipping");
+                "calculateFinalPrice", "add", "add", "new", "toOrder", "decreaseStock", "feeFor", "new", "pickUp",
+                "markDelivered");
         // HCM 2 → 0, HN 10 + 2 − 3 = 9, hub LAPTOP 5 + 3 − 2 = 6, PHONE 8 − 1 = 7
         assertThat(w.warehouse(WorldFactory.WH_HCM).stockOf("LAPTOP")).isZero();
         assertThat(w.warehouse(WorldFactory.WH_HN).stockOf("LAPTOP")).isEqualTo(9);
@@ -194,7 +197,11 @@ class ScenarioTest {
         assertThat(w.orders()).hasSize(1);
         Order order = w.orders().getFirst();
         assertThat(order.getDiscountRate()).isEqualByComparingTo("0.10");
-        // flow đi lần lượt kho → kho → hub → giỏ → đơn (cùng mã → đơn) → hub → vùng ship
+        // giao thành công: kho không hoàn; phí cả đơn LAPTOP ×2 + PHONE ×1 về Hà Nội
+        assertThat(shipmentStatuses(run)).containsExactly("CREATED", "IN_TRANSIT", "DELIVERED");
+        assertThat(run.events().stream().filter(e -> e.method().equals("feeFor")).findFirst().orElseThrow().result())
+                .isEqualTo("42000.00");
+        // flow đi lần lượt kho → kho → hub → giỏ → đơn (cùng mã → đơn) → hub → vùng ship → List<Shipment>
         assertThat(run.events().stream().flatMap(e -> e.flows().stream())).containsExactly(
                 new Flow(WorldSnapshotter.warehousePanelId(WorldFactory.WH_HCM), WorldSnapshotter.warehousePanelId(WorldFactory.WH_HN)),
                 new Flow(WorldSnapshotter.warehousePanelId(WorldFactory.WH_HN), WorldSnapshotter.HUB),
@@ -203,7 +210,8 @@ class ScenarioTest {
                 new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDERS),
                 new Flow("pricing:code:SALE10", WorldSnapshotter.ORDERS),
                 new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.HUB),
-                new Flow(WorldSnapshotter.HUB, "zone:INNER_CITY"));
+                new Flow(WorldSnapshotter.orderNodeId(order), "zone:INNER_CITY"),
+                new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.SHIPMENTS));
     }
 
     @Test
@@ -278,5 +286,66 @@ class ScenarioTest {
         });
         assertThat(nodes.get(0).items().subList(1, 2)).extracting(i -> i.value()).containsExactly("30.0k");
         assertThat(nodes.get(1).items().subList(1, 2)).extracting(i -> i.value()).containsExactly("37.0k");
+    }
+
+    /** Status của vận đơn sau mỗi event thay đổi nó (ô status trên bản đồ). */
+    private List<String> shipmentStatuses(Run run) {
+        return run.events().stream().filter(e -> e.changes().stream().anyMatch(c -> c.ref().startsWith("Shipment ")))
+                .map(e -> e.worldAfter().nodes().stream().filter(n -> n.id().startsWith("shipping:shipment:"))
+                        .findFirst().orElseThrow().items().getFirst().value().toString()).toList();
+    }
+
+    @Test
+    void shipmentDeliveredDiQuaDuongThuanVaKhongHoanKho() {
+        Run run = run("shipment-delivered");
+        assertThat(run.events()).extracting(TraceEvent::outcome).containsOnly(Outcome.OK);
+        assertThat(run.events()).extracting(TraceEvent::method).containsExactly("new", "addLine", "addLine",
+                "decreaseStock", "feeFor", "new", "pickUp", "markDelivered");
+        // trừ kho đúng số đã đặt và không hoàn: LAPTOP 5 → 4, PHONE 8 → 7
+        assertThat(run.world().product("LAPTOP").getStock()).isEqualTo(4);
+        assertThat(run.world().product("PHONE").getStock()).isEqualTo(7);
+        assertThat(run.events()).noneMatch(e -> e.method().equals("restock"));
+        assertThat(shipmentStatuses(run)).containsExactly("CREATED", "IN_TRANSIT", "DELIVERED");
+        TraceEvent fee = run.events().get(4);
+        assertThat(fee.className()).isEqualTo("ShippingFeeCalculator");
+        assertThat(fee.result()).isEqualTo("32000.00");
+        NodeView node = run.events().getLast().worldAfter().nodes().stream()
+                .filter(n -> n.id().startsWith("shipping:shipment:")).findFirst().orElseThrow();
+        assertThat(node.parent()).isEqualTo(WorldSnapshotter.SHIPMENTS);
+        assertThat(node.cls()).isEqualTo("Shipment");
+        assertThat(node.items()).extracting(ItemView::key).containsExactly("status", "failedAttempts", "fee",
+                "trackingCode");
+        assertThat(node.items().getFirst().value()).isEqualTo(ShipmentStatus.DELIVERED.name());
+        // tính phí: flow từ đơn tới vùng được chọn (Hà Nội → INNER_CITY); tạo vận đơn: flow tới List<Shipment>
+        assertThat(fee.flows()).extracting(f -> f.to()).containsExactly("zone:INNER_CITY");
+        assertThat(fee.panels()).contains("zone:INNER_CITY");
+        assertThat(run.events().get(5).flows()).extracting(f -> f.to()).containsExactly(WorldSnapshotter.SHIPMENTS);
+    }
+
+    @Test
+    void shipmentReturnedHoanKhoVeNhuTruocKhiDat() {
+        World seed = new WorldFactory().create();
+        Run run = run("shipment-returned");
+        assertThat(run.world().product("LAPTOP").getStock()).isEqualTo(seed.product("LAPTOP").getStock());
+        assertThat(run.world().product("PHONE").getStock()).isEqualTo(seed.product("PHONE").getStock());
+        // Đà Nẵng → OTHER_CITY
+        assertThat(run.events().stream().filter(e -> e.method().equals("feeFor")).findFirst().orElseThrow().flows())
+                .extracting(f -> f.to()).containsExactly("zone:OTHER_CITY");
+        // ca duy nhất lỗi: cancel khi IN_TRANSIT, trạng thái và history giữ nguyên
+        List<TraceEvent> thrown = run.events().stream().filter(e -> e.outcome() == Outcome.THROWN).toList();
+        assertThat(thrown).singleElement().satisfies(e -> {
+            assertThat(e.method()).isEqualTo("cancel");
+            assertThat(e.exception().type()).isEqualTo("IllegalShipmentTransitionException");
+            assertThat(e.changes()).isEmpty();
+        });
+        // lần thất bại thứ 3 tự sang RETURNING
+        assertThat(shipmentStatuses(run)).containsExactly("CREATED", "IN_TRANSIT", "IN_TRANSIT", "IN_TRANSIT",
+                "RETURNING", "RETURNED");
+        assertThat(run.events().stream().filter(e -> e.method().equals("failAttempt"))).hasSize(3);
+        TraceEvent restock = run.events().getLast();
+        assertThat(restock.method()).isEqualTo("restock");
+        assertThat(restock.flows().getFirst().to()).isEqualTo(WorldSnapshotter.HUB);
+        assertThat(restock.flows().getFirst().from()).startsWith("shipping:shipment:");
+        assertThat(restock.changes()).isNotEmpty();
     }
 }

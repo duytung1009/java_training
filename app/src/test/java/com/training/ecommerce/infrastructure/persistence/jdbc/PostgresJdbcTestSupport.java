@@ -42,6 +42,6 @@ abstract class PostgresJdbcTestSupport {
 
     @BeforeEach
     void cleanTables() {
-        jdbc.sql("TRUNCATE order_lines, orders, bundle_items, products").update();
+        jdbc.sql("TRUNCATE shipment_events, shipments, order_lines, orders, bundle_items, products").update();
     }
 }

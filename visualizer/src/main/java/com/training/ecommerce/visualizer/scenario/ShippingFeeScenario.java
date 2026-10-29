@@ -45,7 +45,7 @@ public class ShippingFeeScenario implements Scenario {
 
     /** Tính phí ship qua recorder; dùng chung với kịch bản tổng quan. */
     static void ship(World world, TraceRecorder recorder, String productId, Address address) {
-        String addressText = "Address(" + address.getCity() + ")";
+        String addressText = WorldSnapshotter.addressRef(address);
         ShippingZone zone = recorder.call("ShippingZone", "of", List.of(addressText), null, List.of(),
                 () -> ShippingZone.of(address));
         // Product (nằm trong hub) tự tính phí qua Shippable; hàm thuần nên changes rỗng,
