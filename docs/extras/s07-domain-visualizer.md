@@ -23,7 +23,7 @@ Học viên chọn một **kịch bản** (gắn với buổi S02–S06), bấm 
 | D4 | **Mỗi lượt chạy dựng thế giới mới từ dữ liệu mẫu**, API trả cả lượt (`worldBefore` + danh sách event, mỗi event kèm `worldAfter`). FE tự phát lại Play / Pause / Step; Reset = về `worldBefore`. Không SSE / WebSocket, không endpoint reset | Kết quả tất định, dễ test, không có state dùng chung giữa các request |
 | D5 | FE là **file tĩnh** trong `visualizer/src/main/resources/static/`: HTML + CSS + JS (ES modules) thuần, SVG isometric. Không npm / build tool | `spring-boot:run` là đủ |
 | D6 | Bản đồ **vẽ đúng domain hiện có**; đường `WH → hub` để nét chấm "chưa có" | `Warehouse` và tồn kho `InventoryManager` là hai model riêng |
-| D7 | **Bố cục bản đồ thuộc FE.** BE chỉ trả panel id + item + `flow {from, to}`; FE tự map cặp `(from, to)` sang đường và hướng | BE không biết gì về toạ độ |
+| D7 | **Bố cục bản đồ thuộc FE.** BE chỉ trả panel id + item + `flow {from, to}`; FE tự map cặp `(from, to)` sang đường và hướng. Đường chỉ gồm đoạn ngang/dọc; `checkLayout()` trong `layout.js` cảnh báo ở console khi đường cắt qua panel hoặc panel chồng nhau | BE không biết gì về toạ độ |
 | D8 | Nhánh `extra/domain-visualizer` từ `main` (đã có S07), commit tiền tố `[S07-extra]` | — |
 
 ## 3. Kiến trúc

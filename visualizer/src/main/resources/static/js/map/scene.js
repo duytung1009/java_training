@@ -1,6 +1,6 @@
 // Vẽ bản đồ SVG: panel, ô con, đường nối và animation
-import { el, iso, diamond, wirePath, css } from './iso.js';
-import { PANELS, WIRES, MISSING_WIRE, resolveFlow } from './layout.js';
+import { el, iso, diamond, wirePath, css, flat } from './iso.js';
+import { PANELS, HEADER, WIRES, MISSING_WIRE, resolveFlow, checkLayout } from './layout.js';
 
 const PRODUCT = { LAPTOP: '#e8c46a', PHONE: '#7fd4e0', HEADPHONE: '#b7e07f', BOOK: '#e88fb4' };
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -13,8 +13,10 @@ function tileColor(panelId, key) {
   return '#cfd3dc';
 }
 
-export function createScene(svg) {
+// onSelect(id, panelView): click một khối (id null = bỏ chọn)
+export function createScene(svg, { onSelect = () => {} } = {}) {
   const layers = {}, groups = {}, frames = {};
+  let world = null, selected = null;
   const tiles = new Map(); // `${panelId}/${key}` → { g, polygon, text, label, value, anim }
 
   function build() {
@@ -25,29 +27,43 @@ export function createScene(svg) {
       const m = el('marker', { id, viewBox: '0 0 10 10', refX: 7, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, defs);
       el('path', { d: 'M1 1L8 5L1 9', fill: 'none', stroke: c, 'stroke-width': 1.6 }, m);
     }
+    for (const err of checkLayout()) console.warn('Visualizer layout:', err);
     for (const n of ['ground', 'wires', 'zones', 'flows', 'labels']) layers[n] = el('g', {}, svg);
 
-    for (let x = -0.5; x < 13.5; x++) for (let y = -0.5; y < 13; y++)
+    for (let x = -0.5; x < 16; x++) for (let y = -0.5; y < 15.5; y++)
       el('polygon', { points: diamond(x, y, 1, 1), fill: 'none', stroke: '#1b1f27' }, layers.ground);
 
     for (const w of WIRES)
       el('path', { d: wirePath(w.pts), fill: 'none', stroke: css('--wire'), 'stroke-width': 1.5 }, layers.wires);
     el('path', { d: wirePath(MISSING_WIRE), fill: 'none', stroke: css('--wire'), 'stroke-width': 1, 'stroke-dasharray': '2 5' }, layers.wires);
-    const [mx, my] = iso(4.45, 2);
-    el('text', { x: mx, y: my + 18, 'text-anchor': 'middle', class: 'zone-sub' }, layers.labels).textContent = 'WH → hub: chưa có';
+    // Ghi chú nằm phẳng dọc theo đường, phía sau đường
+    const note = el('text', { transform: flat(...iso(4.45, 2.4)), 'text-anchor': 'middle', class: 'zone-sub' }, layers.labels);
+    el('tspan', { x: 0, y: -13 }, note).textContent = 'WH → hub';
+    el('tspan', { x: 0, y: -3 }, note).textContent = 'chưa có';
 
     for (const [id, p] of Object.entries(PANELS)) {
       const color = css(p.color);
-      groups[id] = el('g', {}, layers.zones);
+      groups[id] = el('g', { class: 'zone' }, layers.zones);
+      groups[id].addEventListener('click', e => { e.stopPropagation(); select(selected === id ? null : id); });
       frames[id] = el('polygon', { points: diamond(p.x, p.y, p.w, p.d), fill: color, 'fill-opacity': 0.05, stroke: color, 'stroke-width': 1.5, class: 'zone-frame' }, groups[id]);
-      const [tx, ty] = iso(p.x, p.y);
-      el('text', { x: tx, y: ty - 18, 'text-anchor': 'middle', class: 'zone-title', fill: color }, layers.labels).textContent = p.title;
-      el('text', { x: tx, y: ty - 6, 'text-anchor': 'middle', class: 'zone-sub' }, layers.labels).textContent = p.sub;
+      // Tiêu đề nằm phẳng trong dải đầu panel, chạy dọc cạnh sau
+      const head = el('text', { transform: flat(...iso(p.x + 0.2, p.y + 0.4)), class: 'zone-head' }, groups[id]);
+      el('tspan', { x: 0, y: 0, class: 'zone-title', fill: color }, head).textContent = p.title;
+      el('tspan', { x: 0, y: 11, class: 'zone-sub' }, head).textContent = p.sub;
     }
+    svg.onclick = () => select(null);
+    if (selected) frames[selected]?.classList.add('sel');
   }
 
-  // Chữ nằm phẳng trên nền iso: trục x của chữ chạy theo trục x của lưới, dòng sau lùi theo trục y
-  const flat = (cx, cy) => `matrix(0.894 0.447 -0.894 0.447 ${cx} ${cy})`;
+  const panelOf = id => world?.panels?.find(p => p.id === id) ?? null;
+
+  function select(id) {
+    if (selected) frames[selected]?.classList.remove('sel');
+    selected = id && frames[id] ? id : null;
+    if (selected) frames[selected].classList.add('sel');
+    onSelect(selected, panelOf(selected));
+  }
+
 
   // Đếm dần số trong ô; huỷ lượt đếm cũ nếu có giá trị mới đến
   function countTo(t, to, ms) {
@@ -63,7 +79,9 @@ export function createScene(svg) {
 
   // Đồng bộ ô con với WorldView: mới pop-in, mất pop-out, số đổi thì đếm dần + nháy viền.
   // animate=false: dựng lại ngay, không hiệu ứng (Reset / lần đầu)
-  function sync(world, { animate = true, speed = 1 } = {}) {
+  function sync(next, { animate = true, speed = 1 } = {}) {
+    world = next;
+    if (selected) onSelect(selected, panelOf(selected));
     const byId = new Map((world?.panels ?? []).map(p => [p.id, p]));
     const slow = reduced() ? 0 : 1;
     for (const [id, p] of Object.entries(PANELS)) {
@@ -74,7 +92,7 @@ export function createScene(svg) {
       list.forEach((it, i) => {
         const k = `${id}/${it.key}`;
         seen.add(k);
-        const tx = p.x + 0.3 + (i % cols) * (tw + gap), ty = p.y + 0.35 + Math.floor(i / cols) * (td + gap);
+        const tx = p.x + 0.3 + (i % cols) * (tw + gap), ty = p.y + HEADER + Math.floor(i / cols) * (td + gap);
         const [cx, cy] = iso(tx + tw / 2, ty + td / 2);
         const tip = `${p.title} · ${it.key} · ${it.value}`;
         let t = tiles.get(k);
@@ -150,5 +168,5 @@ export function createScene(svg) {
   }
 
   build();
-  return { sync, flash, flow, reset };
+  return { sync, flash, flow, reset, select };
 }

@@ -2,12 +2,16 @@ import * as api from './api.js';
 import { createScene } from './map/scene.js';
 import { createPlayer } from './player.js';
 import { initControls } from './controls.js';
+import { renderInfo } from './panels/info.js';
 
 const $ = id => document.getElementById(id);
 let setButtons = () => {};
 
+const scene = createScene($('map'), { onSelect: (id, panel) => renderInfo($('info'), id, panel) });
+$('info').addEventListener('click', e => { if (e.target.closest('.close')) scene.select(null); });
+
 const player = createPlayer({
-  scene: createScene($('map')),
+  scene,
   els: { log: $('log'), diff: $('diff'), status: $('status') },
   onState: s => setButtons(s),
 });

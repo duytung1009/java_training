@@ -22,6 +22,17 @@ main { display: grid; grid-template-columns: minmax(0, 62fr) minmax(0, 38fr); ga
 .map h2 { color: var(--wh); } .log h2 { color: var(--hub); } .diff h2 { color: var(--store); }
 .map { border-color: #4a3426; } .log { border-color: #26344d; } .diff { border-color: #29402f; }
 svg { display: block; width: 100%; height: auto; }
+.map { position: relative; } .map h2 span { color: var(--muted); letter-spacing: 0; }
+.info { position: absolute; right: 8px; bottom: 8px; width: min(260px, calc(100% - 16px)); max-height: 60%; overflow: auto;
+  background: rgba(18, 20, 26, .94); border: 1px solid var(--c); padding: 6px 9px; font-size: 10.5px; line-height: 1.4; }
+.info .t { color: var(--c); font-weight: 600; letter-spacing: .06em; padding-right: 16px; }
+.info .cls { color: var(--text); } .info .cls span, .info .empty { color: var(--muted); }
+.info p { margin: 6px 0; color: var(--text); }
+.info .h { color: var(--c); margin-top: 6px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.info ul { margin: 2px 0; padding-left: 14px; } .info ul.kv { list-style: none; padding: 0; }
+.info .kv li { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed var(--line); }
+.info .kv b { font-weight: 400; color: var(--c); }
+.info .close { position: absolute; top: 4px; right: 4px; border: 0; padding: 0 6px; color: var(--muted); }
 .right { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .log ol { list-style: none; margin: 0; padding: 4px 0; min-height: 220px; max-height: 340px; overflow: auto; }
 .log li { display: grid; grid-template-columns: 92px 60px 1fr 16px; gap: 6px; padding: 3px 10px; cursor: pointer; }
@@ -36,8 +47,11 @@ svg { display: block; width: 100%; height: auto; }
 footer { padding: 6px 16px 16px; color: var(--muted); }
 
 /* ---- Bản đồ ---- */
-.zone-title { font-size: 11px; letter-spacing: .06em; }
-.zone-sub { font-size: 10px; fill: var(--muted); }
+.zone-title { font-size: 11px; font-weight: 600; }
+.zone { cursor: pointer; } .zone-head { pointer-events: none; }
+.zone:hover .zone-frame { fill-opacity: .12; }
+.zone-frame.sel { stroke-width: 3; fill-opacity: .14; }
+.zone-sub { font-size: 9px; fill: var(--muted); }
 .tile text { font-size: 10px; font-weight: 600; pointer-events: none; }
 .tile .val { font-size: 11px; }
 .tile, .zone-frame { transform-box: fill-box; transform-origin: center; }
