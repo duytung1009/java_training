@@ -45,27 +45,46 @@ public class TraceRecorder {
     }
 
     /**
-     * Gọi {@code action} và ghi lại một event.
+     * Gọi {@code action} và ghi lại một event với tối đa một flow.
      *
+     * @param flow flow duy nhất của bước này, null nếu không có
      * @return kết quả của action
      * @throws IllegalArgumentException nếu className, method, args, panels hoặc action null
      * @throws RuntimeException         exception của action được ghi lại (THROWN) rồi ném lại nguyên vẹn
      */
     public <T> T call(String className, String method, List<String> args, Flow flow, List<String> panels,
                       Supplier<T> action) {
+        return callFlows(className, method, args, flow == null ? List.of() : List.of(flow), panels, action);
+    }
+
+    /**
+     * Như {@link #call} nhưng một bước phát nhiều flow lần lượt theo thứ tự trong {@code flows}.
+     *
+     * @param flows các flow theo thứ tự phát, null coi như rỗng
+     * @throws IllegalArgumentException nếu className, method, args, panels hoặc action null, hoặc flows có phần tử null
+     * @throws RuntimeException         exception của action được ghi lại (THROWN) rồi ném lại nguyên vẹn
+     */
+    public <T> T callFlows(String className, String method, List<String> args, List<Flow> flows,
+                           List<String> panels, Supplier<T> action) {
         if (className == null || method == null || args == null || panels == null || action == null) {
             throw new IllegalArgumentException("className, method, args, panels và action không được null");
+        }
+        List<Flow> safeFlows;
+        try {
+            safeFlows = flows == null ? List.of() : List.copyOf(flows);
+        } catch (NullPointerException e) {
+            throw new IllegalArgumentException("flows không được chứa phần tử null", e);
         }
         WorldSnapshot before = snapshotter.snapshot(world);
         T result;
         try {
             result = action.get();
         } catch (RuntimeException e) {
-            record(className, method, args, Outcome.THROWN, null, ExceptionInfo.of(e), flow, panels, before);
+            record(className, method, args, Outcome.THROWN, null, ExceptionInfo.of(e), safeFlows, panels, before);
             throw e;
         }
         record(className, method, args, Outcome.OK, result == null ? null : String.valueOf(result), null,
-                flow, panels, before);
+                safeFlows, panels, before);
         return result;
     }
 
@@ -76,10 +95,20 @@ public class TraceRecorder {
      */
     public void run(String className, String method, List<String> args, Flow flow, List<String> panels,
                     Runnable action) {
+        runFlows(className, method, args, flow == null ? List.of() : List.of(flow), panels, action);
+    }
+
+    /**
+     * Như {@link #callFlows} cho action không có kết quả (void).
+     *
+     * @throws IllegalArgumentException nếu tham số null hoặc flows có phần tử null
+     */
+    public void runFlows(String className, String method, List<String> args, List<Flow> flows,
+                         List<String> panels, Runnable action) {
         if (action == null) {
             throw new IllegalArgumentException("action không được null");
         }
-        call(className, method, args, flow, panels, () -> {
+        callFlows(className, method, args, flows, panels, () -> {
             action.run();
             return null;
         });
@@ -91,12 +120,12 @@ public class TraceRecorder {
     }
 
     private void record(String className, String method, List<String> args, Outcome outcome, String result,
-                        ExceptionInfo exception, Flow flow, List<String> panels, WorldSnapshot before) {
+                        ExceptionInfo exception, List<Flow> flows, List<String> panels, WorldSnapshot before) {
         WorldSnapshot after = snapshotter.snapshot(world);
         // seq cấp lúc hoàn tất để thứ tự log = thứ tự thực sự kết thúc
         events.add(new TraceEvent(sequence.incrementAndGet(), Instant.now().toString(),
                 Thread.currentThread().getName(), className, method, List.copyOf(args), outcome, result,
-                exception, flow, List.copyOf(panels), diff(before.objects(), after.objects()), after.view()));
+                exception, flows, List.copyOf(panels), diff(before.objects(), after.objects()), after.view()));
     }
 
     /** So sánh hai snapshot object, chỉ giữ field có đổi. */

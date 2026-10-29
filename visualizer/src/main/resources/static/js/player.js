@@ -1,5 +1,5 @@
 // Giữ run + con trỏ bước; phát lại tuần tự từng event.
-// Mỗi bước: flow → đồng bộ ô theo worldAfter → nháy panel → cập nhật log/diff.
+// Mỗi bước: các flow lần lượt → đồng bộ ô theo worldAfter → nháy panel → cập nhật log/diff.
 import { renderLog } from './panels/log.js';
 import { renderDiff } from './panels/diff.js';
 
@@ -43,8 +43,10 @@ export function createPlayer({ scene, els, onState }) {
     if (busy || !run || cursor >= events().length) return false;
     busy = true; notify();
     const g = gen, e = events()[cursor], ok = e.outcome === 'OK';
-    await scene.flow(e.flow, ok, FLOW_MS / speed);
-    if (g !== gen) return false;
+    for (const f of e.flows ?? (e.flow ? [e.flow] : [])) {
+      await scene.flow(f, ok, FLOW_MS / speed);
+      if (g !== gen) return false;
+    }
     scene.sync(e.worldAfter, { speed });
     scene.flash(e.panels, ok);
     cursor++; selected = cursor - 1;

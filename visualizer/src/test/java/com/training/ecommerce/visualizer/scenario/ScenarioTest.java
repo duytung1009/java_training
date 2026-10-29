@@ -1,5 +1,6 @@
 package com.training.ecommerce.visualizer.scenario;
 
+import com.training.ecommerce.visualizer.trace.Flow;
 import com.training.ecommerce.visualizer.trace.Outcome;
 import com.training.ecommerce.visualizer.trace.TraceEvent;
 import com.training.ecommerce.visualizer.trace.TraceRecorder;
@@ -68,9 +69,21 @@ class ScenarioTest {
         TraceEvent remove = run.events().stream().filter(e -> e.method().equals("remove")).findFirst().orElseThrow();
         assertThat(remove.changes().getFirst().before()).containsKey("BOOK");
         assertThat(remove.changes().getFirst().after()).doesNotContainKey("BOOK");
-        TraceEvent toOrder = run.events().getLast();
+        TraceEvent toOrder = run.events().stream().filter(e -> e.method().equals("toOrder")).findFirst().orElseThrow();
         assertThat(toOrder.changes().getFirst().before()).isNull();
         assertThat(toOrder.result()).startsWith("Order ");
+        assertThat(toOrder.flows()).containsExactly(
+                new Flow(WorldSnapshotter.PRICING, WorldSnapshotter.CART),
+                new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDER));
+        // Cart không trừ kho: sau add/changeQuantity/remove/toOrder tồn kho vẫn như seed (LAPTOP 5, PHONE 8)
+        TraceEvent decrease = run.events().getLast();
+        assertThat(decrease.method()).isEqualTo("decreaseStock");
+        assertThat(run.events()).filteredOn(e -> !e.method().equals("decreaseStock"))
+                .allSatisfy(e -> assertThat(e.changes()).noneMatch(c -> c.ref().startsWith("Product")));
+        assertThat(decrease.flows()).containsExactly(new Flow(WorldSnapshotter.ORDER, WorldSnapshotter.HUB));
+        // chỉ InventoryManager.decreaseStock(order) trừ: LAPTOP 5 → 4, PHONE 8 → 7
+        assertThat(run.world().product("LAPTOP").getStock()).isEqualTo(4);
+        assertThat(run.world().product("PHONE").getStock()).isEqualTo(7);
     }
 
     @Test

@@ -46,7 +46,7 @@ class VisualizerControllerTest {
                 .andExpect(jsonPath("$.worldBefore.panels", hasSize(8)))
                 .andExpect(jsonPath("$.events[0].result").hasJsonPath())
                 .andExpect(jsonPath("$.events[0].exception").hasJsonPath())
-                .andExpect(jsonPath("$.events[0].flow").hasJsonPath())
+                .andExpect(jsonPath("$.events[0].flows").isArray())
                 .andExpect(jsonPath("$.events[0].outcome").value("OK"))
                 .andExpect(jsonPath("$.events[0].changes[0].before").hasJsonPath())
                 .andExpect(jsonPath("$.events[0].changes[0].before").value((Object) null))
@@ -61,5 +61,17 @@ class VisualizerControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.detail").value("Không tìm thấy kịch bản: khong-co"));
+    }
+
+    // Chỉ kiểm hình dạng response: snapshot lệch domain là cảnh báo trên UI, không làm đỏ build
+    @Test
+    void syncTraVeTrangThaiDongBo() throws Exception {
+        mockMvc.perform(get("/api/viz/sync"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.inSync").isBoolean())
+                .andExpect(jsonPath("$.added").isArray())
+                .andExpect(jsonPath("$.removed").isArray())
+                .andExpect(jsonPath("$.snapshotSize").isNumber())
+                .andExpect(jsonPath("$.currentSize").isNumber());
     }
 }

@@ -4,9 +4,11 @@ import { PANELS, HEADER, WIRES, MISSING_WIRE, resolveFlow, checkLayout } from '.
 
 const PRODUCT = { LAPTOP: '#e8c46a', PHONE: '#7fd4e0', HEADPHONE: '#b7e07f', BOOK: '#e88fb4' };
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MORE = '__more'; // ô "+N" gom các item không đủ chỗ
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function tileColor(panelId, key) {
+  if (key === MORE) return '#7d8290';
   if (PRODUCT[key]) return PRODUCT[key];
   if (panelId === 'pricing' || panelId === 'order') return '#c9b6ff';
   if (panelId.startsWith('zone:')) return '#8fe0d6';
@@ -30,7 +32,18 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     for (const err of checkLayout()) console.warn('Visualizer layout:', err);
     for (const n of ['ground', 'wires', 'zones', 'flows', 'labels']) layers[n] = el('g', {}, svg);
 
-    for (let x = -0.5; x < 16; x++) for (let y = -0.5; y < 15.5; y++)
+    // Ground + viewBox suy ra từ kích thước các panel và đường nối
+    const ps = Object.values(PANELS);
+    const maxX = Math.max(...ps.map(p => p.x + p.w)) + 0.5, maxY = Math.max(...ps.map(p => p.y + p.d)) + 0.5;
+    const pts = [...ps.flatMap(p => [[p.x, p.y], [p.x + p.w, p.y], [p.x + p.w, p.y + p.d], [p.x, p.y + p.d]]),
+      ...WIRES.flatMap(w => w.pts), ...MISSING_WIRE].map(q => iso(...q));
+    const M = 24, x0 = Math.min(...pts.map(q => q[0])) - M, y0 = Math.min(...pts.map(q => q[1])) - M;
+    const vw = Math.max(...pts.map(q => q[0])) + M - x0, vh = Math.max(...pts.map(q => q[1])) + M - y0;
+    svg.setAttribute('viewBox', `${x0} ${y0} ${vw} ${vh}`);
+    svg.setAttribute('width', Math.round(vw)); svg.setAttribute('height', Math.round(vh));
+    svg.style.setProperty('--nat-w', Math.round(vw) + 'px'); // min-width trong CSS: hẹp thì cuộn ngang
+
+    for (let x = -0.5; x < maxX; x++) for (let y = -0.5; y < maxY; y++)
       el('polygon', { points: diamond(x, y, 1, 1), fill: 'none', stroke: '#1b1f27' }, layers.ground);
 
     for (const w of WIRES)
@@ -85,16 +98,27 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     const byId = new Map((world?.panels ?? []).map(p => [p.id, p]));
     const slow = reduced() ? 0 : 1;
     for (const [id, p] of Object.entries(PANELS)) {
-      const list = byId.get(id)?.items ?? [];
+      const all = byId.get(id)?.items ?? [];
       const tw = p.tileW || 1.3, td = 0.9, gap = 0.2;
       const cols = Math.max(1, Math.floor((p.w - 0.3) / (tw + gap)));
+      // Số hàng vừa trong card: đáy ô cuối ≤ p.y + p.d - 0.1
+      const rows = Math.max(1, Math.floor((p.d - HEADER - 0.1 + gap) / (td + gap)));
+      const cap = cols * rows;
+      let list = all;
+      if (all.length > cap) {
+        const hidden = all.slice(cap - 1);
+        list = [...all.slice(0, cap - 1), {
+          key: MORE, label: `+${hidden.length}`, value: 'khác',
+          tip: `${p.title} · +${hidden.length} khác (click khối để xem đủ)\n` + hidden.map(h => `${h.key} · ${h.value}`).join('\n'),
+        }];
+      }
       const seen = new Set();
       list.forEach((it, i) => {
         const k = `${id}/${it.key}`;
         seen.add(k);
         const tx = p.x + 0.3 + (i % cols) * (tw + gap), ty = p.y + HEADER + Math.floor(i / cols) * (td + gap);
         const [cx, cy] = iso(tx + tw / 2, ty + td / 2);
-        const tip = `${p.title} · ${it.key} · ${it.value}`;
+        const tip = it.tip ?? `${p.title} · ${it.key} · ${it.value}`;
         let t = tiles.get(k);
         if (!t) {
           const g = el('g', { class: animate ? 'tile pop-in' : 'tile' }, groups[id]);
@@ -102,17 +126,19 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
           const polygon = el('polygon', { points: diamond(tx, ty, tw, td), fill: color, 'fill-opacity': 0.06, stroke: color, 'stroke-width': 1.5 }, g);
           // Ô 2 dòng: tên trên, số dưới; panel valueOnly chỉ có số
           const text = el('text', { transform: flat(cx, cy), 'text-anchor': 'middle', fill: color }, g);
-          if (!p.valueOnly) el('tspan', { x: 0, y: -1.5 }, text).textContent = it.label ?? it.key;
+          const name = p.valueOnly ? null : el('tspan', { x: 0, y: -1.5 }, text);
+          if (name) name.textContent = it.label ?? it.key;
           const val = el('tspan', { x: 0, y: p.valueOnly ? 3.5 : 9.5, class: 'val' }, text);
           val.textContent = String(it.value);
           const title = el('title', {}, g);
           title.textContent = tip;
-          tiles.set(k, { g, polygon, text, val, title, value: it.value, anim: 0 });
+          tiles.set(k, { g, polygon, text, name, val, title, value: it.value, anim: 0 });
           return;
         }
         t.polygon.setAttribute('points', diamond(tx, ty, tw, td));
         t.text.setAttribute('transform', flat(cx, cy));
         t.title.textContent = tip;
+        if (t.name) t.name.textContent = it.label ?? it.key;
         if (it.value === t.value) return;
         if (typeof it.value === 'number' && typeof t.value === 'number') {
           countTo(t, it.value, animate ? 500 / speed * slow : 0);
@@ -167,6 +193,29 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     sync(world, { animate: false });
   }
 
+  enablePan(svg.parentElement);
   build();
   return { sync, flash, flow, reset, select };
+}
+
+// Kéo chuột để cuộn bản đồ; dịch chuyển < 4px vẫn là click (chọn/bỏ chọn panel)
+function enablePan(box) {
+  let drag = null, moved = false;
+  box.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    drag = { x: e.clientX, y: e.clientY, sl: box.scrollLeft, st: box.scrollTop };
+    moved = false;
+  });
+  window.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!moved && Math.hypot(dx, dy) < 4) return;
+    moved = true; box.classList.add('panning');
+    box.scrollLeft = drag.sl - dx; box.scrollTop = drag.st - dy;
+  });
+  const end = () => { drag = null; box.classList.remove('panning'); };
+  window.addEventListener('pointerup', end);
+  window.addEventListener('pointercancel', end);
+  // Chặn click sinh ra sau khi kéo thật (capture: chạy trước handler của panel/svg)
+  box.addEventListener('click', e => { if (moved) { e.stopPropagation(); moved = false; } }, true);
 }

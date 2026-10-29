@@ -1,0 +1,132 @@
+# Snapshot API công khai của module domain (mỗi dòng một chữ ký).
+# Visualizer so sánh file này với domain hiện tại để hiện banner cảnh báo khi lệch.
+# Không sửa tay. Tạo lại: ./mvnw -q -pl visualizer -am compile && java -cp visualizer/target/classes:domain/target/classes com.training.ecommerce.visualizer.sync.DomainApiScanner visualizer/src/main/resources/domain-api.txt
+class catalog.BundleProduct
+class catalog.DigitalProduct
+class catalog.OutOfStockException
+class catalog.PhysicalProduct
+class catalog.Product abstract
+class catalog.ProductNotFoundException
+class catalog.SubscriptionProduct
+class customer.Address
+class inventory.InventoryManager
+class inventory.Warehouse
+class inventory.WarehouseTransferService
+class order.Cart
+class order.Order
+class order.OrderLine
+class pricing.DiscountCode
+ctor catalog.BundleProduct(String, String, int, BigDecimal, Category, Product[])
+ctor catalog.BundleProduct(String, String, int, BigDecimal, Product[])
+ctor catalog.DigitalProduct(String, String, BigDecimal, int)
+ctor catalog.DigitalProduct(String, String, BigDecimal, int, Category)
+ctor catalog.OutOfStockException(String, int, int)
+ctor catalog.PhysicalProduct(String, String, BigDecimal, int, BigDecimal)
+ctor catalog.PhysicalProduct(String, String, BigDecimal, int, BigDecimal, Category)
+ctor catalog.ProductNotFoundException(String)
+ctor catalog.SubscriptionProduct(String, String, BigDecimal, int, int)
+ctor catalog.SubscriptionProduct(String, String, BigDecimal, int, int, Category)
+ctor customer.Address(String, String)
+ctor inventory.InventoryManager()
+ctor inventory.Warehouse(String)
+ctor inventory.WarehouseTransferService()
+ctor order.Cart()
+ctor order.Order(BigDecimal, BigDecimal)
+ctor order.Order(String, BigDecimal, BigDecimal)
+ctor order.OrderLine(Product, int)
+ctor order.OrderLine(Product, int, BigDecimal)
+ctor pricing.DiscountCode(String, BigDecimal)
+enum catalog.Category
+enum catalog.ProductType
+enum shipping.ShippingZone
+field catalog.Category.ELECTRONICS: Category static
+field catalog.Category.FASHION: Category static
+field catalog.Category.OTHER: Category static
+field catalog.Category.SOFTWARE: Category static
+field catalog.Category.SUBSCRIPTION: Category static
+field catalog.ProductType.BUNDLE: ProductType static
+field catalog.ProductType.DIGITAL: ProductType static
+field catalog.ProductType.PHYSICAL: ProductType static
+field catalog.ProductType.SUBSCRIPTION: ProductType static
+field shipping.ShippingZone.INNER_CITY: ShippingZone static
+field shipping.ShippingZone.OTHER_CITY: ShippingZone static
+interface pricing.Discountable
+interface pricing.PricingRule
+interface shipping.Shippable
+method catalog.BundleProduct#calculateFinalPrice(): BigDecimal
+method catalog.BundleProduct#getDiscountRate(): BigDecimal
+method catalog.BundleProduct#getItems(): Product[]
+method catalog.Category#valueOf(String): Category static
+method catalog.Category#values(): Category[] static
+method catalog.DigitalProduct#calculateFinalPrice(): BigDecimal
+method catalog.OutOfStockException#getAvailable(): int
+method catalog.OutOfStockException#getProductId(): String
+method catalog.OutOfStockException#getRequested(): int
+method catalog.PhysicalProduct#calculateFinalPrice(): BigDecimal
+method catalog.PhysicalProduct#calculateShipping(Address): BigDecimal
+method catalog.PhysicalProduct#getWeightKg(): BigDecimal
+method catalog.Product#calculateFinalPrice(): BigDecimal
+method catalog.Product#decreaseStock(int): void
+method catalog.Product#equals(Object): boolean
+method catalog.Product#getBasePrice(): BigDecimal
+method catalog.Product#getCategory(): Category
+method catalog.Product#getId(): String
+method catalog.Product#getName(): String
+method catalog.Product#getStock(): int
+method catalog.Product#hashCode(): int
+method catalog.Product#toString(): String
+method catalog.ProductNotFoundException#getProductId(): String
+method catalog.ProductType#of(Product): ProductType static
+method catalog.ProductType#valueOf(String): ProductType static
+method catalog.ProductType#values(): ProductType[] static
+method catalog.SubscriptionProduct#calculateFinalPrice(): BigDecimal
+method catalog.SubscriptionProduct#getMonths(): int
+method customer.Address#getCity(): String
+method customer.Address#getStreet(): String
+method inventory.InventoryManager#addProduct(Product): void
+method inventory.InventoryManager#decreaseStock(Order): void
+method inventory.InventoryManager#findById(String): Optional<Product>
+method inventory.InventoryManager#search(Predicate<Product>): List<Product>
+method inventory.Warehouse#add(String, int): void
+method inventory.Warehouse#getId(): String
+method inventory.Warehouse#remove(String, int): void
+method inventory.Warehouse#stockOf(String): int
+method inventory.Warehouse#toString(): String
+method inventory.WarehouseTransferService#transfer(Warehouse, Warehouse, String, int): void
+method order.Cart#add(Product, int): void
+method order.Cart#changeQuantity(Product, int): void
+method order.Cart#getItems(): Map<Product, Integer>
+method order.Cart#getQuantity(Product): int
+method order.Cart#isEmpty(): boolean
+method order.Cart#remove(Product): void
+method order.Cart#toOrder(BigDecimal, BigDecimal): Order
+method order.Order#addLine(OrderLine): void
+method order.Order#discountAmount(): BigDecimal
+method order.Order#finalAmount(): BigDecimal
+method order.Order#getDiscountRate(): BigDecimal
+method order.Order#getId(): String
+method order.Order#getLines(): OrderLine[]
+method order.Order#getTaxRate(): BigDecimal
+method order.Order#quantitiesByProductId(): Map<String, Integer>
+method order.Order#subtotal(): BigDecimal
+method order.Order#taxAmount(): BigDecimal
+method order.OrderLine#getProduct(): Product
+method order.OrderLine#getQuantity(): int
+method order.OrderLine#getUnitPrice(): BigDecimal
+method order.OrderLine#lineTotal(): BigDecimal
+method pricing.DiscountCode#getCode(): String
+method pricing.DiscountCode#getRate(): BigDecimal
+method pricing.Discountable#applyDiscount(DiscountCode): BigDecimal
+method pricing.Discountable#calculateFinalPrice(): BigDecimal
+method pricing.PricingRule#amountOff(BigDecimal): PricingRule static
+method pricing.PricingRule#andThen(PricingRule): PricingRule
+method pricing.PricingRule#apply(BigDecimal): BigDecimal
+method pricing.PricingRule#chain(List<PricingRule>): PricingRule static
+method pricing.PricingRule#identity(): PricingRule static
+method pricing.PricingRule#percentOff(BigDecimal): PricingRule static
+method shipping.Shippable#calculateShipping(Address): BigDecimal
+method shipping.ShippingZone#feeFor(BigDecimal): BigDecimal
+method shipping.ShippingZone#getBaseFee(): BigDecimal
+method shipping.ShippingZone#of(Address): ShippingZone static
+method shipping.ShippingZone#valueOf(String): ShippingZone static
+method shipping.ShippingZone#values(): ShippingZone[] static

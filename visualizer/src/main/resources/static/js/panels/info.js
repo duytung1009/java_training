@@ -62,7 +62,7 @@ export function renderInfo(el, id, panel) {
     <p>${esc(info.desc)}</p>
     <div class="h">API chính</div>
     <ul>${info.api.map(a => `<li>${esc(a)}</li>`).join('')}</ul>
-    <div class="h">Trạng thái · ${esc(info.items)}</div>
+    <div class="h">Trạng thái · ${esc(info.items)}${items.length ? ` · ${items.length}` : ''}</div>
     ${items.length
       ? `<ul class="kv">${items.map(it => `<li><span>${esc(it.label ?? it.key)}</span><b>${esc(it.value)}</b></li>`).join('')}</ul>`
       : '<div class="empty">(trống)</div>'}`;

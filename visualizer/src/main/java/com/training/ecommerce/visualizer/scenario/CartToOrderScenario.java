@@ -10,6 +10,7 @@ import com.training.ecommerce.visualizer.world.WorldSnapshotter;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** S02/S04: giỏ hàng thêm, đổi số lượng, xoá rồi chốt thành Order. */
 public class CartToOrderScenario implements Scenario {
@@ -31,7 +32,7 @@ public class CartToOrderScenario implements Scenario {
 
     @Override
     public String description() {
-        return "Cart.add ×3, changeQuantity, remove rồi toOrder(giảm giá 10%, thuế 8%): ô cart pop-in, đổi số, pop-out; Order mới xuất hiện.";
+        return "Cart.add ×3, changeQuantity, remove rồi toOrder(giảm giá 10%, thuế 8%): ô cart pop-in, đổi số, pop-out; Order mới xuất hiện. Cart chỉ kiểm tồn kho, không trừ; kho giảm ở bước InventoryManager.decreaseStock cuối.";
     }
 
     @Override
@@ -49,12 +50,20 @@ public class CartToOrderScenario implements Scenario {
         recorder.run("Cart", "changeQuantity", List.of("PHONE", "1"), null, cartPanel,
                 () -> cart.changeQuantity(phone, 1));
         recorder.run("Cart", "remove", List.of("BOOK"), null, cartPanel, () -> cart.remove(book));
-        recorder.call("Cart", "toOrder", List.of("0.10", "0.08"),
-                new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDER),
-                List.of(WorldSnapshotter.PRICING, WorldSnapshotter.ORDER), () -> {
+        AtomicReference<Order> created = new AtomicReference<>();
+        recorder.callFlows("Cart", "toOrder", List.of("0.10", "0.08"),
+                List.of(new Flow(WorldSnapshotter.PRICING, WorldSnapshotter.CART),
+                        new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDER)),
+                List.of(WorldSnapshotter.PRICING, WorldSnapshotter.CART, WorldSnapshotter.ORDER), () -> {
                     Order order = cart.toOrder(new BigDecimal("0.10"), new BigDecimal("0.08"));
                     world.addOrder(order);
+                    created.set(order);
                     return WorldSnapshotter.orderRef(order);
                 });
+        Order order = created.get();
+        // Cart không trừ kho; kho chỉ giảm khi InventoryManager.decreaseStock(order)
+        recorder.run("InventoryManager", "decreaseStock", List.of(WorldSnapshotter.orderRef(order)),
+                new Flow(WorldSnapshotter.ORDER, WorldSnapshotter.HUB), List.of(WorldSnapshotter.HUB),
+                () -> world.hub().decreaseStock(order));
     }
 }

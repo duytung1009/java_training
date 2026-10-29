@@ -23,7 +23,7 @@ Học viên chọn một **kịch bản** (gắn với buổi S02–S06), bấm 
 | D4 | **Mỗi lượt chạy dựng thế giới mới từ dữ liệu mẫu**, API trả cả lượt (`worldBefore` + danh sách event, mỗi event kèm `worldAfter`). FE tự phát lại Play / Pause / Step; Reset = về `worldBefore`. Không SSE / WebSocket, không endpoint reset | Kết quả tất định, dễ test, không có state dùng chung giữa các request |
 | D5 | FE là **file tĩnh** trong `visualizer/src/main/resources/static/`: HTML + CSS + JS (ES modules) thuần, SVG isometric. Không npm / build tool | `spring-boot:run` là đủ |
 | D6 | Bản đồ **vẽ đúng domain hiện có**; đường `WH → hub` để nét chấm "chưa có" | `Warehouse` và tồn kho `InventoryManager` là hai model riêng |
-| D7 | **Bố cục bản đồ thuộc FE.** BE chỉ trả panel id + item + `flow {from, to}`; FE tự map cặp `(from, to)` sang đường và hướng. Đường chỉ gồm đoạn ngang/dọc; `checkLayout()` trong `layout.js` cảnh báo ở console khi đường cắt qua panel hoặc panel chồng nhau | BE không biết gì về toạ độ |
+| D7 | **Bố cục bản đồ thuộc FE.** BE chỉ trả panel id + item + `flows` (danh sách `{from, to}` theo thứ tự phát); FE tự map cặp `(from, to)` sang đường và hướng. Đường chỉ gồm đoạn ngang/dọc; `checkLayout()` trong `layout.js` cảnh báo ở console khi đường cắt qua panel hoặc panel chồng nhau | BE không biết gì về toạ độ |
 | D8 | Nhánh `extra/domain-visualizer` từ `main` (đã có S07), commit tiền tố `[S07-extra]` | — |
 
 ## 3. Kiến trúc
@@ -48,7 +48,7 @@ Luật phụ thuộc: `web → scenario → trace/world → domain`. Không impo
 
 ```java
 // Ý tưởng, không phải code chốt
-public <T> T call(String className, String method, List<Object> args, Flow flow, List<String> panels, Supplier<T> action) {
+public <T> T call(String className, String method, List<Object> args, Flow flow, List<String> panels, Supplier<T> action) {  // flow nullable; có thêm callFlows/runFlows nhận List<Flow>
     var before = snapshotter.snapshot(world);           // trước khi gọi
     try {
         T result = action.get();                        // gọi method domain thật
@@ -92,7 +92,7 @@ Kịch bản đa luồng: snapshot chụp ngoài lock của domain, nên `change
   "outcome": "OK",                     // OK | THROWN
   "result": null,                      // string hoặc null
   "exception": null,                   // {"type": "OutOfStockException", "message": "..."} khi THROWN
-  "flow": { "from": "warehouse:WH-HN", "to": "warehouse:WH-HCM" },   // null nếu không có
+  "flows": [ { "from": "warehouse:WH-HN", "to": "warehouse:WH-HCM" } ],   // theo thứ tự phát, [] nếu không có
   "panels": ["warehouse:WH-HN", "warehouse:WH-HCM"],                 // panel cần nháy viền
   "changes": [ { "ref": "Warehouse WH-HN", "before": {"LAPTOP": 10}, "after": {"LAPTOP": 7} } ],
   "worldAfter": { /* WorldView */ } }
@@ -119,7 +119,7 @@ Flow FE hỗ trợ (chiều ngược tự đảo): `warehouse:WH-HN ↔ warehous
 
 | id | Buổi | Nội dung | Điểm cần thấy trên UI |
 |---|---|---|---|
-| `cart-to-order` | S02/S04 | `Cart.add` ×3, `changeQuantity`, `remove`, `toOrder(discount, tax)` | Ô cart pop-in / đổi số / pop-out; Order mới |
+| `cart-to-order` | S02/S04 | `Cart.add` ×3, `changeQuantity`, `remove`, `toOrder(discount, tax)`, `decreaseStock(order)` | Ô cart pop-in / đổi số / pop-out; toOrder chạy pricing → cart → order; kho chỉ giảm ở bước `decreaseStock` (Cart không trừ kho) |
 | `pricing-types` | S03 | `calculateFinalPrice` cho Physical / Digital / Subscription / Bundle; `PricingRule.andThen`; `DiscountCode` | Ô giá từng loại hiện ở trạm giá (đa hình) |
 | `decrease-stock-ok` | S04 | `InventoryManager.decreaseStock(order)` có 2 dòng cùng một sản phẩm | Cộng dồn theo product, trừ đúng một lần |
 | `decrease-stock-fail` | S04 | Đơn có một dòng thiếu hàng | `THROWN OutOfStockException`, `changes` rỗng |
@@ -135,7 +135,7 @@ Theo mockup `docs/extras/mockups/iso-map.html`:
 - Nền tối, font JetBrains Mono, panel viền mảnh nhiều màu, legend ô vuông.
 - **Panel domain:** hình thoi phẳng trên lưới isometric, viền màu theo loại, ruột trong suốt; tên + kiểu dữ liệu ở góc trên.
 - **Ô con:** hình thoi phẳng có nhãn + giá trị. Số đổi → đếm dần + viền nháy xanh (tăng) / cam (giảm). Ô mới → pop-in; ô mất → pop-out.
-- **Đường nối:** một màu xám, đứng yên; chỉ khi event có `flow` thì chạy nét đứt có mũi tên theo hướng data; exception → màu đỏ + panel nháy đỏ.
+- **Đường nối:** một màu xám, đứng yên; chỉ khi event có `flows` thì lần lượt từng flow chạy nét đứt có mũi tên theo hướng data; exception → màu đỏ + panel nháy đỏ.
 - Log, diff và bản đồ dùng chung **một con trỏ bước**; bấm dòng log → chọn bước đó.
 - Header: chọn kịch bản, Run, Pause, Step, tốc độ, Reset. Màn hình < 1100px: xếp dọc.
 

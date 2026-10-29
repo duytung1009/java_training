@@ -3,6 +3,7 @@ import { createScene } from './map/scene.js';
 import { createPlayer } from './player.js';
 import { initControls } from './controls.js';
 import { renderInfo } from './panels/info.js';
+import { renderSync } from './panels/sync.js';
 
 const $ = id => document.getElementById(id);
 let setButtons = () => {};
@@ -27,6 +28,7 @@ async function loadScenario(id) {
 async function start() {
   const scenarios = await api.getScenarios();
   $('badge').hidden = !api.isFixture();
+  try { renderSync($('sync'), await api.getSync()); } catch { /* banner lỗi không được chặn app */ }
   setButtons = initControls({ player, scenarios, onScenario: loadScenario });
   if (scenarios.length) await loadScenario(scenarios[0].id);
 }

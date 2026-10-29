@@ -124,10 +124,12 @@
    "outcome": "OK",
    "result": null,
    "exception": null,
-   "flow": {
-    "from": "warehouse:WH-HN",
-    "to": "warehouse:WH-HCM"
-   },
+   "flows": [
+    {
+     "from": "warehouse:WH-HN",
+     "to": "warehouse:WH-HCM"
+    }
+   ],
    "panels": [
     "warehouse:WH-HN",
     "warehouse:WH-HCM"
@@ -274,10 +276,12 @@
    "outcome": "OK",
    "result": null,
    "exception": null,
-   "flow": {
-    "from": "warehouse:WH-HN",
-    "to": "warehouse:WH-HCM"
-   },
+   "flows": [
+    {
+     "from": "warehouse:WH-HN",
+     "to": "warehouse:WH-HCM"
+    }
+   ],
    "panels": [
     "warehouse:WH-HN",
     "warehouse:WH-HCM"
@@ -430,10 +434,12 @@
     "type": "OutOfStockException",
     "message": "PHONE: cần 9, còn 4"
    },
-   "flow": {
-    "from": "warehouse:WH-HCM",
-    "to": "warehouse:WH-HN"
-   },
+   "flows": [
+    {
+     "from": "warehouse:WH-HCM",
+     "to": "warehouse:WH-HN"
+    }
+   ],
    "panels": [
     "warehouse:WH-HCM"
    ],
@@ -563,10 +569,12 @@
    "outcome": "OK",
    "result": null,
    "exception": null,
-   "flow": {
-    "from": "hub",
-    "to": "cart"
-   },
+   "flows": [
+    {
+     "from": "hub",
+     "to": "cart"
+    }
+   ],
    "panels": [
     "cart"
    ],
@@ -710,10 +718,12 @@
    "outcome": "OK",
    "result": null,
    "exception": null,
-   "flow": {
-    "from": "hub",
-    "to": "cart"
-   },
+   "flows": [
+    {
+     "from": "hub",
+     "to": "cart"
+    }
+   ],
    "panels": [
     "cart"
    ],
@@ -861,7 +871,7 @@
    "outcome": "OK",
    "result": null,
    "exception": null,
-   "flow": null,
+   "flows": [],
    "panels": [
     "cart"
    ],
@@ -1005,10 +1015,12 @@
    "outcome": "OK",
    "result": "Order a1f3",
    "exception": null,
-   "flow": {
-    "from": "cart",
-    "to": "order"
-   },
+   "flows": [
+    {
+     "from": "cart",
+     "to": "order"
+    }
+   ],
    "panels": [
     "pricing",
     "order"
@@ -1162,10 +1174,12 @@
    "outcome": "OK",
    "result": null,
    "exception": null,
-   "flow": {
-    "from": "order",
-    "to": "hub"
-   },
+   "flows": [
+    {
+     "from": "order",
+     "to": "hub"
+    }
+   ],
    "panels": [
     "hub"
    ],
@@ -1317,10 +1331,12 @@
    "outcome": "OK",
    "result": "INNER_CITY · 27 500",
    "exception": null,
-   "flow": {
-    "from": "order",
-    "to": "zone:INNER_CITY"
-   },
+   "flows": [
+    {
+     "from": "order",
+     "to": "zone:INNER_CITY"
+    }
+   ],
    "panels": [
     "zone:INNER_CITY"
    ],

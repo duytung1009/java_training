@@ -13,6 +13,7 @@ Repo học Java core của Tùng: mỗi buổi (`sXX`) áp dụng lý thuyết v
 ./mvnw -pl domain test -Dtest=InventoryManagerTest          # một test class
 ./mvnw -pl app -am test -Dtest=OrderDetailServiceTest -Dsurefire.failIfNoSpecifiedTests=false
 ./mvnw -pl app -am spring-boot:run            # profile local (mặc định, in-memory); Swagger: http://localhost:8080/swagger-ui.html
+./mvnw -pl visualizer -am spring-boot:run     # Domain Visualizer: http://localhost:8081
 docker compose up --build                     # profile dev: PostgreSQL + backend trong Docker
 docker compose up -d db && ./mvnw -pl app -am spring-boot:run -Dspring-boot.run.profiles=dev   # BE trên IDE, DB trong Docker
 ./mvnw -q -pl app -am compile && java -cp app/target/classes:domain/target/classes com.training.ecommerce.demo.S06Demo
@@ -28,6 +29,7 @@ java playground/session01/IntegerCacheDemo.java   # file playground chạy đơn
   - `infrastructure`: `persistence/jdbc` (`JdbcClient` + PostgreSQL, `schema.sql`/`data.sql` ở `app/src/main/resources`), `persistence/inmemory`, `fake/` (implement port với `SimulatedLatency`). Class persistence không có annotation Spring; wiring theo profile ở `infrastructure/config` (`JdbcPersistenceConfig` = `dev`, `InMemoryPersistenceConfig` = `local`, kèm seed).
   - `interfaces/rest/<catalog|order>`: controller + DTO record + mapper (không trả domain object ra ngoài); `RestExceptionHandler` map exception → `ProblemDetail` (not found 404, `OutOfStockException`/ràng buộc DB 409, IAE 400). `interfaces/cli`: `ReceiptPrinter`.
   - `demo/SXXDemo`: entry point `main` chạy thử từng buổi.
+- `visualizer/` (S07 extra, Spring Boot, port 8081): bản đồ 2.5D + call log + diff trạng thái, chỉ phụ thuộc `domain`, không sửa `domain/`/`app/`. **Sửa `domain/` (public API hoặc hành vi) thì chạy skill `visualizer-sync`**; app hiện banner khi `domain-api.txt` lệch với domain. Plan: `docs/extras/s07-domain-visualizer.md`.
 - Dependency rule: `interfaces → application → domain ← infrastructure`; `domain.**` được dùng `shared.**`, không được import `app`.
 - Profile: `local` (mặc định, `application-local.properties` tắt autoconfig DataSource/JDBC) và `dev` (`application-dev.properties`, ghi đè bằng `SPRING_DATASOURCE_URL`/`_USERNAME`/`_PASSWORD`). Test JDBC dùng Testcontainers `postgres:17` qua `PostgresJdbcTestSupport` (một container dùng chung) + `@ActiveProfiles("dev")`; Testcontainers không đọc Docker context nên với OrbStack cần `DOCKER_HOST` hoặc `~/.testcontainers.properties`.
 - Service nhận dependency qua constructor (kể cả `ExecutorService`); service không tự tạo/đóng executor — bên tạo thì bên đóng. Constructor/method validate null/rỗng và ném `IllegalArgumentException`; contract exception ghi trong Javadoc `@throws`.

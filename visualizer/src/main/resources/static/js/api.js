@@ -33,3 +33,10 @@ export async function getWorld() {
   if (fixtureMode) return (await loadFixture()).worldBefore;
   return json(await fetch('/api/viz/world'));
 }
+
+// Trạng thái đồng bộ với domain; fixture hoặc lỗi thì trả null (không hiện banner)
+export async function getSync() {
+  if (fixtureMode) return null;
+  try { return await json(await fetch('/api/viz/sync')); }
+  catch { return null; }
+}

@@ -16,12 +16,18 @@ button:disabled { opacity: .4; cursor: default; }
 .badge { font-size: 11px; color: var(--price); border: 1px solid var(--price); padding: 0 6px; }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 8px 16px; color: var(--muted); border-bottom: 1px solid var(--line); }
 .legend i { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border: 1.5px solid; }
+.sync { padding: 8px 16px; border: 1px solid var(--dec); color: var(--dec); }
+.sync strong { font-weight: 600; } .sync details { margin-top: 6px; max-height: 220px; overflow: auto; }
+.sync summary { cursor: pointer; } .sync .add { color: var(--ok); } .sync .del { color: var(--err); } .sync .more { color: var(--muted); }
 main { display: grid; grid-template-columns: minmax(0, 62fr) minmax(0, 38fr); gap: 12px; padding: 12px 16px; }
 .panel { border: 1px solid var(--line); background: var(--panel); min-width: 0; }
 .panel > h2 { font-size: 11px; letter-spacing: .1em; margin: 0; padding: 6px 10px; border-bottom: 1px solid var(--line); color: var(--muted); }
 .map h2 { color: var(--wh); } .log h2 { color: var(--hub); } .diff h2 { color: var(--store); }
 .map { border-color: #4a3426; } .log { border-color: #26344d; } .diff { border-color: #29402f; }
 svg { display: block; width: 100%; height: auto; }
+.map-view { overflow: auto; max-height: calc(100vh - 150px); cursor: grab; }
+.map-view.panning { cursor: grabbing; user-select: none; }
+.map-view svg { min-width: var(--nat-w, 0); }
 .map { position: relative; } .map h2 span { color: var(--muted); letter-spacing: 0; }
 .info { position: absolute; right: 8px; bottom: 8px; width: min(260px, calc(100% - 16px)); max-height: 60%; overflow: auto;
   background: rgba(18, 20, 26, .94); border: 1px solid var(--c); padding: 6px 9px; font-size: 10.5px; line-height: 1.4; }
