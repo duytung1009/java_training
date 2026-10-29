@@ -444,3 +444,68 @@ Hiện `DiscountCode` (`domain.pricing`) chỉ dùng được qua `Discountable.
 Ngoài spec: mã hết hạn / giới hạn số lần dùng, cộng dồn nhiều mã, mã chỉ áp cho một số sản phẩm, lưu mã vào `Order` hay DB.
 
 **Kiểm khi review:** overload mới gọi lại overload cũ (không lặp logic tạo dòng); `domain/` vẫn Java thuần; đã chạy `visualizer-sync`.
+
+---
+
+## Extra – Vận đơn & giao hàng: tạo vận đơn, giao thành công / thất bại / hoàn
+**Nhánh:** `extra/shipment-lifecycle` · đề xuất 30/10, theo luồng spec đỏ
+
+Hiện luồng mới dừng ở chốt đơn: `Order` không có trạng thái, địa chỉ hay phí ship. `Shippable.calculateShipping(Address)` chỉ tính phí cho **từng sản phẩm** (mỗi sản phẩm cộng một lần `baseFee`), chưa ai gọi trong luồng đặt đơn. `ShipmentTracker`/`ShipmentInfo` ở `application/shipping` chỉ là nguồn giả S06 để gọi song song. Kho chỉ trừ (`decreaseStock(Order)`), chưa hoàn khi huỷ/trả.
+
+Mô hình: **vận đơn là aggregate riêng `Shipment` trong `domain.shipping`**, tham chiếu đơn qua `orderId`, giữ địa chỉ, phí ship và trạng thái giao. `Order` giữ nguyên (không đổi bảng `orders`, test S02–S07 không đụng). `shipping` được import `order`/`catalog`/`customer`; `order` không import `shipping` (không vòng). Đã loại: thêm `OrderStatus` + địa chỉ vào `Order` (đổi constructor, JDBC, test cũ; để khi có thanh toán/hoàn tiền); `Shipment` giữ cả object `Order` (khó lưu, lẫn ranh giới aggregate).
+
+```
+CREATED ──pickUp()──▶ IN_TRANSIT ──markDelivered()──▶ DELIVERED
+   │                     │  ▲
+ cancel()   failAttempt(lý do): attempts+1, vẫn IN_TRANSIT
+   ▼                     │  (lần thứ 3 tự chuyển RETURNING)
+CANCELLED                ├──refuse(lý do)──▶ RETURNING ──markReturned()──▶ RETURNED
+```
+
+| # | Class/Task | Package | Ghi chú |
+|---|---|---|---|
+| 1 | `ShipmentStatus` (enum) | `domain/shipping` | `CREATED`, `IN_TRANSIT`, `DELIVERED`, `RETURNING`, `RETURNED`, `CANCELLED`; `isTerminal()` |
+| 2 | `ShipmentEvent` (record `status`, `note`) | `domain/shipping` | mỗi lần chuyển trạng thái / giao thất bại thêm một event |
+| 3 | `Shipment implements Identifiable<String>` | `domain/shipping` | `orderId`, `Address`, `fee`, `trackingCode`, `status`, `failedAttempts`, `history()` (bản copy không sửa được); method chuyển trạng thái như sơ đồ |
+| 4 | `ShippingFeeCalculator.feeFor(Order, Address)` | `domain/shipping` | `ShippingZone.of(address).feeFor(tổng cân nặng)`: cộng `weightKg × quantity` các dòng `PhysicalProduct`, bundle tính item physical bên trong; `baseFee` tính một lần |
+| 5 | `InventoryManager.restock(Order)` | `domain/inventory` | đối xứng `decreaseStock(Order)`, `synchronized`, dùng `Product.increaseStock` |
+| 6 | Port `StockStore.increaseStock(Order)` + `ShipmentRepository` (`findActiveByOrderId`) | `application/{inventory, shipping}` | |
+| 7 | `ShipmentService`: `create(orderId, address)`, `pickUp`, `deliver`, `failAttempt`, `refuse`, `markReturned`, `cancel` | `application/shipping` | `markReturned`/`cancel` là `@Transactional`: đổi trạng thái + hoàn kho cùng commit/rollback |
+| 8 | JDBC + in-memory (`shipments`, `shipment_events`), REST `/api/shipments` | `infrastructure`, `interfaces/rest/shipping` | ISE → 409, IAE → 400, không tìm thấy → 404 |
+| 9 | Visualizer: kịch bản giao thành công và giao thất bại 3 lần → hoàn kho | `visualizer` | sau khi domain xanh, chạy skill `visualizer-sync` |
+
+**Spec hành vi** (đề xuất 30/10, test: `ShipmentTest`, `ShippingFeeCalculatorTest` trong `domain/src/test/java/com/training/ecommerce/domain/shipping/`, `InventoryManagerRestockTest` trong `domain/src/test/java/com/training/ecommerce/domain/inventory/`, `ShipmentServiceTest` ở `app`)
+
+- **G1** Vận đơn mới: `CREATED`, `failedAttempts = 0`, `trackingCode` không rỗng, `fee` scale 2, history có đúng một event `CREATED`.
+- **G2** Phí theo cả đơn, `baseFee` một lần: không cộng `calculateShipping` từng dòng.
+- **G3** Đơn không có dòng hàng vật lý nào (chỉ digital/subscription) → IAE khi tính phí / tạo vận đơn; `order`, `address`, `orderId` null/rỗng → IAE.
+- **G4** `failAttempt(lý do)` chỉ ở `IN_TRANSIT`: `failedAttempts + 1`, giữ `IN_TRANSIT`; lần thứ 3 (`MAX_ATTEMPTS = 3`) tự chuyển `RETURNING`. Lý do null/rỗng → IAE (kiểm trước trạng thái).
+- **G5** `cancel()` chỉ ở `CREATED`; đã lấy hàng thì phải `refuse` → `markReturned`.
+- **G6** Chuyển trạng thái không có trong sơ đồ → `IllegalStateException`, message nêu trạng thái hiện tại; trạng thái kết thúc (`DELIVERED`, `RETURNED`, `CANCELLED`) không chuyển đi đâu được. Ném lỗi thì trạng thái và history không đổi.
+- **G7** `restock(Order)` cộng lại đúng số lượng theo product của đơn; product không có trong hub → `ProductNotFoundException`, không product nào được cộng (all-or-nothing như `decreaseStock`). Ở `ShipmentService`: `RETURNED` và `CANCELLED` hoàn kho, `DELIVERED` không.
+- **G8** Mỗi đơn có tối đa một vận đơn chưa kết thúc: tạo thêm → ISE (REST 409); vận đơn trước đã `CANCELLED`/`RETURNED` thì được tạo mới.
+
+| Method | Input | Kết quả mong đợi | Test |
+|---|---|---|---|
+| `new Shipment(orderId, address, fee)` | `"o-1"`, Hà Nội, `30000` | `CREATED`, attempts 0, history 1 event (**G1**) | `startsCreated` |
+| `ShippingFeeCalculator.feeFor` | áo 0.5 kg × 2 + quần 1 kg; Hà Nội | `30000.00` (20000 + 5000 × 2) (**G2**) | `sumsWeightOnceBaseFee` |
+| `ShippingFeeCalculator.feeFor` | đơn trên, giao Đà Nẵng | `45000.00` | `otherCityFee` |
+| `ShippingFeeCalculator.feeFor` | bundle gồm áo 0.5 kg + ebook, × 1; Hà Nội | `22500.00` | `countsPhysicalItemsInBundle` |
+| `ShippingFeeCalculator.feeFor` | chỉ ebook; `order`/`address` null | IAE (**G3**) | `rejectsOrderWithoutPhysicalLines`, `rejectsNullArgs` |
+| `pickUp` → `markDelivered` | vận đơn mới | `DELIVERED`, history 3 event | `deliversSuccessfully` |
+| `failAttempt` × 2 | đang `IN_TRANSIT` | `IN_TRANSIT`, attempts 2 (**G4**) | `staysInTransitBelowMax` |
+| `failAttempt` × 3 | đang `IN_TRANSIT` | `RETURNING`, attempts 3 | `autoReturnsAfterThirdFailure` |
+| `failAttempt("")` | đang `IN_TRANSIT`; ở `CREATED` | IAE; ISE | `rejectsBlankReason`, `failAttemptRequiresInTransit` |
+| `refuse(lý do)` → `markReturned` | đang `IN_TRANSIT` | `RETURNING` → `RETURNED` | `returnsAfterRefusal` |
+| `cancel` | ở `CREATED`; ở `IN_TRANSIT` | `CANCELLED`; ISE (**G5**) | `cancelsBeforePickUp`, `cannotCancelAfterPickUp` |
+| `markDelivered`, `pickUp`, `cancel` | ở `DELIVERED` / `CANCELLED` / `RETURNED` | ISE, trạng thái + history không đổi (**G6**) | `terminalStatesAreFinal` (parameterized) |
+| `restock(order)` | áo 1 + quần 1 + áo 1, hub áo 3 quần 5 | áo 5, quần 6 (**G7**) | `restocksOrderQuantities` |
+| `restock(order)` | một dòng có product không có trong hub | `ProductNotFoundException`, stock không đổi | `restockAllOrNothing` |
+| `ShipmentService.markReturned` / `cancel` / `deliver` | đơn áo × 2 | stock +2 / +2 / không đổi (**G7**) | `returnRestocks`, `cancelRestocks`, `deliverDoesNotRestock` |
+| `ShipmentService.create` | đơn đã có vận đơn `IN_TRANSIT`; vận đơn cũ `CANCELLED` | ISE; tạo được (**G8**) | `rejectsSecondActiveShipment`, `allowsNewAfterCancelled` |
+
+Ngoài spec: trả hàng **sau khi đã giao** (`DELIVERED → RETURNING`, luồng đổi trả riêng), hoàn tiền (`PaymentGateway` hiện chỉ đọc), timestamp / `Clock` cho event, nhiều kiện cho một đơn, giao từng phần, phí ship cộng vào `finalAmount` của `Order`, tích hợp API hãng vận chuyển thật (nối `ShipmentTracker` vào `ShipmentRepository` để sau).
+
+**Thứ tự làm:** domain #1–5 (G1–G7 phần domain, Java thuần, test đỏ trước) → application + persistence + REST #6–8 (G7 phần service, G8) → visualizer #9.
+
+**Kiểm khi review:** chuyển trạng thái nằm trong `Shipment` (service không tự set status); lỗi chuyển trạng thái không để lại thay đổi nửa vời; `restock` là all-or-nothing và an toàn đa luồng như `decreaseStock`; hoàn kho cùng transaction với đổi trạng thái; `domain/` vẫn Java thuần; đã chạy `visualizer-sync`.

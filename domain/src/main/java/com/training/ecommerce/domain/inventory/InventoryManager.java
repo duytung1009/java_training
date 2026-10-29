@@ -123,6 +123,17 @@ public class InventoryManager {
         }
     }
 
+    /**
+     * Hoàn kho cho toàn bộ order (đối xứng {@link #decreaseStock}): cộng lại số lượng theo
+     * {@code order.quantitiesByProductId()}, all-or-nothing.
+     *
+     * @throws IllegalArgumentException khi order null
+     * @throws ProductNotFoundException khi hub thiếu product nào đó; không product nào được cộng
+     */
+    public synchronized void restock(Order order) {
+        throw new UnsupportedOperationException("TODO S07-extra");
+    }
+
     private Product findStored(String id) {
         return findById(id).orElseThrow(() -> new ProductNotFoundException(id));
     }
