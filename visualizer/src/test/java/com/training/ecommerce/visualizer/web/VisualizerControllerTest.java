@@ -36,7 +36,7 @@ class VisualizerControllerTest {
     void scenariosTraVeTamKichBan() throws Exception {
         mockMvc.perform(get("/api/viz/scenarios"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(8)))
+                .andExpect(jsonPath("$", hasSize(9)))
                 .andExpect(jsonPath("$[0].id").value("cart-to-order"))
                 .andExpect(jsonPath("$[0].session").value("S02"));
     }

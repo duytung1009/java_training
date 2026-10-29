@@ -82,11 +82,19 @@ const STAGES = [
       'Khay và vùng cha giãn theo một chiều từ trên xuống, đẩy các vùng bên dưới xuống; tối đa 4 hàng rồi mới hiện "+N".',
     ],
   },
+  {
+    title: 'Nối kho với hub',
+    why: 'Warehouse và InventoryManager từng là hai model rời nhau, đường kho → hub trên bản đồ chỉ là nét chấm "chưa có".',
+    what: [
+      'Domain thêm InventoryManager.replenish (kho xuất, Product.stock trên hub cộng đúng số đó, all-or-nothing; khoá hub trước, kho sau) và Product.increaseStock.',
+      'Hub = hàng sẵn bán, kho = hàng dự trữ. Kịch bản replenish (thành công, hub không bán sản phẩm, kho không có hàng) và hai đường nối WH → hub nét liền thay cho nét chấm.',
+    ],
+  },
 ];
 
 const PRODUCT = [
   '5 vùng package, khối object / collection / area, ô computed tách khỏi state.',
-  '8 kịch bản S02–S06: giỏ hàng → đơn, giá theo loại sản phẩm, trừ kho thành công / thất bại, chuyển kho, chuyển kho song song không deadlock, tranh nhau món hàng cuối, phí ship.',
+  '9 kịch bản: giỏ hàng → đơn, giá theo loại sản phẩm, trừ kho thành công / thất bại, chuyển kho, chuyển kho song song không deadlock, tranh nhau món hàng cuối, phí ship, nhập hàng kho → hub.',
   'Run / Pause / Step / Back / Reset, tốc độ 0.5–2×, call log có badge thread, diff before → after, bảng chú thích khi click khối.',
   'Banner cảnh báo khi visualizer lệch với domain + skill visualizer-sync; không sửa một dòng nào trong domain/ hay app/.',
 ];

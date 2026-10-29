@@ -3,15 +3,15 @@ import { ROOTS, PLACED } from '../map/layout.js';
 
 const WAREHOUSE = {
   cls: 'Warehouse', pkg: 'domain.inventory', session: 'S04 · S06',
-  desc: 'Kho vật lý giữ số lượng theo productId. Chuyển hàng giữa hai kho qua WarehouseTransferService, khoá theo thứ tự id để không deadlock.',
-  api: ['stockOf(productId)', 'add(productId, qty)', 'remove(productId, qty)', 'WarehouseTransferService.transfer(from, to, id, qty)'],
+  desc: 'Kho vật lý giữ hàng dự trữ theo productId (chưa bán được ngay). Chuyển hàng giữa hai kho qua WarehouseTransferService, khoá theo thứ tự id để không deadlock; nhập lên hub bằng InventoryManager.replenish (hub khoá trước, kho sau — đang giữ lock kho thì không được gọi vào hub).',
+  api: ['stockOf(productId)', 'add(productId, qty)', 'remove(productId, qty)', 'WarehouseTransferService.transfer(from, to, id, qty)', 'InventoryManager.replenish(from, id, qty)'],
   items: 'productId → số lượng',
 };
 
 const PRODUCT = (cls, calc, extra = '') => ({
   cls, pkg: 'domain.catalog', session: 'S03',
   desc: `Một Product cụ thể trong package catalog, giá cuối tính đa hình qua calculateFinalPrice(): ${calc}${extra}`,
-  api: ['calculateFinalPrice()', 'getBasePrice()', 'decreaseStock(qty)'],
+  api: ['calculateFinalPrice()', 'getBasePrice()', 'decreaseStock(qty)', 'increaseStock(qty)'],
   items: 'basePrice, giá cuối',
 });
 
@@ -19,14 +19,14 @@ const PRODUCT = (cls, calc, extra = '') => ({
 export const INFO = {
   Warehouse: {
     cls: 'Warehouse', pkg: 'domain.inventory', session: 'S04 · S06',
-    desc: 'Kho vật lý giữ số lượng theo productId. Chuyển hàng giữa hai kho qua WarehouseTransferService, khoá theo thứ tự id để không deadlock.',
-    api: ['stockOf(productId)', 'add(productId, qty)', 'remove(productId, qty)', 'WarehouseTransferService.transfer(from, to, id, qty)'],
+    desc: 'Kho vật lý giữ hàng dự trữ theo productId (chưa bán được ngay). Chuyển hàng giữa hai kho qua WarehouseTransferService, khoá theo thứ tự id để không deadlock; nhập lên hub bằng InventoryManager.replenish (hub khoá trước, kho sau — đang giữ lock kho thì không được gọi vào hub).',
+    api: ['stockOf(productId)', 'add(productId, qty)', 'remove(productId, qty)', 'WarehouseTransferService.transfer(from, to, id, qty)', 'InventoryManager.replenish(from, id, qty)'],
     items: 'productId → số lượng',
   },
   InventoryManager: {
     cls: 'InventoryManager', pkg: 'domain.inventory', session: 'S04 · S06',
-    desc: 'Danh mục sản phẩm và tồn kho (Product.stock). decreaseStock trừ cả đơn theo kiểu all-or-nothing, synchronized để nhiều thread không bán âm kho.',
-    api: ['addProduct(product)', 'findById(id)', 'search(predicate)', 'decreaseStock(order) throws OutOfStockException'],
+    desc: 'Hub: danh mục sản phẩm và hàng sẵn bán (Product.stock); kho Warehouse là hàng dự trữ. decreaseStock trừ cả đơn, replenish chuyển hàng từ một kho lên hub, đều all-or-nothing và synchronized. Thứ tự khoá toàn cục: hub trước, kho sau.',
+    api: ['addProduct(product)', 'findById(id)', 'search(predicate)', 'decreaseStock(order) throws OutOfStockException', 'replenish(from, id, qty) throws ProductNotFoundException, OutOfStockException'],
     items: 'productId → stock',
   },
   Cart: {
@@ -49,7 +49,7 @@ export const INFO = {
   },
   'domain.inventory': {
     cls: 'domain.inventory', pkg: 'package', session: 'S04 · S06',
-    desc: 'Package tồn kho: Warehouse (kho vật lý), InventoryManager (danh mục + Product.stock) và WarehouseTransferService chuyển hàng giữa hai kho.',
+    desc: 'Package tồn kho: Warehouse (kho dự trữ), InventoryManager (hub: danh mục + Product.stock sẵn bán, replenish nhập từ kho) và WarehouseTransferService chuyển hàng giữa hai kho.',
     api: ['Warehouse', 'InventoryManager', 'WarehouseTransferService'],
     items: 'thành viên',
   },

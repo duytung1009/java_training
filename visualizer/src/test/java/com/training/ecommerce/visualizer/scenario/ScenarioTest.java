@@ -47,10 +47,10 @@ class ScenarioTest {
     }
 
     @Test
-    void coDungTamKichBanTheoThuTu() {
+    void coDungChinKichBanTheoThuTu() {
         assertThat(all().map(Scenario::id)).containsExactly("cart-to-order", "shipping-fee",
                 "pricing-types", "decrease-stock-ok", "decrease-stock-fail", "transfer", "transfer-deadlock-safe",
-                "last-item-race");
+                "last-item-race", "replenish");
     }
 
     @ParameterizedTest
@@ -158,6 +158,34 @@ class ScenarioTest {
         assertThat(run.events().getLast().outcome()).isEqualTo(Outcome.THROWN);
         assertThat(run.events().getLast().changes()).isEmpty();
         assertThat(run.events().get(1).changes().get(1).before()).isEmpty();
+    }
+
+    @Test
+    void replenishBaoToanTongVaCoHaiCaThatBai() {
+        World seed = new WorldFactory().create();
+        Run run = run("replenish");
+        World w = run.world();
+        for (String id : List.of("LAPTOP", "PHONE", "HEADPHONE", "BOOK")) {
+            int before = totalStock(seed, id) + (seed.hub().findById(id).map(p -> p.getStock()).orElse(0));
+            int after = totalStock(w, id) + (w.hub().findById(id).map(p -> p.getStock()).orElse(0));
+            assertThat(after).as(id).isEqualTo(before);
+        }
+        assertThat(w.warehouse(WorldFactory.WH_HN).stockOf("LAPTOP")).isEqualTo(7);
+        assertThat(w.product("LAPTOP").getStock()).isEqualTo(8);
+        assertThat(w.warehouse(WorldFactory.WH_HCM).stockOf("PHONE")).isEqualTo(2);
+        assertThat(w.product("PHONE").getStock()).isEqualTo(10);
+        assertThat(w.warehouse(WorldFactory.WH_HN).stockOf("HEADPHONE")).isEqualTo(4);
+        assertThat(w.product("BOOK").getStock()).isEqualTo(12);
+
+        assertThat(run.events()).hasSize(4).extracting(TraceEvent::method).containsOnly("replenish");
+        assertThat(run.events()).extracting(TraceEvent::outcome)
+                .containsExactly(Outcome.OK, Outcome.OK, Outcome.THROWN, Outcome.THROWN);
+        assertThat(run.events().get(2).exception().type()).isEqualTo("ProductNotFoundException");
+        assertThat(run.events().get(3).exception().type()).isEqualTo("OutOfStockException");
+        assertThat(run.events().get(2).changes()).isEmpty();
+        assertThat(run.events().get(3).changes()).isEmpty();
+        assertThat(run.events().getFirst().flows()).containsExactly(
+                new Flow(WorldSnapshotter.warehousePanelId(WorldFactory.WH_HN), WorldSnapshotter.HUB));
     }
 
     @Test

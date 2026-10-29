@@ -24,6 +24,9 @@ export const HEADER = 1;
 // Đường nối các object/collection (hoặc area shipping); checkLayout() cảnh báo nếu cắt qua khối
 export const WIRES = [
   { a: 'warehouse:WH-HN', b: 'warehouse:WH-HCM', pts: [[2.2, 4.65], [2.2, 5.45]] },
+  // Nhập hàng kho → hub (InventoryManager.replenish): đi qua khoảng trống x 3.9–6, không cắt khối
+  { a: 'warehouse:WH-HN', b: 'hub', pts: [[3.9, 3], [6, 3]] },
+  { a: 'warehouse:WH-HCM', b: 'hub', pts: [[3.9, 7], [5, 7], [5, 4.5], [6, 4.5]] },
   { a: 'hub', b: 'cart', pts: [[9.4, 2.5], [13, 2.5]] },
   // cart → orders (toOrder)
   { a: 'cart', b: 'orders', pts: [[14.7, 4.65], [14.7, 5.5]] },
@@ -31,8 +34,6 @@ export const WIRES = [
   // Phí ship: Product (trong hub) gọi ShippingZone qua PhysicalProduct.calculateShipping
   { a: 'hub', b: 'shipping', pts: [[7.7, 5.25], [7.7, 9.7]] },
 ];
-// Chưa có trong domain: Warehouse và InventoryManager là hai model riêng
-export const MISSING_WIRE = [[3.9, 3], [6, 3]];
 
 const EPS = 1e-6;
 const overlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), b2) - Math.max(Math.min(a1, a2), b1) > EPS;
@@ -41,7 +42,7 @@ const boxOverlap = (p, q) => overlap(p.x, p.x + p.w, q.x, q.x + q.w) && overlap(
 
 // Kiểm tra bố cục: đường cắt xuyên object/collection (cắt khung area thì được), area chồng nhau,
 // thành viên chồng nhau hoặc nằm ngoài area của nó. Trả về danh sách lỗi (rỗng = ổn)
-export function checkLayout(areas = ROOTS, placed = PLACED, wires = [...WIRES, { a: 'missing', b: 'missing', pts: MISSING_WIRE }]) {
+export function checkLayout(areas = ROOTS, placed = PLACED, wires = WIRES) {
   const errors = [];
   const list = Object.entries(placed), alist = Object.entries(areas);
   for (const w of wires) {
@@ -130,9 +131,7 @@ export function computeLayout(nodes = []) {
   const total = id => placed[id] ? shift[PLACED[id].area] + inner[id] : (shift[id] ?? 0);
   const move = (pts, sa, sb) => pts.map(([x, y], i) => [x, y + (sa === sb ? sa : i === 0 ? sa : i === pts.length - 1 ? sb : y < (pts[0][1] + pts.at(-1)[1]) / 2 ? sa : sb)]);
   const wires = WIRES.map(w => ({ ...w, pts: move(w.pts, total(w.a), total(w.b)) }));
-  const ms = shift.inventory ?? 0;
-  const missing = MISSING_WIRE.map(([x, y]) => [x, y + ms]);
-  return { areas, placed, wires, missing, grids, dy };
+  return { areas, placed, wires, grids, dy };
 }
 
 const key = (p, q) => [p, q].sort().join('|');

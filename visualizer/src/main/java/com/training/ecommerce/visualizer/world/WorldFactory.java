@@ -24,6 +24,8 @@ public class WorldFactory {
         for (String id : List.of("LAPTOP", "PHONE", "HEADPHONE", "BOOK")) {
             world.trackProductId(id);
         }
+        // Hai model đã nối bằng InventoryManager.replenish: hub (Product.stock) = hàng sẵn bán,
+        // kho (Warehouse) = hàng dự trữ chờ nhập lên hub. HEADPHONE chỉ có ở kho (hub không bán).
         hn.add("LAPTOP", 10);
         hn.add("PHONE", 6);
         hn.add("HEADPHONE", 4);

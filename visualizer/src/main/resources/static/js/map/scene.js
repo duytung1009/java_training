@@ -50,7 +50,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   const layers = {}, frames = {};
   const blocks = new Map(); // id (root hoặc con) → { id, root, kind, color, small, g, frame, head, titleEl, subEl, rect, more }
   let world = null, selected = null, nodes = new Map();
-  let layout = null, layoutKey = '', groundKey = '', wirePaths = [], missingPath = null;
+  let layout = null, layoutKey = '', groundKey = '', wirePaths = [];
   const warnedLayout = new Set();
   const tiles = new Map(); // `${blockId}/${key}` → { g, polygon, text, name, val, title, value, pre, anim }
 
@@ -65,12 +65,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     }
     for (const n of ['ground', 'wires', 'zones', 'flows', 'labels']) layers[n] = el('g', {}, svg);
     wirePaths = WIRES_BASE.map(() => el('path', { fill: 'none', stroke: css('--wire'), 'stroke-width': 1.5 }, layers.wires));
-    missingPath = el('path', { fill: 'none', stroke: css('--wire'), 'stroke-width': 1, 'stroke-dasharray': '2 5' }, layers.wires);
     groundKey = '';
-    // Ghi chú nằm phẳng dọc theo đường, phía sau đường
-    const note = el('text', { transform: flat(...iso(4.95, 3)), 'text-anchor': 'middle', class: 'zone-sub' }, layers.labels);
-    el('tspan', { x: 0, y: -13 }, note).textContent = 'WH → hub';
-    el('tspan', { x: 0, y: -3 }, note).textContent = 'chưa có';
 
     // Area vẽ trước (nền), thành viên cố định nằm trong group của area nên click sâu nhất thắng
     for (const [id, p] of Object.entries(ROOTS))
@@ -101,7 +96,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     const seen = JSON.stringify([lay.areas, lay.placed, lay.wires]);
     if (seen !== layoutKey) {
       layoutKey = seen;
-      for (const err of checkLayout(lay.areas, lay.placed, [...lay.wires, { a: 'missing', b: 'missing', pts: lay.missing }]))
+      for (const err of checkLayout(lay.areas, lay.placed, lay.wires))
         if (!warnedLayout.has(err)) { warnedLayout.add(err); console.warn('Visualizer layout:', err); }
     }
     for (const id of [...Object.keys(ROOTS), ...Object.keys(PLACED)]) {
@@ -110,12 +105,11 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
       setShift(b, lay.dy[id], animate);
     }
     lay.wires.forEach((w, i) => wirePaths[i].setAttribute('d', wirePath(w.pts)));
-    missingPath.setAttribute('d', wirePath(lay.missing));
     // Nền + viewBox suy ra từ area và đường nối hiệu dụng
     const ps = Object.values(lay.areas);
     const maxX = Math.max(...ps.map(p => p.x + p.w)) + 0.5, maxY = Math.max(...ps.map(p => p.y + p.d)) + 0.5;
     const pts = [...ps.flatMap(p => [[p.x, p.y], [p.x + p.w, p.y], [p.x + p.w, p.y + p.d], [p.x, p.y + p.d]]),
-      ...lay.wires.flatMap(w => w.pts), ...lay.missing].map(q => iso(...q));
+      ...lay.wires.flatMap(w => w.pts)].map(q => iso(...q));
     const M = 24, x0 = Math.min(...pts.map(q => q[0])) - M, y0 = Math.min(...pts.map(q => q[1])) - M;
     const vw = Math.max(...pts.map(q => q[0])) + M - x0, vh = Math.max(...pts.map(q => q[1])) + M - y0;
     svg.setAttribute('viewBox', `${x0} ${y0} ${vw} ${vh}`);

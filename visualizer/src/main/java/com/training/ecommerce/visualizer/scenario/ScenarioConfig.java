@@ -19,7 +19,8 @@ public class ScenarioConfig {
                 new DecreaseStockFailScenario(),
                 new TransferScenario(),
                 new TransferDeadlockSafeScenario(),
-                new LastItemRaceScenario()
+                new LastItemRaceScenario(),
+                new ReplenishScenario()
         ));
     }
 }
