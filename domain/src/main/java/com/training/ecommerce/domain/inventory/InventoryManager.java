@@ -28,6 +28,10 @@ import java.util.stream.Collectors;
  * </ul>
  * Đánh đổi: mọi checkout xếp hàng nối tiếp, kể cả các đơn không liên quan. Đủ đúng cho domain in-memory;
  * cần nhanh hơn thì đo trước, rồi mới cân nhắc lock theo từng product (phải khóa theo thứ tự id để tránh deadlock).
+ *
+ * <p>S07-extra: {@code replenish} nhập hàng từ {@link Warehouse} lên hub, giữ lock của hub rồi tới lock của kho.
+ * Thứ tự khóa toàn cục là <b>hub trước, kho sau</b>: không code nào được giữ lock một kho rồi gọi vào hub,
+ * nếu không sẽ có vòng chờ với {@code replenish}.
  */
 public class InventoryManager {
     private final Map<String, Product> catalog = new LinkedHashMap<>();
@@ -105,8 +109,18 @@ public class InventoryManager {
      * @throws ProductNotFoundException khi hub chưa có product này; kho giữ nguyên
      * @throws OutOfStockException      khi kho from không đủ hàng; hai bên giữ nguyên
      */
-    public void replenish(Warehouse from, String productId, int quantity) {
-        throw new UnsupportedOperationException("TODO S07-extra");
+    public synchronized void replenish(Warehouse from, String productId, int quantity) {
+        if (from == null || productId == null) {
+            throw new IllegalArgumentException("from, productId không được null");
+        }
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("quantity phải > 0");
+        }
+        Product product = findStored(productId);    // hub chưa có thì ném ở đây, kho chưa bị đụng tới
+        synchronized (from) {                        // thứ tự khóa: hub (this) trước, kho sau
+            from.remove(productId, quantity);        // thiếu hàng thì ném ở đây, chưa có gì thay đổi
+            product.increaseStock(quantity);         // quantity > 0 đã kiểm, bước này không thể lỗi
+        }
     }
 
     private Product findStored(String id) {

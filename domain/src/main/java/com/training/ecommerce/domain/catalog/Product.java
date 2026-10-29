@@ -79,7 +79,10 @@ public abstract class Product implements Identifiable<String> {
      * @throws IllegalArgumentException khi quantity &lt;= 0
      */
     public void increaseStock(int quantity) {
-        throw new UnsupportedOperationException("TODO S07-extra");
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("quantity phải > 0");
+        }
+        stock += quantity;
     }
 
     @Override
