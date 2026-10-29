@@ -39,7 +39,7 @@ export const INFO = {
     cls: 'Order', pkg: 'domain.order', session: 'S02 · S04',
     desc: 'Một đơn hàng giữ OrderLine với giá đã snapshot lúc đặt; tổng tiền tính từ subtotal, giảm giá và thuế. Khối này xuất hiện khi Cart.toOrder tạo đơn.',
     api: ['addLine(line)', 'subtotal() · discountAmount() · taxAmount()', 'finalAmount()', 'quantitiesByProductId()'],
-    items: 'OrderLine: sản phẩm × số lượng → thành tiền',
+    items: 'OrderLine: sản phẩm × số lượng → đơn giá snapshot',
   },
   'List<Order>': {
     cls: 'List<Order>', pkg: 'java.util', session: 'S02 · S04',

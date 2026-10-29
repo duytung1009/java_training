@@ -53,17 +53,23 @@ public class LastItemRaceScenario implements Scenario {
         recorder.run("InventoryManager", "addProduct", List.of(PRODUCT_ID + ", stock 1"), null,
                 List.of(WorldSnapshotter.HUB), () -> world.registerProduct(gift));
 
-        // Dựng đơn trước khi các thread chạy: OrderLine kiểm tồn kho lúc tạo, lúc này còn đúng 1 cái
+        // Dựng đơn trước khi các thread chạy: OrderLine kiểm tồn kho lúc tạo, lúc này còn đúng 1 cái.
+        // Ghi thành một event và đưa vào world để các đơn hiện trong List<Order> trước khi tranh nhau
         List<Order> orders = new ArrayList<>();
-        for (int i = 0; i < THREADS; i++) {
-            Order order = new Order(BigDecimal.ZERO, BigDecimal.ZERO);
-            order.addLine(new OrderLine(gift, 1));
-            orders.add(order);
-        }
+        recorder.run("Order", "new", List.of("×" + THREADS, "addLine(" + PRODUCT_ID + ", 1)"), null,
+                List.of(WorldSnapshotter.ORDERS), () -> {
+                    for (int i = 0; i < THREADS; i++) {
+                        Order order = new Order(BigDecimal.ZERO, BigDecimal.ZERO);
+                        order.addLine(new OrderLine(gift, 1));
+                        orders.add(order);
+                        world.addOrder(order);
+                    }
+                });
         List<Runnable> tasks = orders.stream().map(order -> (Runnable) () -> {
+            String orderNode = WorldSnapshotter.orderNodeId(order);
             try {
                 recorder.run("InventoryManager", "decreaseStock", List.of(WorldSnapshotter.orderRef(order)),
-                        new Flow(WorldSnapshotter.ORDERS, WorldSnapshotter.HUB), List.of(WorldSnapshotter.HUB),
+                        new Flow(orderNode, WorldSnapshotter.HUB), List.of(orderNode, WorldSnapshotter.HUB),
                         () -> world.hub().decreaseStock(order));
             } catch (OutOfStockException expected) {
                 // thread thua cuộc: đã ghi thành THROWN

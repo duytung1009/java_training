@@ -170,9 +170,15 @@ class ScenarioTest {
     @Test
     void lastItemRaceDungMotOkVaStockKhongAm() {
         Run run = run("last-item-race");
-        // event đầu: addProduct GIFT; sau đó mỗi thread một decreaseStock
-        assertThat(run.events()).hasSize(LastItemRaceScenario.THREADS + 1);
+        // event đầu: addProduct GIFT; rồi tạo các đơn (vào List<Order>); sau đó mỗi thread một decreaseStock
+        assertThat(run.events()).hasSize(LastItemRaceScenario.THREADS + 2);
         assertThat(run.events().getFirst().method()).isEqualTo("addProduct");
+        assertThat(run.events().get(1).method()).isEqualTo("new");
+        assertThat(run.world().orders()).hasSize(LastItemRaceScenario.THREADS);
+        // flow decreaseStock xuất phát từ đúng khối Order đang có trên bản đồ
+        assertThat(run.events().stream().filter(e -> e.method().equals("decreaseStock"))).allSatisfy(e ->
+                assertThat(e.worldAfter().nodes()).extracting(n -> n.id())
+                        .contains(e.flows().getFirst().from()));
         assertThat(run.events().stream().filter(e -> e.method().equals("decreaseStock"))
                 .filter(e -> e.outcome() == Outcome.OK)).hasSize(1);
         assertThat(run.world().product(LastItemRaceScenario.PRODUCT_ID).getStock()).isZero();

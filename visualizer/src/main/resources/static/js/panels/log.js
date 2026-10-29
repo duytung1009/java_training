@@ -10,8 +10,14 @@ export function shortThread(name) {
   return name.length > 7 ? name.slice(0, 6) + '…' : name;
 }
 
+// Màu thread theo thứ tự xuất hiện đầu tiên (không dùng đỏ: dành cho exception)
+const THREAD_COLORS = ['#6f9cf0', '#e0894f', '#74c48a', '#a78bfa', '#4fb8b0', '#e8c46a', '#e88fb4', '#9ab4ff'];
+
 export function renderLog(ol, events, selected, onSelect) {
   ol.textContent = '';
+  // Chỉ tô màu khi có từ 2 thread trở lên; một thread thì giữ màu xám như cũ
+  const threads = [...new Set(events.map(e => e.thread))];
+  const colorOf = t => threads.length > 1 ? THREAD_COLORS[threads.indexOf(t) % THREAD_COLORS.length] : null;
   events.forEach((e, i) => {
     const thrown = e.outcome === 'THROWN';
     const li = h('li', (thrown ? 'thrown ' : '') + (i === selected ? 'sel' : ''));
@@ -22,6 +28,8 @@ export function renderLog(ol, events, selected, onSelect) {
     } else if (e.result) m.append(` → ${e.result}`);
     const th = h('span', 'th', shortThread(e.thread));
     th.title = e.thread;
+    const c = colorOf(e.thread);
+    if (c) { li.style.setProperty('--tc', c); li.classList.add('mt'); }
     li.append(h('span', 'ts', (e.at ?? '').slice(11, 23)), th, m, h('span', thrown ? 'err' : 'ok', thrown ? '✗' : '✓'));
     li.onclick = () => onSelect(i);
     ol.appendChild(li);
