@@ -6,6 +6,7 @@ import com.training.ecommerce.domain.inventory.WarehouseTransferService;
 import com.training.ecommerce.domain.order.Cart;
 import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.domain.pricing.DiscountCode;
+import com.training.ecommerce.domain.shipping.Shipment;
 import com.training.ecommerce.visualizer.trace.Flow;
 import com.training.ecommerce.visualizer.trace.TraceRecorder;
 import com.training.ecommerce.visualizer.world.World;
@@ -17,7 +18,8 @@ import java.util.List;
 
 /**
  * S02–S07: một lượt mua hàng đi qua mọi package, ghép từ các bước của kịch bản theo buổi.
- * Gom hàng giữa hai kho → nhập lên hub → tính giá → giỏ hàng → mã giảm giá → chốt đơn → trừ kho → phí ship.
+ * Gom hàng giữa hai kho → nhập lên hub → tính giá → giỏ hàng → mã giảm giá → chốt đơn → trừ kho → phí ship cả đơn
+ * → vận đơn giao thành công.
  */
 public class OverviewScenario implements Scenario {
 
@@ -40,7 +42,8 @@ public class OverviewScenario implements Scenario {
     public String description() {
         return "Một lượt mua đi qua mọi package: transfer LAPTOP ×2 HCM → HN, replenish LAPTOP ×3 HN → hub, "
                 + "calculateFinalPrice, Cart.add LAPTOP ×2 + PHONE ×1, nhập mã SALE10, toOrder(SALE10, thuế 8%), "
-                + "decreaseStock trừ hub, rồi tính phí ship LAPTOP về Hà Nội.";
+                + "decreaseStock trừ hub, ShippingFeeCalculator.feeFor tính phí ship cả đơn về Hà Nội, "
+                + "rồi tạo Shipment và pickUp → markDelivered.";
     }
 
     @Override
@@ -64,8 +67,14 @@ public class OverviewScenario implements Scenario {
         DiscountCode sale10 = PricingTypesScenario.createCode(world, recorder, "SALE10", new BigDecimal("0.10"));
         Order order = OrderSteps.checkout(world, recorder, sale10, new BigDecimal("0.08"));
 
-        // 4. Trừ kho trên hub (all-or-nothing), rồi tính phí giao
+        // 4. Trừ kho trên hub (all-or-nothing)
         OrderSteps.decreaseStock(world, recorder, order);
-        ShippingFeeScenario.ship(world, recorder, "LAPTOP", new Address("1 Hàng Bài", "Hà Nội"));
+
+        // 5. Giao hàng: phí ship cả đơn (chọn vùng theo địa chỉ) → tạo vận đơn → lấy hàng → giao thành công
+        Address address = new Address("1 Hàng Bài", "Hà Nội");
+        BigDecimal fee = ShipmentSteps.fee(recorder, order, address);
+        Shipment shipment = ShipmentSteps.create(world, recorder, order, address, fee);
+        ShipmentSteps.step(recorder, shipment, "pickUp", List.of(), shipment::pickUp);
+        ShipmentSteps.step(recorder, shipment, "markDelivered", List.of(), shipment::markDelivered);
     }
 }

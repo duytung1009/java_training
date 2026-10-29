@@ -187,7 +187,8 @@ class ScenarioTest {
 
         assertThat(run.events()).extracting(TraceEvent::outcome).containsOnly(Outcome.OK);
         assertThat(run.events()).extracting(TraceEvent::method).containsExactly("transfer", "replenish",
-                "calculateFinalPrice", "add", "add", "new", "toOrder", "decreaseStock", "of", "calculateShipping");
+                "calculateFinalPrice", "add", "add", "new", "toOrder", "decreaseStock", "feeFor", "new", "pickUp",
+                "markDelivered");
         // HCM 2 → 0, HN 10 + 2 − 3 = 9, hub LAPTOP 5 + 3 − 2 = 6, PHONE 8 − 1 = 7
         assertThat(w.warehouse(WorldFactory.WH_HCM).stockOf("LAPTOP")).isZero();
         assertThat(w.warehouse(WorldFactory.WH_HN).stockOf("LAPTOP")).isEqualTo(9);
@@ -196,7 +197,11 @@ class ScenarioTest {
         assertThat(w.orders()).hasSize(1);
         Order order = w.orders().getFirst();
         assertThat(order.getDiscountRate()).isEqualByComparingTo("0.10");
-        // flow đi lần lượt kho → kho → hub → giỏ → đơn (cùng mã → đơn) → hub → vùng ship
+        // giao thành công: kho không hoàn; phí cả đơn LAPTOP ×2 + PHONE ×1 về Hà Nội
+        assertThat(shipmentStatuses(run)).containsExactly("CREATED", "IN_TRANSIT", "DELIVERED");
+        assertThat(run.events().stream().filter(e -> e.method().equals("feeFor")).findFirst().orElseThrow().result())
+                .isEqualTo("42000.00");
+        // flow đi lần lượt kho → kho → hub → giỏ → đơn (cùng mã → đơn) → hub → vùng ship → List<Shipment>
         assertThat(run.events().stream().flatMap(e -> e.flows().stream())).containsExactly(
                 new Flow(WorldSnapshotter.warehousePanelId(WorldFactory.WH_HCM), WorldSnapshotter.warehousePanelId(WorldFactory.WH_HN)),
                 new Flow(WorldSnapshotter.warehousePanelId(WorldFactory.WH_HN), WorldSnapshotter.HUB),
@@ -205,7 +210,8 @@ class ScenarioTest {
                 new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDERS),
                 new Flow("pricing:code:SALE10", WorldSnapshotter.ORDERS),
                 new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.HUB),
-                new Flow(WorldSnapshotter.HUB, "zone:INNER_CITY"));
+                new Flow(WorldSnapshotter.orderNodeId(order), "zone:INNER_CITY"),
+                new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.SHIPMENTS));
     }
 
     @Test
@@ -305,12 +311,15 @@ class ScenarioTest {
         assertThat(fee.result()).isEqualTo("32000.00");
         NodeView node = run.events().getLast().worldAfter().nodes().stream()
                 .filter(n -> n.id().startsWith("shipping:shipment:")).findFirst().orElseThrow();
-        assertThat(node.parent()).isEqualTo(WorldSnapshotter.SHIPPING);
+        assertThat(node.parent()).isEqualTo(WorldSnapshotter.SHIPMENTS);
         assertThat(node.cls()).isEqualTo("Shipment");
         assertThat(node.items()).extracting(ItemView::key).containsExactly("status", "failedAttempts", "fee",
                 "trackingCode");
         assertThat(node.items().getFirst().value()).isEqualTo(ShipmentStatus.DELIVERED.name());
-        assertThat(run.events().get(5).flows()).extracting(f -> f.to()).containsExactly(WorldSnapshotter.SHIPPING);
+        // tính phí: flow từ đơn tới vùng được chọn (Hà Nội → INNER_CITY); tạo vận đơn: flow tới List<Shipment>
+        assertThat(fee.flows()).extracting(f -> f.to()).containsExactly("zone:INNER_CITY");
+        assertThat(fee.panels()).contains("zone:INNER_CITY");
+        assertThat(run.events().get(5).flows()).extracting(f -> f.to()).containsExactly(WorldSnapshotter.SHIPMENTS);
     }
 
     @Test
@@ -319,6 +328,9 @@ class ScenarioTest {
         Run run = run("shipment-returned");
         assertThat(run.world().product("LAPTOP").getStock()).isEqualTo(seed.product("LAPTOP").getStock());
         assertThat(run.world().product("PHONE").getStock()).isEqualTo(seed.product("PHONE").getStock());
+        // Đà Nẵng → OTHER_CITY
+        assertThat(run.events().stream().filter(e -> e.method().equals("feeFor")).findFirst().orElseThrow().flows())
+                .extracting(f -> f.to()).containsExactly("zone:OTHER_CITY");
         // ca duy nhất lỗi: cancel khi IN_TRANSIT, trạng thái và history giữ nguyên
         List<TraceEvent> thrown = run.events().stream().filter(e -> e.outcome() == Outcome.THROWN).toList();
         assertThat(thrown).singleElement().satisfies(e -> {

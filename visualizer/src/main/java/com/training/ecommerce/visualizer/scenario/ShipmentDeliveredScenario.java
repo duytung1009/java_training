@@ -9,7 +9,7 @@ import com.training.ecommerce.visualizer.world.World;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** Extra: vận đơn đi đường thuận CREATED → IN_TRANSIT → DELIVERED, kho không hoàn. */
+/** S07: vận đơn đi đường thuận CREATED → IN_TRANSIT → DELIVERED, kho không hoàn. */
 public class ShipmentDeliveredScenario implements Scenario {
 
     @Override
@@ -24,7 +24,7 @@ public class ShipmentDeliveredScenario implements Scenario {
 
     @Override
     public String session() {
-        return "Extra";
+        return "S07";
     }
 
     @Override

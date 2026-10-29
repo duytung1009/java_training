@@ -32,6 +32,7 @@ public class WorldSnapshotter {
     public static final String ORDERS = "orders";
     public static final String PRICING = "pricing";
     public static final String SHIPPING = "shipping";
+    public static final String SHIPMENTS = "shipments";
 
     public static String warehousePanelId(String warehouseId) {
         return "warehouse:" + warehouseId;
@@ -46,7 +47,7 @@ public class WorldSnapshotter {
         return "catalog:product:" + productId;
     }
 
-    /** Node id của một vận đơn, vd. "shipping:shipment:SHP-1A2B3C4D" (con của {@link #SHIPPING}). */
+    /** Node id của một vận đơn, vd. "shipping:shipment:SHP-1A2B3C4D" (con của {@link #SHIPMENTS}). */
     public static String shipmentNodeId(Shipment shipment) {
         return "shipping:shipment:" + shipment.getTrackingCode();
     }
@@ -133,7 +134,9 @@ public class WorldSnapshotter {
             nodes.add(new NodeView(zoneNodeId(zone), NodeView.OBJECT, "ShippingZone", "ShippingZone." + zone.name(),
                     null, SHIPPING, items));
         }
-        addRegistered(world, SHIPPING, nodes, objects);
+        nodes.add(new NodeView(SHIPMENTS, NodeView.COLLECTION, "List<Shipment>", "List<Shipment> · World",
+                "vận đơn đã tạo", SHIPPING, List.of()));
+        addRegistered(world, SHIPMENTS, nodes, objects);
         return new WorldSnapshot(new WorldView(List.copyOf(nodes)), objects);
     }
 

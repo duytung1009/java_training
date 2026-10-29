@@ -10,7 +10,7 @@ import com.training.ecommerce.visualizer.world.World;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** Extra: giao thất bại 3 lần → RETURNING → RETURNED, rồi hoàn kho cho đơn. */
+/** S07: giao thất bại 3 lần → RETURNING → RETURNED, rồi hoàn kho cho đơn. */
 public class ShipmentReturnedScenario implements Scenario {
 
     @Override
@@ -25,7 +25,7 @@ public class ShipmentReturnedScenario implements Scenario {
 
     @Override
     public String session() {
-        return "Extra";
+        return "S07";
     }
 
     @Override

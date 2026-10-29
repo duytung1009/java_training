@@ -23,7 +23,7 @@ class VisualizerControllerTest {
     void worldTraVeCayNode() throws Exception {
         mockMvc.perform(get("/api/viz/world"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nodes", hasSize(15)))
+                .andExpect(jsonPath("$.nodes", hasSize(16)))
                 .andExpect(jsonPath("$.nodes[1].id").value("warehouse:WH-HN"))
                 .andExpect(jsonPath("$.nodes[0].kind").value("area"))
                 .andExpect(jsonPath("$.nodes[1].items[0].value").value(10))
@@ -48,7 +48,7 @@ class VisualizerControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.scenarioId").value("decrease-stock-fail"))
                 .andExpect(jsonPath("$.concurrent").value(false))
-                .andExpect(jsonPath("$.worldBefore.nodes", hasSize(15)))
+                .andExpect(jsonPath("$.worldBefore.nodes", hasSize(16)))
                 .andExpect(jsonPath("$.events[0].result").hasJsonPath())
                 .andExpect(jsonPath("$.events[0].exception").hasJsonPath())
                 .andExpect(jsonPath("$.events[0].flows").isArray())

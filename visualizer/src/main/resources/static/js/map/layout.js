@@ -6,8 +6,7 @@ export const ROOTS = {
   order:     { kind: 'area', x: 12.5, y: 0,    w: 8.5, d: 12.2, color: '--store', title: 'domain.order',     sub: 'package' },
   catalog:   { kind: 'area', x: 8.8,  y: 12.7, w: 7.5, d: 6.2,  color: '--cat',   title: 'domain.catalog',   sub: 'package', child: { w: 3.4, d: 2.4, tileW: 1.45 } },
   pricing:   { kind: 'area', x: 16.5, y: 12.7, w: 7.5, d: 6.2,  color: '--price', title: 'domain.pricing',   sub: 'package', child: { w: 3.4, d: 2.4, tileW: 1.45 } },
-  // child.d 3.6: khối Shipment có 4 ô (status, failed, fee, tracking) xếp 2×2
-  shipping:  { kind: 'area', x: 0,    y: 9.7,  w: 8,   d: 4.7,  color: '--zone',  title: 'domain.shipping',  sub: 'package', child: { w: 3.6, d: 3.6, tileW: 1.5 } },
+    shipping:  { kind: 'area', x: 0,    y: 9.7,  w: 8,   d: 9.0,  color: '--zone',  title: 'domain.shipping',  sub: 'package' },
 };
 // Thành viên cố định đặt tuyệt đối trong một area (object / collection)
 export const PLACED = {
@@ -17,12 +16,17 @@ export const PLACED = {
   cart:               { area: 'order', kind: 'object', x: 13, y: 1.5, w: 3.4, d: 3.15, color: '--store', title: 'Cart', sub: 'Map<Product, qty>' },
   // Collection do visualizer giữ (domain không có object này): chứa các khối Order
   orders:             { area: 'order', kind: 'collection', x: 13, y: 5.5, w: 7.5, d: 6.2, color: '--store', title: 'List<Order>', sub: 'World', child: { w: 3.4, d: 2.4, tileW: 1.4 } },
+  // ShippingZone là enum, luôn có hai giá trị: 1 ô baseFee + tối đa 1 ô computed (phí) xếp một hàng
+  'zone:INNER_CITY':  { area: 'shipping', kind: 'object', x: 0.3, y: 10.9, w: 3.6, d: 2.4, color: '--zone', title: 'ShippingZone.INNER_CITY', sub: null },
+  'zone:OTHER_CITY':  { area: 'shipping', kind: 'object', x: 4.1, y: 10.9, w: 3.6, d: 2.4, color: '--zone', title: 'ShippingZone.OTHER_CITY', sub: null },
+  // Collection do visualizer giữ: chứa các khối Shipment (4 ô 2×2: status, failed, fee, tracking), mọc dần xuống
+  shipments:          { area: 'shipping', kind: 'collection', x: 0.3, y: 13.5, w: 7.4, d: 5, color: '--zone', title: 'List<Shipment>', sub: 'World', child: { w: 3.4, d: 3.6, tileW: 1.4 } },
 };
 // Dải tiêu đề trong khối (đơn vị ô lưới): ô con bắt đầu từ y + HEADER
 export const HEADER = 1;
 
 // Mỗi đường có hướng chuẩn a → b; pts đi từ a tới b, chỉ gồm đoạn ngang/dọc theo lưới.
-// Đường nối các object/collection (hoặc area shipping); checkLayout() cảnh báo nếu cắt qua khối
+// Đường nối các object/collection (hoặc area shipping, nơi zone/shipments không phải đầu mút nên flow leo lên vùng); checkLayout() cảnh báo nếu cắt qua khối
 export const WIRES = [
   { a: 'warehouse:WH-HN', b: 'warehouse:WH-HCM', pts: [[2.2, 4.65], [2.2, 5.45]] },
   // Nhập hàng kho → hub (InventoryManager.replenish): đi qua khoảng trống x 3.9–6, không cắt khối
@@ -144,7 +148,7 @@ export function computeLayout(nodes = []) {
 const key = (p, q) => [p, q].sort().join('|');
 const ENDPOINTS = new Set(WIRES.flatMap(w => [w.a, w.b]));
 const warned = new Set();
-const PREFIX = [['order:', 'orders'], ['zone:', 'shipping'], ['shipping:', 'shipping'], ['catalog:', 'catalog'], ['pricing:', 'pricing']];
+const PREFIX = [['order:', 'orders'], ['zone:', 'shipping'], ['shipping:', 'shipments'], ['catalog:', 'catalog'], ['pricing:', 'pricing']];
 
 // Id → id đầu tiên trên chuỗi cha là đầu mút của một đường (không có thì lên tới root).
 // parentOf(id) trả id cha hoặc undefined; con lạ thì đoán theo tiền tố
