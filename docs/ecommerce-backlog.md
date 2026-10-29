@@ -371,3 +371,48 @@ Ngoài spec: đo thời gian chạy (để `S06Demo` so sánh), fairness, hiệu
 Ngoài phạm vi: JPA / Spring Data, Flyway, optimistic lock bằng cột version, phân trang, auth.
 
 **Kiểm khi review:** SQL dùng tham số (không nối chuỗi); trừ kho là một câu `UPDATE` có điều kiện; transaction bao cả trừ kho lẫn lưu đơn; repository không trả domain object ra REST trực tiếp; secret DB lấy từ biến môi trường; test JDBC chạy trên PostgreSQL thật (Testcontainers, `@Tag("docker")`).
+
+---
+
+## Extra – Nối Warehouse ↔ InventoryManager (hub): nhập hàng từ kho lên hub
+**Nhánh:** `extra/warehouse-hub` · đề xuất 30/10, theo luồng spec đỏ
+
+Hiện có hai nguồn tồn kho rời nhau: `Product.stock` trong `InventoryManager` (bị `decreaseStock(Order)` trừ khi bán) và `Map<productId, qty>` của `Warehouse` (chỉ `WarehouseTransferService` đụng tới). Dữ liệu mẫu visualizer vì vậy lệch nhau (LAPTOP hub 5, HN 10 + HCM 2), đường `WH → hub` đang là nét chấm "chưa có" (D6 trong `docs/extras/s07-domain-visualizer.md`).
+
+Mô hình: **hub = hàng sẵn bán, kho = hàng dự trữ**, nối bằng luồng nhập hàng kho → hub. Không đổi nghĩa `Product.stock` nên test S02–S06 giữ nguyên. Đã loại: bỏ `Product.stock` để tồn = tổng các kho (phá API/test từ S02, `decreaseStock` phải tự chọn kho); đơn chọn kho để trừ (fulfillment, phạm vi lớn, để buổi sau).
+
+| # | Class/Task | Package | Ghi chú |
+|---|---|---|---|
+| 1 | `Product.increaseStock(int quantity)` | `domain/catalog` | mới; `quantity ≤ 0` → IAE |
+| 2 | `InventoryManager.replenish(Warehouse from, String productId, int quantity)` | `domain/inventory` | mới; kho xuất, hub cộng đúng số đó, all-or-nothing |
+| 3 | Visualizer: kịch bản `replenish`, đường `WH → hub` nét liền, sửa dữ liệu mẫu `WorldFactory` | `visualizer` | sau khi domain xanh, chạy skill `visualizer-sync` |
+
+**Acceptance**
+- [ ] `replenish` thành công: kho giảm và hub tăng đúng `quantity`; lỗi thì cả kho lẫn hub giữ nguyên
+- [ ] Không ai thấy trạng thái "kho đã trừ, hub chưa cộng"
+- [ ] `replenish`, `transfer` hai chiều và `decreaseStock` chạy song song không treo (test có timeout); tổng hub + các kho + đã bán không đổi
+- [ ] Thứ tự khóa toàn cục ghi trong Javadoc `InventoryManager` và `Warehouse`
+- [ ] `domain/` vẫn Java thuần; test S02–S07 vẫn xanh
+
+**Spec hành vi** (đề xuất 30/10, test: `domain/src/test/java/com/training/ecommerce/domain/inventory/InventoryManagerReplenishTest.java`, test `increaseStock` thêm vào test sẵn có của `Product`)
+
+API (quyết định đề xuất 30/10):
+- **D1** `replenish` đặt trên `InventoryManager`, không tách service: lock của hub là `this`, service riêng sẽ phải `synchronized(inventoryManager)` từ bên ngoài (lộ chi tiết khóa).
+- **D2** Thứ tự khóa toàn cục: **hub trước, kho sau**. Không code nào giữ lock kho rồi gọi vào hub. `WarehouseTransferService` chỉ khóa kho ↔ kho (id nhỏ trước) nên không tạo vòng chờ.
+- **D3** Giữ cả hai lock trong suốt lần nhập (không nhả giữa hai bước).
+- **D4** Product chưa có trên hub → `ProductNotFoundException`, kiểm trước khi đụng tới kho; không tự tạo product từ kho (kho chỉ biết productId, không biết tên/giá).
+- Tham số `null` / quantity ≤ 0 → IAE, cả hai bên giữ nguyên.
+
+| Method | Input | Kết quả mong đợi | Test |
+|---|---|---|---|
+| `increaseStock` | stock 5, cộng 3; quantity 0 / −1 | 8; IAE, stock giữ nguyên | `increaseAddsStock`, `increaseRejectsNonPositive` |
+| `replenish` | HN LAPTOP 10, hub LAPTOP 5, nhập 4 | HN 6, hub 9 | `movesStockFromWarehouseToHub` |
+| `replenish` | HN có 3, nhập 4; HN chưa có product | `OutOfStockException`, hai bên giữ nguyên | `notEnoughInWarehouse`, `unknownProductInWarehouse` |
+| `replenish` | productId không có trên hub | `ProductNotFoundException`, kho giữ nguyên (**D4**) | `productNotInHub` |
+| `replenish` | `null` (from / productId); quantity 0 / −5 | IAE, hai bên giữ nguyên | `rejectsNulls`, `rejectsNonPositiveQuantity` |
+| song song | `replenish` HN → hub + `transfer` HN ↔ HCM hai chiều + `decreaseStock` đơn 1 cái, mỗi luồng 5000 lần (×5) | xong trong 10 giây (không deadlock); hub + HN + HCM + số đã bán = tổng ban đầu | `replenishTransferSell_conserveTotal` |
+| song song | hub còn 0; 1 thread `replenish` 1 cái, 100 thread mua (×20) | số lần mua thành công ≤ 1, stock không âm | `replenishWhileBuyingLastItem` |
+
+Ngoài spec: trả hàng hub → kho, tự động nhập khi hub sắp hết, chọn kho cho từng đơn, lưu xuống DB (`StockStore` ở `app` chưa đụng), tràn `int`.
+
+**Kiểm khi review:** thứ tự khóa đúng **D2** ở mọi chỗ; kiểm tra (product có trên hub, kho đủ hàng) và cập nhật nằm trong cùng lock; `Product.increaseStock` chỉ được gọi khi đang giữ lock hub; không gọi IO / `sleep` khi giữ lock; `domain/` vẫn Java thuần; đã chạy `visualizer-sync`, banner lệch API không còn.
