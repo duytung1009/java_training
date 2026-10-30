@@ -1,6 +1,7 @@
-// Gọi REST; không có API (hoặc ?fixture=1) thì dùng fixtures/sample-run.json
-const FIXTURE_URL = 'fixtures/sample-run.json';
-let fixtureMode = new URLSearchParams(location.search).has('fixture');
+// Gọi REST; không có API (hoặc ?fixture=...) thì dùng fixture: ?fixture=events → sample-events.json, còn lại sample-run.json
+const params = new URLSearchParams(location.search);
+const FIXTURE_URL = params.get('fixture') === 'events' ? 'fixtures/sample-events.json' : 'fixtures/sample-run.json';
+let fixtureMode = params.has('fixture');
 let fixtureCache = null;
 
 export const isFixture = () => fixtureMode;

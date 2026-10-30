@@ -29,6 +29,7 @@ diff visualizer/src/main/resources/domain-api.txt "$TMPDIR/domain-api.now.txt"
 | Domain object mới cần một khối trên bản đồ | Chọn dạng khối: `object` (một instance thật), `collection` (danh sách chứa object), `area` (package/khái niệm, không có class). Ô là kết quả hàm thuần thì `computed=true`, không ghi như state. `area` = đúng một package domain (mỗi package một vùng gốc trong `ROOTS` của `static/adapter/layout.js`). Object cố định (luôn có) đặt toạ độ trong `PLACED`, nằm trọn trong vùng của nó; object sinh lúc chạy chỉ cần `parent` trong `WorldSnapshotter`, tự xếp lưới theo `child` spec của vùng/collection. `WIRES` nối giữa object/collection (được cắt qua khung vùng, không được cắt qua khối); màu ở `static/adapter/theme.css` + `legend` trong `static/adapter/index.js` |
 | Mô tả, API chính, buổi học đổi | `static/adapter/info.js` (bảng chú thích khi click khối, tra theo `cls`) — mô tả phải đúng với code domain, đối chiếu lại |
 | Flow mới giữa hai khối | `TraceEvent.flows` (danh sách `{from,to}`) trong kịch bản + một wire trong `static/adapter/layout.js` (FE tự đảo chiều) |
+| Domain mới có domain event | Override `eventSource()` (rút event kiểu `pullDomainEvents`) và `eventMapper()` (event → `EventFlow` giữa hai node có wire) trong adapter; ecommerce hiện dùng nguồn rỗng. Cần ghi phản ứng của listener thì dùng `recorder.lastEvents()` + `recorder.react(...)` trong kịch bản |
 
 Chỉ thay đổi nội bộ (private, refactor không đổi hành vi) thì thường chỉ cần cập nhật snapshot.
 

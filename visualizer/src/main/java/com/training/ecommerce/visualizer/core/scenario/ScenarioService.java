@@ -1,5 +1,6 @@
 package com.training.ecommerce.visualizer.core.scenario;
 
+import com.training.ecommerce.visualizer.core.spi.DomainEventSource;
 import com.training.ecommerce.visualizer.core.spi.VisualizerAdapter;
 import com.training.ecommerce.visualizer.core.trace.TraceRecorder;
 import com.training.ecommerce.visualizer.core.view.WorldView;
@@ -55,9 +56,11 @@ public class ScenarioService {
 
         RunResult run(String id) {
             Scenario<W> scenario = registry.get(id);
+            DomainEventSource<W> source = adapter.eventSource();
             W world = adapter.createWorld();
             WorldView before = adapter.snapshot(world).view();
-            TraceRecorder recorder = new TraceRecorder(() -> adapter.snapshot(world));
+            TraceRecorder recorder = new TraceRecorder(() -> adapter.snapshot(world),
+                    () -> source.drain(world), adapter.eventMapper());
             scenario.run(world, recorder);
             return new RunResult(scenario.id(), scenario.title(), scenario.concurrent(), before, recorder.events());
         }

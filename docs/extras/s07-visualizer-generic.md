@@ -90,6 +90,8 @@ Làm tuần tự P1 → P2 → P3 (P2 và P3 cùng sửa `scene.js`, `player.js`
 2. Implementation: các type ở §3 (`DomainEventSource`, `DomainEventMapper`, `EventFlow`, `DomainEventView{id, type, context, payload, from, to}`), `Flow` thêm `kind` (`call`|`event`) và `label`, `TraceEvent` thêm `events` và `causedBy`. Adapter ecommerce trả source rỗng.
 3. FE: log hiện event thành dòng con dưới lời gọi; flow `event` vẽ nét chấm, màu riêng, nhãn tên event; diff panel không đổi. Thêm fixture `static/fixtures/sample-events.json` (sinh từ test domain giả) để xem trên trình duyệt qua `?fixture=events`.
 
+**Đã làm (P2):** API ghi event của `TraceRecorder`: `emit(event)` (ThreadLocal theo thread, ném `IllegalStateException` ngoài lời gọi), `lastEvents()` (event gốc của lời gọi cấp ngoài cùng vừa xong trên thread này) và `react(event, className, method, args, flows, panels, action)` (ghi `TraceEvent` riêng có `causedBy` = id event; `react` không ghi đè `lastEvents`). Adapter muốn có event thì override `eventSource()` / `eventMapper()`; ecommerce dùng nguồn rỗng. Fixture `sample-events.json` do `ecommerce/trace/SampleEventsFixture` (test của **ecommerce**) sinh, không phải test lõi, vì bản đồ vẽ theo bố cục adapter ecommerce nên domain giả thuần không có chỗ để vẽ; test `SampleEventsFixtureTest` chặn file lệch khi sinh lại. `sample-run.json` là dữ liệu tay, chỉ thêm trường mặc định (`kind: CALL`, `label: null`, `events: []`, `causedBy: null`).
+
 **Xong khi:** test P2 xanh; JSON kịch bản ecommerce không có trường mới khác rỗng/mặc định; fixture events phát đúng thứ tự lời gọi → event → phản ứng trên trình duyệt.
 
 ### P3 — Mô hình domain dựng trên giao diện, xem theo tầng, bộ lọc

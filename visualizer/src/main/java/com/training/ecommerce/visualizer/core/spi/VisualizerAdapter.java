@@ -25,4 +25,16 @@ public interface VisualizerAdapter<W> {
 
     /** Package domain và file snapshot API để cảnh báo khi domain lệch. */
     DomainApiSpec domainApi();
+
+    /**
+     * Nguồn domain event của thế giới. Mặc định rỗng; domain có event thì override cùng {@link #eventMapper()}.
+     */
+    default DomainEventSource<W> eventSource() {
+        return DomainEventSource.none();
+    }
+
+    /** Cách biến domain event thành flow trên bản đồ. Mặc định không ánh xạ event nào. */
+    default DomainEventMapper eventMapper() {
+        return DomainEventMapper.none();
+    }
 }

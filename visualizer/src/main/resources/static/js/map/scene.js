@@ -60,7 +60,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     tiles.clear(); blocks.clear();
     for (const k of Object.keys(frames)) delete frames[k];
     const defs = el('defs', {}, svg);
-    for (const [id, c] of [['arrow-flow', css('--flow')], ['arrow-err', css('--err')]]) {
+    for (const [id, c] of [['arrow-flow', css('--flow')], ['arrow-err', css('--err')], ['arrow-event', css('--event')]]) {
       const m = el('marker', { id, viewBox: '0 0 10 10', refX: 7, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, defs);
       el('path', { d: 'M1 1L8 5L1 9', fill: 'none', stroke: c, 'stroke-width': 1.6 }, m);
     }
@@ -374,10 +374,21 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     const afterNodes = after?.nodes && new Map(after.nodes.map(n => [n.id, n])); // con mới chưa có trong world hiện tại
     const pts = resolveFlow(f, id => nodes.get(id)?.parent ?? afterNodes?.get(id)?.parent, layout.wires);
     if (!pts) return;
-    const p = el('path', { d: wirePath(pts), class: 'flow', stroke: ok ? css('--flow') : css('--err'), 'marker-end': `url(#arrow-${ok ? 'flow' : 'err'})` }, layers.flows);
+    // Flow event: nét chấm màu --event kèm nhãn tên event, luôn giữ màu event kể cả khi lời gọi THROWN
+    // (event đã thật sự xảy ra trước lúc ném). Flow lời gọi: --flow, hoặc --err khi lời gọi lỗi.
+    const isEvent = f.kind === 'EVENT';
+    const kind = isEvent ? 'event' : ok ? 'flow' : 'err';
+    const p = el('path', { d: wirePath(pts), class: isEvent ? 'flow event' : 'flow', stroke: css(`--${kind}`), 'marker-end': `url(#arrow-${kind})` }, layers.flows);
+    let label = null;
+    if (isEvent && f.label) {
+      const mid = p.getPointAtLength(p.getTotalLength() / 2);
+      label = el('text', { x: mid.x, y: mid.y - 5, class: 'flow-label', 'text-anchor': 'middle' }, layers.flows);
+      label.textContent = f.label;
+    }
     await sleep(ms);
     p.style.transition = 'opacity .3s'; p.style.opacity = 0;
     setTimeout(() => p.remove(), 300);
+    if (label) { label.style.transition = 'opacity .3s'; label.style.opacity = 0; setTimeout(() => label.remove(), 300); }
   }
 
   // Về trạng thái ban đầu, không animation

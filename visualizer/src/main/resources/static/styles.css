@@ -1,7 +1,7 @@
 :root {
   --bg: #12141a; --panel: #171a21; --line: #2a2e38; --text: #d6d8de; --muted: #7d8290;
   --c-map: #e0894f; --c-log: #6f9cf0; --c-diff: #74c48a; --c-alt: #a78bfa; /* màu chrome của khung: panel bản đồ / log / diff, nhấn phụ */
-  --wire: #3a404d; --flow: #9ab4ff; --ok: #74c48a; --err: #ef6b6b; --dec: #e0894f;
+  --wire: #3a404d; --flow: #9ab4ff; --ok: #74c48a; --err: #ef6b6b; --dec: #e0894f; --event: #e8c46a;
   --spd: 1; /* hệ số tốc độ, player.js cập nhật */
 }
 * { box-sizing: border-box; }
@@ -51,6 +51,8 @@ svg { display: block; width: 100%; height: auto; }
 .log .ts, .log .th { color: var(--muted); } .log .m { overflow-wrap: anywhere; } .log .m b { color: var(--c-log); font-weight: 400; }
 .log li.mt { box-shadow: inset 3px 0 0 var(--tc); }
 .log li.mt .th { color: var(--tc); border: 1px solid var(--tc); border-radius: 3px; padding: 0 4px; justify-self: start; line-height: 1.35; height: fit-content; }
+.log li.ev { padding-top: 0; padding-bottom: 1px; color: var(--event); }
+.log li.ev .evp { color: var(--muted); } .log .re { color: var(--event); }
 .log .ok { color: var(--ok); } .log .err, .log li.thrown .m { color: var(--err); }
 .diff .body { padding: 8px 10px; min-height: 160px; max-height: 280px; overflow: auto; overflow-wrap: anywhere; }
 .diff .obj { margin-bottom: 8px; } .diff .obj > div:first-child { color: var(--muted); }
@@ -80,6 +82,8 @@ footer { padding: 6px 16px 16px; color: var(--muted); }
 .flash-ok { animation: flashOk calc(.9s / var(--spd)) ease-out; }
 .flash-err { animation: flashErr calc(.9s / var(--spd)) ease-out; }
 .flow { fill: none; stroke-width: 2; stroke-dasharray: 4 10; stroke-linecap: round; animation: flow calc(.5s / var(--spd)) linear infinite; }
+.flow.event { stroke-width: 2.5; stroke-dasharray: 1 7; }
+.flow-label { fill: var(--event); font-size: 10px; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; pointer-events: none; }
 @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes popOut { to { transform: scale(0); opacity: 0; } }
 @keyframes bumpUp { 30% { stroke: var(--ok); stroke-width: 3; } }

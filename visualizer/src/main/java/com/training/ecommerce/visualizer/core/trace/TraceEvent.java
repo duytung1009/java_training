@@ -20,6 +20,8 @@ import java.util.List;
  * @param panels     panel id cần nháy viền
  * @param changes    các object có field đổi (rỗng nếu không đổi gì)
  * @param worldAfter trạng thái thế giới sau lần gọi
+ * @param events     domain event phát sinh trong lần gọi theo thứ tự, rỗng nếu không có (không bao giờ null)
+ * @param causedBy   id domain event mà lần ghi này là phản ứng của nó, null nếu là lời gọi thường
  */
 public record TraceEvent(
         long seq,
@@ -34,5 +36,12 @@ public record TraceEvent(
         List<Flow> flows,
         List<String> panels,
         List<ObjectChange> changes,
-        WorldView worldAfter) {
+        WorldView worldAfter,
+        List<DomainEventView> events,
+        String causedBy) {
+
+    /** Chuẩn hoá {@code events}: null thành rỗng, và sao chép bất biến. */
+    public TraceEvent {
+        events = events == null ? List.of() : List.copyOf(events);
+    }
 }
