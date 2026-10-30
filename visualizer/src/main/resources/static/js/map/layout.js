@@ -126,17 +126,23 @@ export function rootOf(id, parentOf = () => undefined) {
   return id;
 }
 
-// Trả về danh sách điểm theo chiều data, hoặc null nếu không có đường (cùng đầu mút: không cần đường; cặp lạ: cảnh báo 1 lần)
-// wires: đường hiệu dụng (đã dịch theo bố cục động), mặc định là đường gốc
-export function resolveFlow(flow, parentOf, wires = WIRES) {
+// Tìm đường nối cho flow: { i: chỉ số trong wires, forward: true nếu data đi a → b }, hoặc null nếu không có đường
+// (cùng đầu mút: không cần đường; cặp lạ: cảnh báo 1 lần). wires: đường hiệu dụng, mặc định là đường gốc
+export function resolveWire(flow, parentOf, wires = WIRES) {
   if (!flow || !flow.from || !flow.to) return null;
   const from = rootOf(flow.from, parentOf), to = rootOf(flow.to, parentOf);
   if (from === to) return null;
-  const w = wires.find(x => key(x.a, x.b) === key(from, to));
-  if (!w) {
+  const i = wires.findIndex(x => key(x.a, x.b) === key(from, to));
+  if (i < 0) {
     const k = from + '->' + to;
     if (!warned.has(k)) { warned.add(k); console.warn('Visualizer: chưa có đường nối cho flow', k); }
     return null;
   }
-  return from === w.a ? w.pts : w.pts.slice().reverse();
+  return { i, forward: from === wires[i].a };
+}
+
+// Trả về danh sách điểm theo chiều data, hoặc null nếu không có đường
+export function resolveFlow(flow, parentOf, wires = WIRES) {
+  const r = resolveWire(flow, parentOf, wires);
+  return r && (r.forward ? wires[r.i].pts : wires[r.i].pts.slice().reverse());
 }

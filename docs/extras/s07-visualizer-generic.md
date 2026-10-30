@@ -270,6 +270,22 @@ Sửa khi review trên trình duyệt: breadcrumb không co (thiếu 1px subpixe
   - Bảng lọc gọi `preventDefault` khi đóng, nên cùng một lần Esc không lùi tầng nữa.
 - Bản đồ không cho bôi đen chữ, để double click không chọn chữ.
 
+**Đã làm (P4c):**
+- `js/map/ports.js` (mới, hàm thuần, có `ports.test.mjs`):
+  - `clipWire` cắt dây ở chỗ rời area đầu tiên, tính từ đầu nằm trong area. Đầu mút nằm đúng mép area vẫn tính là cắt.
+  - `placePorts` xếp khối cổng ngoài mép area, các cổng cùng một mép được đẩy ra để không chồng nhau, kèm đoạn nối (stub) từ chỗ cắt tới cổng.
+- `layout.js` thêm `resolveWire` (trả chỉ số dây và chiều đi). `resolveFlow` giờ bọc hàm này.
+- `scene.js` ở tầng package:
+  - Package khác ẩn hẳn (`.out`: opacity 0 rồi visibility hidden).
+  - Dây có đúng một đầu trong area chỉ vẽ phần bên trong cộng stub. Cổng nằm trong `plane` nên đổi phép chiếu vẫn đúng, chữ cổng dùng `flat()`.
+  - Nội dung cổng: dòng chính `→ <đầu bên kia>`; dòng phụ là `<package bên kia> · n lời gọi`, bỏ tên package khi đầu bên kia chính là package đó.
+  - Click hoặc Enter trên cổng để sang package bên kia (`onGo`, `router.goArea`).
+  - Khung camera tính cả các cổng.
+- Flow ở tầng package:
+  - Flow hoàn toàn bên ngoài package thì không vẽ và không chờ.
+  - Flow qua mép package chạy tới hoặc từ cổng.
+  - Số lời gọi đếm cả khi đang ở tổng quan, reset thì xoá.
+
 **Không làm.** Bố cục tự động cho tầng tổng quan khi adapter không có layout vẽ tay; context map theo mô hình (có thể đưa vào trình sửa mô hình sau).
 
 ## 5. Kiểm chứng

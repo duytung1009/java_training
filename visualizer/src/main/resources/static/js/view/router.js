@@ -77,6 +77,8 @@ export function createRouter({ scene, els, prefixes = [], isBlocked = () => fals
   }
   const openLabel = id => (!state.area && scene.areaOf(id) ? OPEN_LABEL : null);
 
+  const goArea = id => go({ area: id }); // từ cổng: sang area bên kia
+
   function up() { if (state.area) go({ area: null }); }
 
   window.addEventListener('hashchange', () => {
@@ -137,6 +139,6 @@ export function createRouter({ scene, els, prefixes = [], isBlocked = () => fals
       refresh();
     },
     eventMatches: matchesEvent,
-    open, openLabel,
+    open, openLabel, goArea,
   };
 }

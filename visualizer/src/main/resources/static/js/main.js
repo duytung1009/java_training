@@ -33,7 +33,7 @@ let selection = null;    // { id, node } khối đang chọn, để vẽ lại b
 let router = null;       // tạo sau scene; onSelect có thể chạy trước đó nên dùng ?.
 const showInfo = (id, node) => renderInfo($('info'), id, node, currentModel, { openLabel: id ? router?.openLabel(id) : null });
 const onSelect = (id, node) => { selection = id && node ? { id, node } : null; showInfo(id, node); };
-const scene = createScene($('map'), { onSelect, onOpen: id => router.open(id) });
+const scene = createScene($('map'), { onSelect, onOpen: id => router.open(id), onGo: id => router.goArea(id) });
 $('info').addEventListener('click', e => {
   if (e.target.closest('.close')) router.select(null);
   else if (e.target.closest('.open') && selection) router.open(selection.id);

@@ -109,9 +109,15 @@ footer { padding: 6px 16px 16px; color: var(--muted); }
 }
 
 .zone { transition: transform calc(.35s / var(--spd)) ease-out, opacity .35s; } /* khối bị đẩy xuống khi container phía trên mọc; opacity cho .out */
-/* Tầng package: khối ngoài area đang xem và đường nối không chạm area chỉ còn mờ, không bắt chuột */
-.zone.out, .plane path.out { opacity: .12; pointer-events: none; }
+/* Tầng package: khối ngoài area đang xem và đường nối không chạm area ẩn hẳn (mờ dần rồi visibility ẩn sau khi mờ xong) */
+.zone.out, .plane path.out { opacity: 0; visibility: hidden; pointer-events: none; }
+.zone.out { transition: transform calc(.35s / var(--spd)) ease-out, opacity .35s, visibility 0s .35s; }
 .plane path { transition: opacity .35s; }
+.plane path.out { transition: opacity .35s, visibility 0s .35s; }
+/* Cổng sang package khác: hiện sau khi camera tới nơi */
+.port { cursor: pointer; animation: portIn .3s .45s ease-out both; }
+.port:focus { outline: none; } .port:focus-visible > .zone-frame { stroke: var(--text); stroke-width: 2.5; fill-opacity: .2; }
+@keyframes portIn { from { opacity: 0; } to { opacity: 1; } }
 .zone:focus { outline: none; } .zone:focus-visible > .zone-frame { stroke: var(--text); stroke-width: 2.5; fill-opacity: .12; } /* Enter để đi sâu */
 
 /* Màn "?": hành trình phát triển */

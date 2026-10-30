@@ -3,7 +3,8 @@ import { el, iso, diamond, wirePath, css, flat, sleep, arrowMarkers, restartFlas
 import { planeMatrix, apply, bounds, lerp, toAttr, fitRect, visibleRect, lerpRect } from './projection.js';
 import { adapter } from '../../adapter/index.js';
 import { touchedFirst } from '../view/nav.js';
-import { ROOTS, PLACED, WIRES as WIRES_BASE, HEADER, CHILD_MARGIN, CHILD_GAP, computeLayout, resolveFlow, checkLayout } from './layout.js';
+import { ROOTS, PLACED, WIRES as WIRES_BASE, HEADER, CHILD_MARGIN, CHILD_GAP, computeLayout, resolveWire, checkLayout } from './layout.js';
+import { clipWire, placePorts } from './ports.js';
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const MORE = '__more'; // ô "+N" gom các item không đủ chỗ
@@ -19,6 +20,7 @@ const specOf = id => ROOTS[id] ?? PLACED[id]; // area hoặc thành viên cố �
 const PROJ_MS = 400; // thời gian chuyển phép chiếu
 const ZOOM_MIN = 0.4, ZOOM_MAX = 3;
 const CAM_MS = 450, FOCUS_MARGIN = 16, FOCUS_MAX_SCALE = 2.5; // camera: thời gian tween, lề quanh area (đơn vị viewBox), scale tối đa khi zoom vào area
+const PORT = { w: 4, d: 0.8, gap: 0.15 }; // khối cổng (đơn vị ô lưới) và khe tới mép area
 const easeOut = t => 1 - (1 - t) ** 3;
 
 // Vừa chữ vào maxPx: thu font xuống tối thiểu minPx, vẫn dài thì cắt và thêm "…". Trả về true nếu giữ nguyên chữ gốc.
@@ -48,8 +50,9 @@ const FRAME = { // kiểu viền theo loại khối
 const prefix = it => dispVal(it).slice(0, dispVal(it).length - String(it.value).length); // phần '= ' đứng trước số
 const dispVal = it => it.computed && !String(it.label ?? '').startsWith('=') ? `= ${it.value}` : String(it.value);
 
-// onSelect(id, node): click một khối (id null = bỏ chọn); onOpen(id): double click hoặc Enter trên khối (đi sâu vào)
-export function createScene(svg, { onSelect = () => {}, onOpen = () => {} } = {}) {
+// onSelect(id, node): click một khối (id null = bỏ chọn); onOpen(id): double click hoặc Enter trên khối (đi sâu vào);
+// onGo(areaId): click hoặc Enter trên một cổng (sang area bên kia)
+export function createScene(svg, { onSelect = () => {}, onOpen = () => {}, onGo = () => {} } = {}) {
   const layers = {}, frames = {};
   const blocks = new Map(); // id (root hoặc con) → { id, root, kind, color, small, g, frame, head, titleEl, subEl, rect, more }
   let world = null, selected = null, nodes = new Map();
@@ -65,17 +68,20 @@ export function createScene(svg, { onSelect = () => {}, onOpen = () => {} } = {}
   let focus = null, tw = null, camToken = 0, centre = null; // centre: area vừa rời, tâm cuộn khi quay về tổng quan
   let fitted = false, curVB = null, lastRect = null; // fitted: svg đang đặt kích thước px theo hộp (area / tween); curVB: viewBox hiện tại
   const warnedLayout = new Set();
+  // Cổng tầng package: portList tính lại từ (layout, focus) mỗi lần bố cục đổi; ports = DOM theo chỉ số đường; wireCount = số lời gọi đã qua mỗi đường (kể cả khi đang ở tổng quan)
+  let portList = [];
+  const ports = new Map(), wireCount = new Map();
   const tiles = new Map(); // `${blockId}/${key}` → { g, polygon, text, name, val, title, value, pre, anim }
 
   function build() {
     svg.textContent = '';
-    tiles.clear(); blocks.clear();
+    tiles.clear(); blocks.clear(); ports.clear(); portList = [];
     for (const k of Object.keys(frames)) delete frames[k];
     const defs = el('defs', {}, svg);
     arrowMarkers(defs, 'arrow-', { flow: css('--flow'), err: css('--err'), event: css('--event') });
     // Lớp nền (plane) chịu ma trận phép chiếu; overlay nằm ngoài để chữ/mũi tên flow luôn đứng thẳng, không méo
     const planeG = el('g', { class: 'plane' }, svg);
-    for (const n of ['ground', 'wires', 'zones']) layers[n] = el('g', {}, planeG);
+    for (const n of ['ground', 'wires', 'zones', 'ports']) layers[n] = el('g', {}, planeG);
     layers.overlay = el('g', {}, svg);
     layers.plane = planeG;
     activeFlows.clear();
@@ -109,6 +115,7 @@ export function createScene(svg, { onSelect = () => {}, onOpen = () => {} } = {}
   // Áp bố cục hiệu dụng: khung, tiêu đề, độ dịch, đường nối, nền, viewBox
   function applyLayout(lay, animate) {
     layout = lay;
+    computePorts();
     const seen = JSON.stringify([lay.areas, lay.placed, lay.wires]);
     if (seen !== layoutKey) {
       layoutKey = seen;
@@ -120,7 +127,8 @@ export function createScene(svg, { onSelect = () => {}, onOpen = () => {} } = {}
       placeBlock(b, localRect(id, lay));
       setShift(b, lay.dy[id], animate);
     }
-    lay.wires.forEach((w, i) => wirePaths[i].setAttribute('d', wirePath(w.pts)));
+    applyWires();
+    renderPorts();
     // Nền + viewBox suy ra từ area và đường nối hiệu dụng
     const ps = Object.values(lay.areas);
     const maxX = Math.max(...ps.map(p => p.x + p.w)) + 0.5, maxY = Math.max(...ps.map(p => p.y + p.d)) + 0.5;
@@ -140,8 +148,8 @@ export function createScene(svg, { onSelect = () => {}, onOpen = () => {} } = {}
   const setViewBox = r => { curVB = r; svg.setAttribute('viewBox', `${r.x} ${r.y} ${r.w} ${r.h}`); };
   // Hộp bao (sau phép chiếu) của area theo bố cục hiệu dụng; lề ở fitRect
   function areaBounds(id) {
-    const a = layout.areas[id];
-    return bounds(plane, [[a.x, a.y], [a.x + a.w, a.y], [a.x + a.w, a.y + a.d], [a.x, a.y + a.d]].map(q => iso(...q)));
+    const a = layout.areas[id], rects = id === focus ? [a, ...portList.map(p => p.rect)] : [a]; // area đang xem: kèm các cổng
+    return bounds(plane, rects.flatMap(r => [[r.x, r.y], [r.x + r.w, r.y], [r.x + r.w, r.y + r.d], [r.x, r.y + r.d]]).map(q => iso(...q)));
   }
   const M = 24, overviewVB = () => { const b = bounds(plane, isoPts); return { x: b.x - M, y: b.y - M, w: b.w + 2 * M, h: b.h + 2 * M }; };
 
@@ -444,6 +452,7 @@ export function createScene(svg, { onSelect = () => {}, onOpen = () => {} } = {}
     }
     if (selected && !frames[selected]) select(null);
     else if (selected) onSelect(selected, describe(selected));
+    renderPorts(); // tiêu đề node có thể đổi
     applyDim();
     applyFade();
   }
@@ -474,8 +483,20 @@ export function createScene(svg, { onSelect = () => {}, onOpen = () => {} } = {}
   // Flow không hỗ trợ → không animation, không chờ.
   async function flow(f, ok, ms, after) {
     const afterNodes = after?.nodes && new Map(after.nodes.map(n => [n.id, n])); // con mới chưa có trong world hiện tại
-    const pts = resolveFlow(f, id => nodes.get(id)?.parent ?? afterNodes?.get(id)?.parent, layout.wires);
-    if (!pts) return;
+    const r = resolveWire(f, id => nodes.get(id)?.parent ?? afterNodes?.get(id)?.parent, layout.wires);
+    if (!r) return;
+    const w = layout.wires[r.i];
+    wireCount.set(r.i, (wireCount.get(r.i) ?? 0) + 1); // đếm mọi chế độ để vào area giữa chừng vẫn đúng số
+    let pts = r.forward ? w.pts : w.pts.slice().reverse();
+    if (focus) {
+      const insideA = areaOf(w.a) === focus, insideB = areaOf(w.b) === focus;
+      if (!insideA && !insideB) return; // đường ngoài area đang xem: không vẽ, không chờ
+      const port = insideA !== insideB && portList.find(t => t.i === r.i);
+      if (port) { // cắt tại cổng: đi từ trong ra cổng (hoặc ngược lại)
+        pts = r.forward === insideA ? port.shown : port.shown.slice().reverse();
+        renderPorts();
+      }
+    }
     // Flow event: nét chấm màu --event kèm nhãn tên event, luôn giữ màu event kể cả khi lời gọi THROWN
     // (event đã thật sự xảy ra trước lúc ném). Flow lời gọi: --flow, hoặc --err khi lời gọi lỗi.
     const isEvent = f.kind === 'EVENT';
@@ -517,6 +538,53 @@ export function createScene(svg, { onSelect = () => {}, onOpen = () => {} } = {}
     return null;
   }
 
+  // Dây đang hiện: nguyên đường, hoặc phần trong area + stub tới cổng khi đang xem một area
+  function applyWires() {
+    layout.wires.forEach((w, i) => wirePaths[i].setAttribute('d', wirePath(portList.find(t => t.i === i)?.shown ?? w.pts)));
+  }
+
+  // Cổng của area đang xem: mỗi đường chỉ có một đầu trong area bị cắt tại chỗ rời area đầu tiên
+  function computePorts() {
+    portList = [];
+    if (!focus || !layout) return;
+    const rect = layout.areas[focus], items = [];
+    layout.wires.forEach((w, i) => {
+      const inA = areaOf(w.a) === focus;
+      if (inA === (areaOf(w.b) === focus)) return;
+      const c = clipWire(w.pts, rect, inA);
+      if (c) items.push({ i, c, other: inA ? w.b : w.a });
+    });
+    const placed = placePorts(items.map(t => t.c), rect, PORT);
+    portList = items.map((t, k) => ({ i: t.i, other: t.other, rect: placed[k], shown: [...t.c.inner, ...placed[k].stub.slice(1)] }));
+  }
+
+  // Dựng / cập nhật / gỡ khối cổng theo portList (idempotent: gọi lại sau layout, sync, đếm flow)
+  function renderPorts() {
+    const want = new Set(portList.map(t => t.i));
+    for (const [i, p] of ports) if (!want.has(i)) { p.g.remove(); ports.delete(i); }
+    for (const t of portList) {
+      const area = areaOf(t.other), color = css(ROOTS[area]?.color ?? '--muted');
+      let p = ports.get(t.i);
+      if (!p) {
+        const g = el('g', { class: 'port', tabindex: 0 }, layers.ports);
+        const go = e => { e.stopPropagation(); onGo(area); };
+        g.addEventListener('click', go);
+        g.addEventListener('dblclick', e => e.stopPropagation());
+        g.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.repeat) { e.preventDefault(); go(e); } });
+        const frame = el('polygon', { fill: color, 'fill-opacity': 0.12, stroke: color, 'stroke-width': 1.2, class: 'zone-frame' }, g);
+        const head = el('text', { class: 'zone-head small' }, g);
+        const titleEl = el('tspan', { x: 0, y: 0, class: 'zone-title', fill: color }, head);
+        const subEl = el('tspan', { x: 0, y: 9, class: 'zone-sub' }, head);
+        p = { g, frame, head, titleEl, subEl, tip: el('title', {}, head), small: true, kind: 'port' };
+        ports.set(t.i, p);
+      }
+      placeBlock(p, t.rect);
+      const n = wireCount.get(t.i) ?? 0, ot = nodeOf(t.other)?.title ?? specOf(t.other)?.title ?? t.other;
+      const at = nodeOf(area)?.title ?? ROOTS[area]?.title ?? area; // đầu mút là chính area: không lặp tên ở dòng phụ
+      setHead(p, `→ ${ot}`, [t.other === area ? '' : at, n ? `${n} lời gọi` : ''].filter(Boolean).join(' · '));
+    }
+  }
+
   // Làm mờ phần ngoài area đang xem: khối gốc của area khác và đường nối không chạm area; khối lồng nhau mờ theo cha
   function applyFade() {
     for (const b of blocks.values()) {
@@ -554,6 +622,7 @@ export function createScene(svg, { onSelect = () => {}, onOpen = () => {} } = {}
     const token = ++camToken, from = animate && !reduced() ? currentView() : null;
     if (focus) centre = focus;
     focus = id; zoom = 1;
+    computePorts(); applyWires(); renderPorts();
     applyFade();
     if (!from || !layout) return settleCamera();
     tw = { from, t: 0 };
@@ -571,7 +640,7 @@ export function createScene(svg, { onSelect = () => {}, onOpen = () => {} } = {}
     for (const t of tiles.values()) t.g.remove();
     tiles.clear();
     for (const b of [...blocks.values()]) if (b.small) removeBlock(b, { animate: false });
-    layers.overlay.textContent = ''; activeFlows.clear();
+    layers.overlay.textContent = ''; activeFlows.clear(); wireCount.clear();
     for (const f of Object.values(frames)) f.classList.remove('flash-ok', 'flash-err');
     sync(world, { animate: false });
   }
