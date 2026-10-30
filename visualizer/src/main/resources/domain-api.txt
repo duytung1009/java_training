@@ -1,6 +1,6 @@
 # Snapshot API công khai của module domain (mỗi dòng một chữ ký).
 # Visualizer so sánh file này với domain hiện tại để hiện banner cảnh báo khi lệch.
-# Không sửa tay. Tạo lại: ./mvnw -q -pl visualizer -am compile && java -cp visualizer/target/classes:domain/target/classes com.training.ecommerce.visualizer.sync.DomainApiScanner visualizer/src/main/resources/domain-api.txt
+# Không sửa tay. Tạo lại: ./mvnw -q -pl visualizer -am compile && java -cp visualizer/target/classes:domain/target/classes com.training.ecommerce.visualizer.ecommerce.sync.EcommerceDomainApi visualizer/src/main/resources/domain-api.txt
 class catalog.BundleProduct
 class catalog.DigitalProduct
 class catalog.OutOfStockException

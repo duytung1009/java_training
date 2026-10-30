@@ -6,6 +6,7 @@
 <title>Domain Visualizer</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="adapter/theme.css">
 </head>
 <body>
 <header>
@@ -24,11 +25,7 @@
   <button id="reset">↺ Reset</button>
   <button id="about" class="about-btn" title="Hành trình phát triển visualizer" aria-label="Hành trình phát triển visualizer">?</button>
 </header>
-<div class="legend">
-  <span><i style="border-color:var(--wh)"></i>Warehouse</span>
-  <span><i style="border-color:var(--hub)"></i>InventoryManager</span>
-  <span><i style="border-color:var(--store)"></i>Cart / Order</span>
-  <span><i style="border-color:var(--zone)"></i>ShippingZone</span>
+<div class="legend"><!-- mục legend của domain do adapter.legend thêm vào đầu (main.js) -->
   <span><i style="border-color:var(--err)"></i>Exception</span>
   <span><i style="border-color:var(--muted)"></i>object</span>
   <span><i class="k-coll" style="border-color:var(--muted)"></i>collection</span>

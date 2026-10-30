@@ -13,7 +13,7 @@ Tín hiệu lệch: `visualizer/src/main/resources/domain-api.txt` là snapshot 
 
 ```bash
 ./mvnw -q -pl visualizer -am compile
-java -cp visualizer/target/classes:domain/target/classes com.training.ecommerce.visualizer.sync.DomainApiScanner "$TMPDIR/domain-api.now.txt"
+java -cp visualizer/target/classes:domain/target/classes com.training.ecommerce.visualizer.ecommerce.sync.EcommerceDomainApi "$TMPDIR/domain-api.now.txt"
 diff visualizer/src/main/resources/domain-api.txt "$TMPDIR/domain-api.now.txt"
 ```
 
@@ -23,14 +23,16 @@ diff visualizer/src/main/resources/domain-api.txt "$TMPDIR/domain-api.now.txt"
 
 | Domain đổi | Sửa ở visualizer |
 |---|---|
-| Method bị đổi tên/xoá, đổi tham số | Các `scenario/*Scenario.java` gọi nó; nhãn `recorder.call/run("Class", "method", ...)` phải khớp tên thật |
-| Trạng thái mới cần thấy (field, collection, stock…) | `world/WorldSnapshotter` (node + item + object diff; `ItemView.type` = class mà ô đại diện, hiện thành nhãn nhỏ trên ô — ghi đúng kiểu trong code, vd. `Map.Entry` nếu domain chỉ giữ id), có thể cả `world/World`, `WorldFactory` (seed) |
-| Hành vi mới đáng demo (use case, exception, concurrency) | Thêm `scenario/<Tên>Scenario.java`, đăng ký trong `ScenarioRegistry`, thêm test bất biến trong `ScenarioTest` |
-| Domain object mới cần một khối trên bản đồ | Chọn dạng khối: `object` (một instance thật), `collection` (danh sách chứa object), `area` (package/khái niệm, không có class). Ô là kết quả hàm thuần thì `computed=true`, không ghi như state. `area` = đúng một package domain (mỗi package một vùng gốc trong `ROOTS` của `static/js/map/layout.js`). Object cố định (luôn có) đặt toạ độ trong `PLACED`, nằm trọn trong vùng của nó; object sinh lúc chạy chỉ cần `parent` trong `WorldSnapshotter`, tự xếp lưới theo `child` spec của vùng/collection. `WIRES` nối giữa object/collection (được cắt qua khung vùng, không được cắt qua khối); màu ở `styles.css` + legend `index.html` |
-| Mô tả, API chính, buổi học đổi | `static/js/panels/info.js` (bảng chú thích khi click khối, tra theo `cls`) — mô tả phải đúng với code domain, đối chiếu lại |
-| Flow mới giữa hai khối | `TraceEvent.flows` (danh sách `{from,to}`) trong kịch bản + một wire trong `layout.js` (FE tự đảo chiều) |
+| Method bị đổi tên/xoá, đổi tham số | Các `ecommerce/scenario/*Scenario.java` gọi nó; nhãn `recorder.call/run("Class", "method", ...)` phải khớp tên thật |
+| Trạng thái mới cần thấy (field, collection, stock…) | `ecommerce/world/WorldSnapshotter` (node + item + object diff; `ItemView.type` = class mà ô đại diện, hiện thành nhãn nhỏ trên ô — ghi đúng kiểu trong code, vd. `Map.Entry` nếu domain chỉ giữ id), có thể cả `ecommerce/world/World`, `WorldFactory` (seed) |
+| Hành vi mới đáng demo (use case, exception, concurrency) | Thêm `ecommerce/scenario/<Tên>Scenario.java`, đăng ký trong `EcommerceVisualizerAdapter.scenarios()`, thêm test bất biến trong `ecommerce/scenario/ScenarioTest` |
+| Domain object mới cần một khối trên bản đồ | Chọn dạng khối: `object` (một instance thật), `collection` (danh sách chứa object), `area` (package/khái niệm, không có class). Ô là kết quả hàm thuần thì `computed=true`, không ghi như state. `area` = đúng một package domain (mỗi package một vùng gốc trong `ROOTS` của `static/adapter/layout.js`). Object cố định (luôn có) đặt toạ độ trong `PLACED`, nằm trọn trong vùng của nó; object sinh lúc chạy chỉ cần `parent` trong `WorldSnapshotter`, tự xếp lưới theo `child` spec của vùng/collection. `WIRES` nối giữa object/collection (được cắt qua khung vùng, không được cắt qua khối); màu ở `static/adapter/theme.css` + `legend` trong `static/adapter/index.js` |
+| Mô tả, API chính, buổi học đổi | `static/adapter/info.js` (bảng chú thích khi click khối, tra theo `cls`) — mô tả phải đúng với code domain, đối chiếu lại |
+| Flow mới giữa hai khối | `TraceEvent.flows` (danh sách `{from,to}`) trong kịch bản + một wire trong `static/adapter/layout.js` (FE tự đảo chiều) |
 
 Chỉ thay đổi nội bộ (private, refactor không đổi hành vi) thì thường chỉ cần cập nhật snapshot.
+
+Mọi thứ riêng của ecommerce nằm ở adapter: Java trong `visualizer.ecommerce.**`, FE trong `static/adapter/**`. Không đưa class domain hay id ecommerce vào `visualizer.core.**` hoặc `static/js/**`; `core/ArchitectureTest` sẽ fail nếu core import domain.
 
 ## 3. Quy tắc bố cục
 
@@ -38,7 +40,7 @@ Chỉ thay đổi nội bộ (private, refactor không đổi hành vi) thì th�
 - Khối có dải tiêu đề (`HEADER` cho gốc, `CHILD_HEADER` cho khối con); ô bắt đầu dưới dải này. Chữ tự co/cắt cho vừa bề ngang khối (`fit` trong `scene.js`) — vẫn nên giữ tiêu đề ngắn.
 - Container (vùng hoặc collection có `child`) tự giãn theo số khối con, chỉ một chiều từ trên xuống, tối đa `MAX_ROWS` hàng rồi mới hiện "+N"; vùng bị giãn đẩy các vùng bên dưới (chồng theo x) xuống. `computeLayout()` trong `layout.js` tính bố cục hiệu lực; wire gắn vào khối có thể bị đẩy sẽ bị `checkLayout()` báo nếu gãy — tránh nối wire vào vùng nằm dưới container động.
 - ViewBox và lưới nền tự tính theo bố cục hiệu lực.
-- Thêm chặng mới vào màn "?" (`static/js/panels/about.js`) khi visualizer có thay đổi đáng kể.
+- Thêm chặng mới vào màn "?" (`static/adapter/about.js`) khi visualizer có thay đổi đáng kể.
 
 ## 4. Kiểm tra
 
@@ -49,7 +51,7 @@ Chỉ thay đổi nội bộ (private, refactor không đổi hành vi) thì th�
 3. Khi mọi thứ đã khớp, cập nhật snapshot rồi **khởi động lại app** (kết quả so sánh được tính một lần lúc chạy và cache) và tải lại trang — banner phải biến mất:
 
 ```bash
-java -cp visualizer/target/classes:domain/target/classes com.training.ecommerce.visualizer.sync.DomainApiScanner visualizer/src/main/resources/domain-api.txt
+java -cp visualizer/target/classes:domain/target/classes com.training.ecommerce.visualizer.ecommerce.sync.EcommerceDomainApi visualizer/src/main/resources/domain-api.txt
 ```
 
 Không cập nhật snapshot chỉ để tắt banner khi visualizer chưa thật sự phản ánh thay đổi. Nếu cố ý chưa vẽ một phần domain, ghi lý do vào plan doc.

@@ -1,0 +1,4 @@
+/* Biến màu của adapter ecommerce: layout.js tham chiếu qua color: '--wh', ... */
+:root {
+  --wh: #e0894f; --hub: #6f9cf0; --price: #a78bfa; --store: #74c48a; --zone: #4fb8b0; --cat: #d9c35a;
+}

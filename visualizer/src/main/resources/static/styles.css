@@ -1,6 +1,6 @@
 :root {
   --bg: #12141a; --panel: #171a21; --line: #2a2e38; --text: #d6d8de; --muted: #7d8290;
-  --wh: #e0894f; --hub: #6f9cf0; --price: #a78bfa; --store: #74c48a; --zone: #4fb8b0; --cat: #d9c35a;
+  --c-map: #e0894f; --c-log: #6f9cf0; --c-diff: #74c48a; --c-alt: #a78bfa; /* màu chrome của khung: panel bản đồ / log / diff, nhấn phụ */
   --wire: #3a404d; --flow: #9ab4ff; --ok: #74c48a; --err: #ef6b6b; --dec: #e0894f;
   --spd: 1; /* hệ số tốc độ, player.js cập nhật */
 }
@@ -11,9 +11,9 @@ header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding
 header h1 { font-size: 13px; letter-spacing: .08em; margin: 0 12px 0 0; }
 button, select { font: inherit; color: var(--text); background: transparent; border: 1px solid var(--line); padding: 4px 10px; cursor: pointer; }
 select option { background: var(--panel); }
-button:hover:not(:disabled), select:hover { border-color: var(--hub); }
+button:hover:not(:disabled), select:hover { border-color: var(--c-log); }
 button:disabled { opacity: .4; cursor: default; }
-.badge { font-size: 11px; color: var(--price); border: 1px solid var(--price); padding: 0 6px; }
+.badge { font-size: 11px; color: var(--c-alt); border: 1px solid var(--c-alt); padding: 0 6px; }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 8px 16px; color: var(--muted); border-bottom: 1px solid var(--line); }
 .legend i { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border: 1.5px solid; }
 .legend i.k-coll { border-style: dashed; background: rgba(214, 216, 222, .12); } .legend i.k-area { border-style: dotted; }
@@ -24,7 +24,7 @@ button:disabled { opacity: .4; cursor: default; }
 main { display: grid; grid-template-columns: minmax(0, 62fr) minmax(0, 38fr); gap: 12px; padding: 12px 16px; }
 .panel { border: 1px solid var(--line); background: var(--panel); min-width: 0; }
 .panel > h2 { font-size: 11px; letter-spacing: .1em; margin: 0; padding: 6px 10px; border-bottom: 1px solid var(--line); color: var(--muted); }
-.map h2 { color: var(--wh); } .log h2 { color: var(--hub); } .diff h2 { color: var(--store); }
+.map h2 { color: var(--c-map); } .log h2 { color: var(--c-log); } .diff h2 { color: var(--c-diff); }
 .map { border-color: #4a3426; } .log { border-color: #26344d; } .diff { border-color: #29402f; }
 svg { display: block; width: 100%; height: auto; }
 .map-view { overflow: auto; max-height: calc(100vh - 150px); cursor: grab; }
@@ -48,14 +48,14 @@ svg { display: block; width: 100%; height: auto; }
 .log ol { list-style: none; margin: 0; padding: 4px 0; flex: 1; min-height: 120px; overflow: auto; }
 .log li { display: grid; grid-template-columns: 92px 60px 1fr 16px; gap: 6px; padding: 3px 10px; cursor: pointer; }
 .log li:hover { background: #1d212a; } .log li.sel { background: #222838; }
-.log .ts, .log .th { color: var(--muted); } .log .m { overflow-wrap: anywhere; } .log .m b { color: var(--hub); font-weight: 400; }
+.log .ts, .log .th { color: var(--muted); } .log .m { overflow-wrap: anywhere; } .log .m b { color: var(--c-log); font-weight: 400; }
 .log li.mt { box-shadow: inset 3px 0 0 var(--tc); }
 .log li.mt .th { color: var(--tc); border: 1px solid var(--tc); border-radius: 3px; padding: 0 4px; justify-self: start; line-height: 1.35; height: fit-content; }
 .log .ok { color: var(--ok); } .log .err, .log li.thrown .m { color: var(--err); }
 .diff .body { padding: 8px 10px; min-height: 160px; max-height: 280px; overflow: auto; overflow-wrap: anywhere; }
 .diff .obj { margin-bottom: 8px; } .diff .obj > div:first-child { color: var(--muted); }
 .diff .f { display: grid; grid-template-columns: 110px 1fr; padding-left: 12px; }
-.up { color: var(--ok); } .down { color: var(--dec); } .same { color: var(--muted); } .new { color: var(--price); } .gone { color: var(--err); }
+.up { color: var(--ok); } .down { color: var(--dec); } .same { color: var(--muted); } .new { color: var(--c-alt); } .gone { color: var(--err); }
 .note { color: var(--muted); } .note.err { color: var(--err); }
 footer { padding: 6px 16px 16px; color: var(--muted); }
 
@@ -98,22 +98,22 @@ footer { padding: 6px 16px 16px; color: var(--muted); }
 /* Màn "?": hành trình phát triển */
 .about-btn { margin-left: auto; }
 .about { width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; background: var(--panel); color: var(--text);
-  border: 1px solid var(--price); font: 12.5px/1.55 "JetBrains Mono", ui-monospace, monospace; }
+  border: 1px solid var(--c-alt); font: 12.5px/1.55 "JetBrains Mono", ui-monospace, monospace; }
 /* Header cố định, chỉ phần thân cuộn (tránh nội dung đè lên header / nút đóng) */
 .about[open] { display: flex; flex-direction: column; overflow: hidden; }
 .about::backdrop { background: rgba(8, 9, 12, .7); }
 .about-top { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 8px 14px;
   background: var(--panel); border-bottom: 1px solid var(--line); }
-.about-top h2 { margin: 0; font-size: 11px; letter-spacing: .1em; color: var(--price); }
+.about-top h2 { margin: 0; font-size: 11px; letter-spacing: .1em; color: var(--c-alt); }
 .about-close { border: 0; font-size: 16px; padding: 0 6px; color: var(--muted); }
 .about-body { flex: 1; min-height: 0; overflow: auto; padding: 10px 16px 16px; }
 .about-intro { color: var(--muted); margin: 0 0 10px; }
-.about-sec h3 { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--hub); margin: 16px 0 6px; }
+.about-sec h3 { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--c-log); margin: 16px 0 6px; }
 .about-sec ul { margin: 2px 0; padding-left: 18px; }
 .timeline { list-style: none; margin: 0; padding: 0 0 0 14px; border-left: 1px solid var(--line); }
 .timeline > li { position: relative; padding: 0 0 12px 10px; }
-.timeline > li::before { content: ""; position: absolute; left: -19px; top: 6px; width: 8px; height: 8px; border: 1.5px solid var(--price); background: var(--panel); }
+.timeline > li::before { content: ""; position: absolute; left: -19px; top: 6px; width: 8px; height: 8px; border: 1.5px solid var(--c-alt); background: var(--panel); }
 .st-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
 .st-no { color: var(--muted); } .st-title { color: var(--text); font-weight: 600; }
-.st-commit { color: var(--store); font-size: 11px; }
+.st-commit { color: var(--c-diff); font-size: 11px; }
 .st-why { margin: 2px 0; color: var(--dec); }

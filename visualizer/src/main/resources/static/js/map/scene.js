@@ -1,18 +1,16 @@
 // Vẽ bản đồ SVG: panel, ô con, đường nối và animation
 import { el, iso, diamond, wirePath, css, flat } from './iso.js';
+import { adapter } from '../../adapter/index.js';
 import { ROOTS, PLACED, WIRES as WIRES_BASE, HEADER, CHILD_MARGIN, CHILD_GAP, computeLayout, resolveFlow, checkLayout } from './layout.js';
 
-const PRODUCT = { LAPTOP: '#e8c46a', PHONE: '#7fd4e0', HEADPHONE: '#b7e07f', BOOK: '#e88fb4' };
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const MORE = '__more'; // ô "+N" gom các item không đủ chỗ
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// Màu ô item: "+N" cố định; còn lại do adapter.tileColor(rootId, key) quyết định, trả null/undefined thì dùng màu mặc định
 function tileColor(rootId, key) {
   if (key === MORE) return '#7d8290';
-  if (PRODUCT[key]) return PRODUCT[key];
-  if (rootId === 'pricing' || rootId === 'catalog' || rootId === 'orders') return '#c9b6ff';
-  if (rootId === 'shipping') return '#8fe0d6';
-  return '#cfd3dc';
+  return adapter.tileColor?.(rootId, key) ?? '#cfd3dc';
 }
 
 const EPS = 1e-6;
