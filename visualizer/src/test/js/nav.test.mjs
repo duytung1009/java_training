@@ -3,19 +3,25 @@ import assert from 'node:assert/strict';
 import { parseNav, toHash, normalizeNav, nodeLookup, aggregateKey, touchedFirst } from '../../main/resources/static/js/view/nav.js';
 
 const node = (id, kind, cls, extra = {}) => ({ id, kind, cls, parent: null, items: [], ...extra });
-const OVERVIEW = { area: null };
+const OVERVIEW = { area: null, node: null };
 
 test('hash: round-trip; hash rỗng, lạ hoặc "#level=…" cũ → tổng quan', () => {
-  assert.deepEqual(parseNav(toHash({ area: 'inventory' })), { area: 'inventory' });
+  assert.deepEqual(parseNav(toHash({ area: 'inventory' })), { area: 'inventory', node: null });
   assert.equal(toHash({ area: 'inventory' }), '#area=inventory');
+  assert.equal(toHash({ area: 'inventory', node: 'warehouse:WH-HN' }), '#area=inventory&node=warehouse%3AWH-HN');
+  assert.deepEqual(parseNav(toHash({ area: 'inventory', node: 'warehouse:WH-HN' })), { area: 'inventory', node: 'warehouse:WH-HN' });
+  assert.deepEqual(parseNav('#node=hub'), OVERVIEW); // node không có area thì bỏ
+  assert.equal(toHash({ area: null, node: 'hub' }), '');
   assert.equal(toHash(OVERVIEW), '');
   assert.deepEqual(parseNav(toHash(OVERVIEW)), OVERVIEW);
-  assert.deepEqual(parseNav('#area=a%20b'), { area: 'a b' });
+  assert.deepEqual(parseNav('#area=a%20b'), { area: 'a b', node: null });
   for (const bad of ['', '#', '#foo', '#level=aggregate&ctx=sales&agg=Order', '#area=', undefined, null]) assert.deepEqual(parseNav(bad), OVERVIEW);
 });
 
 test('normalizeNav: area lạ hoặc không có danh sách → tổng quan', () => {
-  assert.deepEqual(normalizeNav({ area: 'order' }, ['order', 'inventory']), { area: 'order' });
+  assert.deepEqual(normalizeNav({ area: 'order' }, ['order', 'inventory']), { area: 'order', node: null });
+  assert.deepEqual(normalizeNav({ area: 'order', node: 'cart' }, ['order']), { area: 'order', node: 'cart' });
+  assert.deepEqual(normalizeNav({ area: 'nope', node: 'cart' }, ['order']), OVERVIEW);
   assert.deepEqual(normalizeNav({ area: 'nope' }, ['order']), OVERVIEW);
   assert.deepEqual(normalizeNav({ area: null }, ['order']), OVERVIEW);
   assert.deepEqual(normalizeNav({ area: 'order' }), OVERVIEW);

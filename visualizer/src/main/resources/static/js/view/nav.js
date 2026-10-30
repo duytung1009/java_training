@@ -1,25 +1,26 @@
-// Điều hướng đi sâu: Tổng quan → Package (→ Instance, P4d). Hàm thuần (không đụng DOM) để test bằng node --test.
-// Trạng thái: { area: id | null } (null = tổng quan); P4d sẽ thêm `node`.
+// Điều hướng đi sâu: Tổng quan → Package → Instance. Hàm thuần (không đụng DOM) để test bằng node --test.
+// Trạng thái: { area: id | null, node: id | null } (area null = tổng quan; node chỉ có nghĩa khi có area).
 import { aggregateOf } from '../model/draft.js';
 import { guessByPrefix } from '../map/layout.js';
 
-export const OVERVIEW = Object.freeze({ area: null });
+export const OVERVIEW = Object.freeze({ area: null, node: null });
 
-// "#area=inventory" ↔ { area }; hash rỗng/lạ (kể cả "#level=…" cũ) → tổng quan
+// "#area=inventory&node=hub" ↔ { area, node }; hash rỗng/lạ (kể cả "#level=…" cũ) → tổng quan; node không có area thì bỏ
 export function parseNav(hash) {
   const p = new URLSearchParams(String(hash ?? '').replace(/^#/, ''));
-  return { area: p.get('area') || null };
+  const area = p.get('area') || null;
+  return { area, node: area ? p.get('node') || null : null };
 }
 
 // Tổng quan → '' (không để lại "#" thừa trong URL)
 export function toHash(state) {
   if (!state?.area) return '';
-  return '#' + new URLSearchParams({ area: state.area }).toString();
+  return '#' + new URLSearchParams(state.node ? { area: state.area, node: state.node } : { area: state.area }).toString();
 }
 
-// Trạng thái hiệu dụng: area lạ (không có trong areaIds) → tổng quan
+// Trạng thái hiệu dụng: area lạ (không có trong areaIds) → tổng quan; node giữ nguyên (có tồn tại hay không chỉ biết khi có world)
 export function normalizeNav(state, areaIds = []) {
-  return areaIds.includes(state?.area) ? { area: state.area } : { ...OVERVIEW };
+  return areaIds.includes(state?.area) ? { area: state.area, node: state.node || null } : { ...OVERVIEW };
 }
 
 // id → node: ưu tiên world sau, rồi hiện tại, rồi trước; id lạ thì đoán đầu mút theo tiền tố (prefixes: [[tiềnTố, idGốc]])

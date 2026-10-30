@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { iso, flat, CELL } from '../../main/resources/static/js/map/iso.js';
-import { IDENTITY, multiply, invert, apply, bounds, lerp, toAttr, GRID, planeMatrix, fitRect, visibleRect, lerpRect } from '../../main/resources/static/js/map/projection.js';
+import { IDENTITY, multiply, invert, apply, bounds, lerp, toAttr, GRID, planeMatrix, screenMatrix, fitRect, visibleRect, lerpRect } from '../../main/resources/static/js/map/projection.js';
 
 const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} ≉ ${b}`);
 const nearAll = (a, b, eps) => a.forEach((v, i) => near(v, b[i], eps));
@@ -107,4 +107,13 @@ test('lerpRect: hai đầu đúng, giữa là trung điểm', () => {
   assert.deepEqual(lerpRect(a, b, 0), a);
   assert.deepEqual(lerpRect(a, b, 1), b);
   assert.deepEqual(lerpRect(a, b, 0.5), { x: 50, y: 10, w: 200, h: 100 });
+});
+
+test('screenMatrix: flat là đơn vị, iso giữ trục dài 1px, không tịnh tiến, trùng hướng chữ nằm trên nền', () => {
+  assert.deepEqual(screenMatrix('flat'), IDENTITY);
+  const m = screenMatrix('iso');
+  near(len([m[0], m[1]]), 1); near(len([m[2], m[3]]), 1);
+  assert.equal(m[4], 0); assert.equal(m[5], 0);
+  nearAll(m, parse(flat(0, 0)), 1e-3);
+  assert.throws(() => screenMatrix('nope'));
 });

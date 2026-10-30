@@ -1,6 +1,7 @@
 import * as api from './api.js';
 import { h } from './dom.js';
 import { createScene } from './map/scene.js';
+import { createNodeView } from './view/node-view.js';
 import { createPlayer } from './player.js';
 import { initControls } from './controls.js';
 import { renderInfo } from './panels/info.js';
@@ -39,15 +40,18 @@ $('info').addEventListener('click', e => {
   else if (e.target.closest('.open') && selection) router.open(selection.id);
 });
 
-createLegend({ el: $('legend'), button: $('legend-toggle') });
-const projToggle = createProjectionToggle({ el: $('proj-switch'), onChange: v => scene.setProjection(v) });
-scene.setProjection(projToggle.get(), { animate: false });
+const nodeView = createNodeView($('node-map'), { onSelect, onNode: id => router.goNode(id) });
+const legend = createLegend({ el: $('legend'), button: $('legend-toggle') });
+const setProjection = (v, opts) => { scene.setProjection(v, opts); nodeView.setProjection(v, opts); };
+const projToggle = createProjectionToggle({ el: $('proj-switch'), onChange: v => setProjection(v) });
+setProjection(projToggle.get(), { animate: false });
 
-// Router đứng giữa player và bản đồ: điều hướng tổng quan → package (hash, breadcrumb, Esc) + bộ lọc
+// Router đứng giữa player và bản đồ: điều hướng tổng quan → package → instance (hash, breadcrumb, Esc) + bộ lọc
 router = createRouter({
-  scene,
+  scene, nodeView,
   els: { title: $('map-title'), hint: $('map-hint'), crumbs: $('crumbs') },
   prefixes: PREFIXES,
+  onMode: m => legend.setMode(m),
   isBlocked: () => !$('model-editor').hidden || $('about-dlg').open || filterBar.isOpen(), // Esc đang dành cho drawer / dialog / bảng lọc
 });
 

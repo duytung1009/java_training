@@ -42,6 +42,13 @@ export const planeMatrix = name => {
   return name === 'iso' ? IDENTITY : multiply(GRID[name], ISO_INV);
 };
 
+// Ma trận cho nội dung vẽ bằng px phẳng (thẻ, chữ): phần tuyến tính của GRID[name] chia CELL nên trục dài đúng 1px, không có tịnh tiến.
+// flat = đơn vị; iso = hai trục chéo 0.894/0.447 (như chữ nằm trên nền ở iso.js `flat()`)
+export const screenMatrix = name => {
+  if (!GRID[name]) throw new Error(`Phép chiếu lạ: ${name}`);
+  return GRID[name].map((v, i) => (i < 4 ? v / CELL : 0));
+};
+
 // ---- Camera: hàm thuần tính khung nhìn ----
 // Vừa nội dung (+ lề, cùng đơn vị viewBox) vào hộp {w,h} px, giữ tỉ lệ, nội dung căn giữa; scale ≤ maxScale.
 // Trả viewBox có đúng tỉ lệ của hộp (nội dung ở giữa) và kích thước svg = hộp, nên zoom 1 thì không cần cuộn.

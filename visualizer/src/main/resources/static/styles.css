@@ -27,6 +27,8 @@ button:disabled { opacity: .4; cursor: default; }
 .legend i { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border: 1.5px solid; }
 .legend i.k-coll { border-style: dashed; background: rgba(214, 216, 222, .12); } .legend i.k-area { border-style: dotted; }
 .legend i.k-calc { border-style: dashed; width: 7px; height: 7px; }
+.legend i.ln { width: 18px; height: 0; border: 0; border-top: 2px solid var(--flow); vertical-align: middle; } .legend i.ln.dashed { border-top: 2px dashed var(--muted); }
+.legend .lg-items[hidden] { display: none; } .legend .lg-node { grid-template-columns: 1fr; }
 .sync { padding: 8px 16px; border: 1px solid var(--dec); color: var(--dec); }
 .sync strong { font-weight: 600; } .sync details { margin-top: 6px; max-height: 220px; overflow: auto; }
 .sync summary { cursor: pointer; } .sync .add { color: var(--ok); } .sync .del { color: var(--err); } .sync .more { color: var(--muted); }
@@ -206,34 +208,29 @@ footer { padding: 6px 16px 16px; color: var(--muted); }
 /* Vòng focus nằm bên trong nút và nổi lên trên nút kề (nút sau chồng 1px lên nút trước nên vòng ngoài bị che) */
 .lv-btn:focus-visible, .fb-toggle:focus-visible { outline: 1px solid var(--c-map); outline-offset: -2px; position: relative; z-index: 1; }
 @media (max-width: 600px) { .map h2 #map-hint { display: none; } }
-/* Khối/cạnh của level-view (chưa dùng, chờ P4d: tầng Instance) */
-.lv-block { cursor: pointer; }
-.lv-block .frame { fill-opacity: .08; stroke-width: 1.5; }
-.lv-block:hover .frame { fill-opacity: .16; }
-.lv-block.port .frame { stroke-dasharray: 5 4; fill-opacity: .03; }
-.lv-block.box .frame { stroke-dasharray: 7 4; fill-opacity: .05; } /* khung aggregate */
-.lv-member { fill: var(--text); fill-opacity: .06; stroke: none; }
-.lv-sep { stroke: var(--line); stroke-width: 1; }
-.lv-block, .lv-edge { transition: opacity .12s; }
-.lv-block.faded, .lv-edge.faded { opacity: .25; }
-/* Tầng instance thu gọn: dòng key/value trong khối, nhãn nhóm aggregate, khối đang chọn */
-.lv-row { fill: var(--muted); font-size: 10.5px; }
-.lv-row.val { fill: var(--text); }
-.lv-group { fill: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
-.lv-block.sel .frame { stroke-width: 3; fill-opacity: .22; }
-.lv-block.touched .frame { stroke-width: 3.5; fill-opacity: .2; }
-.lv-block.dim { filter: opacity(.25); }
-.lv-title { fill: var(--text); font-size: 13px; font-weight: 600; }
-.lv-sub { fill: var(--muted); font-size: 11px; }
-.lv-edge .line { fill: none; stroke: var(--muted); stroke-linejoin: round; }
-.lv-edge .hit { fill: none; stroke: transparent; stroke-width: 10; } /* vùng rê chuột rộng hơn nét vẽ */
-.lv-edge.id .line, .lv-edge.observed .line { stroke-dasharray: 6 4; }
-.lv-edge.observed .line { stroke-opacity: .6; }
-.lv-edge.param .line { stroke-dasharray: 1.5 4; stroke-linecap: round; }
-.lv-edge:hover .line { stroke: var(--text); }
-.lv-end { fill: var(--muted); font-size: 9px; font-weight: 700; pointer-events: none; }
-.lv-badge rect { fill: var(--panel); stroke: var(--line); }
-.lv-badge text { fill: var(--muted); font-size: 10px; }
+/* Tầng instance (node-map): thẻ trung tâm + hàng xóm. Svg nào không hiện thì đẩy ra ngoài màn hình thay vì display:none (scene vẫn đo chữ được) */
+.map-view { position: relative; }
+.map-view svg.lv-off { position: absolute; left: -100000px; visibility: hidden; pointer-events: none; }
+.map-view svg.lv-under { position: absolute; left: 0; top: 0; pointer-events: none; } /* đang cross-fade: svg đi ra nằm dưới svg đi vào */
+.ghost { position: absolute; z-index: 3; border: 2px solid; border-radius: 6px; pointer-events: none; }
+.nv-card { cursor: pointer; transition: opacity .12s; }
+.nv-card.more { cursor: default; }
+.nv-card .frame { fill-opacity: .08; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.nv-card.focus .frame { fill-opacity: .12; stroke-width: 2; }
+.nv-card:hover .frame { fill-opacity: .16; }
+.nv-card.more .frame { stroke-dasharray: 5 4; fill-opacity: .03; }
+.nv-card.sel .frame { stroke-width: 3; fill-opacity: .22; }
+.nv-card.dim { filter: opacity(.25); }
+.nv-card:focus { outline: none; } .nv-card:focus-visible > .frame { stroke: var(--text); stroke-width: 2.5; fill-opacity: .2; }
+.nv-title { fill: var(--text); font-size: 13px; font-weight: 600; pointer-events: none; } .nv-title.big { font-size: 15px; }
+.nv-sub { fill: var(--muted); font-size: 11px; pointer-events: none; }
+.nv-row { fill: var(--muted); font-size: 10.5px; pointer-events: none; } .nv-row.val { fill: var(--text); }
+.nv-sep { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.nv-overlay { pointer-events: none; }
+.nv-edge .line { fill: none; stroke: var(--flow); stroke-linejoin: round; }
+.nv-edge.structural .line { stroke: var(--muted); stroke-dasharray: 5 4; }
+.nv-badge rect { fill: var(--panel); stroke: var(--line); }
+.nv-badge text { fill: var(--muted); font-size: 10px; }
 
 /* Bảng lọc nổi: phủ lên bản đồ ở góc phải, ngay dưới tiêu đề, không đẩy chiều cao trang */
 .fb-toggle { flex: none; }

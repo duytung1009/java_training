@@ -29,7 +29,7 @@
 
 <div id="sync" class="sync" role="alert" hidden></div>
 <main>
-  <section class="panel map"><h2><em id="map-title">BẢN ĐỒ TỔNG QUAN · domain/</em><span id="map-hint">· click để xem chú thích, double click một package để vào trong</span><span id="crumbs" class="crumbs"></span><button id="legend-toggle" class="fb-toggle" type="button" aria-expanded="false" aria-controls="legend">Chú thích</button><button id="filter-toggle" class="fb-toggle" type="button" aria-expanded="false" aria-controls="filter-bar"></button><span id="proj-switch" class="lv-switch" role="group" aria-label="Phép chiếu"></span></h2><div id="filter-bar" class="filter-bar" role="group" aria-label="Bộ lọc" hidden></div><div class="map-view"><svg id="map" role="img" aria-label="Bản đồ isometric các domain object"></svg></div><div id="legend" class="legend" role="group" aria-label="Chú thích" hidden>
+  <section class="panel map"><h2><em id="map-title">BẢN ĐỒ TỔNG QUAN · domain/</em><span id="map-hint">· click để xem chú thích, double click một package để vào trong</span><span id="crumbs" class="crumbs"></span><button id="legend-toggle" class="fb-toggle" type="button" aria-expanded="false" aria-controls="legend">Chú thích</button><button id="filter-toggle" class="fb-toggle" type="button" aria-expanded="false" aria-controls="filter-bar"></button><span id="proj-switch" class="lv-switch" role="group" aria-label="Phép chiếu"></span></h2><div id="filter-bar" class="filter-bar" role="group" aria-label="Bộ lọc" hidden></div><div class="map-view"><svg id="map" role="img" aria-label="Bản đồ isometric các domain object"></svg><svg id="node-map" class="node-map lv-off" role="img" aria-label="Instance và các khối kề"></svg></div><div id="legend" class="legend" role="group" aria-label="Chú thích" hidden>
   <div class="lg-head"><span class="lg-title">Chú thích</span><button class="lg-close" type="button" aria-label="Đóng chú thích">×</button></div>
   <div class="lg-items lg-iso"><!-- mục legend của domain do adapter.legend thêm vào đầu (main.js) -->
   <span><i style="border-color:var(--err)"></i>Exception</span>
@@ -37,6 +37,10 @@
   <span><i class="k-coll" style="border-color:var(--muted)"></i>collection</span>
   <span><i class="k-area" style="border-color:var(--muted)"></i>package</span>
   <span><i class="k-calc" style="border-color:var(--muted)"></i>dynamic value</span>
+  </div>
+  <div class="lg-items lg-node" hidden>
+  <span><i class="ln"></i>lời gọi / event đã chạy</span>
+  <span><i class="ln dashed"></i>liên kết cấu trúc (container, con, dây nối)</span>
   </div>
 </div><aside id="info" class="info" hidden></aside></section>
   <div class="right">

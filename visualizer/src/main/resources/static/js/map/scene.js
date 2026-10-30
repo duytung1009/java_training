@@ -595,6 +595,12 @@ export function createScene(svg, { onSelect = () => {}, onOpen = () => {}, onGo 
     WIRES_BASE.forEach((w, i) => wirePaths[i].classList.toggle('out', !!focus && areaOf(w.a) !== focus && areaOf(w.b) !== focus));
   }
 
+  // Khung khối `id` trên màn hình (px viewport) cho hiệu ứng chuyển cảnh; null nếu khối không có hoặc đang ẩn
+  function blockRect(id) {
+    const r = blocks.get(id)?.frame.getBoundingClientRect();
+    return r && r.width ? { left: r.left, top: r.top, width: r.width, height: r.height } : null;
+  }
+
   // Vùng viewBox đang thấy trên màn hình (đang tween thì là khung hình hiện tại)
   function currentView() {
     if (tw) return lastRect;
@@ -650,7 +656,7 @@ export function createScene(svg, { onSelect = () => {}, onOpen = () => {}, onGo 
   build();
   // Hộp đổi kích thước khi đang zoom vào area: fit lại (tổng quan để CSS tự co; đang tween thì frame kế tiếp tự lấy kích thước mới)
   new ResizeObserver(() => { if (focus && !tw) applyView(); }).observe(svg.parentElement);
-  return { sync, flash, flow, reset, select, setDim, setPriority, setProjection, projection: () => projName, areas, areaOf, focusArea };
+  return { svg, sync, flash, flow, reset, select, setDim, setPriority, setProjection, projection: () => projName, areas, areaOf, focusArea, blockRect };
 }
 
 // Kéo chuột để cuộn bản đồ; dịch chuyển < 4px vẫn là click (chọn/bỏ chọn khối)

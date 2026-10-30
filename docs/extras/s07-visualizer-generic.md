@@ -286,6 +286,29 @@ Sửa khi review trên trình duyệt: breadcrumb không co (thiếu 1px subpixe
   - Flow qua mép package chạy tới hoặc từ cổng.
   - Số lời gọi đếm cả khi đang ở tổng quan, reset thì xoá.
 
+**Đã làm (P4d):**
+- **`js/view/ego.js`** (mới, hàm thuần, có `ego.test.mjs`):
+  - `egoNeighbours` tìm các khối kề của instance từ hai nguồn:
+    - flow đã phát: flow chạm instance hoặc cây con của nó;
+    - cấu trúc: container, các con, đối tác qua dây nối.
+  - `egoLayout` xếp chỗ:
+    - instance ở giữa;
+    - khối chỉ gọi vào ở bên trái; khối được gọi ra, gọi hai chiều hoặc chỉ nối dây ở bên phải;
+    - container ở trên;
+    - các con ở dưới, tối đa 8 khối, dư thì gom thành một khối `+N`;
+    - cạnh vuông góc, mỗi cạnh một chỗ nối riêng trên thẻ.
+- **`js/view/node-view.js`** (đổi từ `level-view.js`, viết lại):
+  - Thẻ lớn ở giữa hiện đủ key/value; thẻ khối kề ghi số lời gọi vào/ra hoặc quan hệ (`container`, `con`, `nối`).
+  - Thẻ nằm trong `plane`; cạnh, mũi tên và nhãn `×N` nằm ở overlay, nên đổi phép chiếu (`screenMatrix`) không làm méo.
+  - Click một khối kề để sang instance đó, kể cả khi nó thuộc package khác.
+- **`js/view/transition.js`:** khi đổi giữa package và instance, hai bản đồ mờ chéo vào nhau, kèm một khung ma bay từ khối trên bản đồ tới thẻ.
+- **`router.js`:**
+  - Hash có dạng `#area=…&node=…`; breadcrumb đủ 3 cấp; Esc lùi từng tầng.
+  - Router lưu các flow đã phát để tìm khối kề. Ở tầng instance, flow không chạm instance thì bỏ qua nhanh.
+  - Link mở thẳng tới một node không có trong world thì sau lần sync đầu quay về package. Node biến mất giữa lượt chạy vẫn giữ thẻ cuối, ghi `(đã bị xoá khỏi world)`.
+- **Chú thích:** có thêm phần ký hiệu riêng cho tầng instance.
+- **Đã xoá:** `graph-layout.js` và test của nó.
+
 **Không làm.** Bố cục tự động cho tầng tổng quan khi adapter không có layout vẽ tay; context map theo mô hình (có thể đưa vào trình sửa mô hình sau).
 
 ## 5. Kiểm chứng
