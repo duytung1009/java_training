@@ -20,6 +20,12 @@ class ArchitectureTest {
             .allowEmptyShould(false);
 
     @ArchTest
+    static final ArchRule coreKhongPhuThuocShared = noClasses()
+            .that().resideInAPackage("com.training.ecommerce.visualizer.core..")
+            .should().dependOnClassesThat().resideInAPackage("com.training.ecommerce.shared..")
+            .allowEmptyShould(false);
+
+    @ArchTest
     static final ArchRule coreKhongPhuThuocAdapterEcommerce = noClasses()
             .that().resideInAPackage("com.training.ecommerce.visualizer.core..")
             .should().dependOnClassesThat().resideInAPackage("com.training.ecommerce.visualizer.ecommerce..")

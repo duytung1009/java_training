@@ -30,6 +30,7 @@ diff visualizer/src/main/resources/domain-api.txt "$TMPDIR/domain-api.now.txt"
 | Mô tả, API chính, buổi học đổi | `static/adapter/info.js` (bảng chú thích khi click khối, tra theo `cls`) — mô tả phải đúng với code domain, đối chiếu lại |
 | Flow mới giữa hai khối | `TraceEvent.flows` (danh sách `{from,to}`) trong kịch bản + một wire trong `static/adapter/layout.js` (FE tự đảo chiều) |
 | Domain mới có domain event | Override `eventSource()` (rút event kiểu `pullDomainEvents`) và `eventMapper()` (event → `EventFlow` giữa hai node có wire) trong adapter; ecommerce hiện dùng nguồn rỗng. Cần ghi phản ứng của listener thì dùng `recorder.lastEvents()` + `recorder.react(...)` trong kịch bản |
+| Thêm hoặc đổi tên class domain | Kiểm `visualizer/src/main/resources/domain-model.json` (nếu đã có): class mới chưa được xếp context, class cũ đổi tên thì mục `cls` không còn khớp và `PUT /api/viz/model` sẽ báo lỗi. Gợi ý mới xem ở `GET /api/viz/model/suggestion` (UI báo lệch ở P3b) |
 
 Chỉ thay đổi nội bộ (private, refactor không đổi hành vi) thì thường chỉ cần cập nhật snapshot.
 

@@ -126,7 +126,37 @@ Chia ba lượt tuần tự: P3a → P3b → P3c.
      "relations": [{ "from": "Order", "to": "Shipment", "source": "observed" }] }
    ```
 
-**Xong khi:** test P3a xanh. Gợi ý cho domain ecommerce ra 5 context (catalog, inventory, order, pricing, shipping) với aggregate hợp lý; ghi kết quả gợi ý vào plan làm mốc so sánh. `PUT` rồi `GET` trả đúng nội dung đã lưu.
+**Đã làm (P3a):** code ở `visualizer/.../core/model/` (`DomainModel`, `DomainModelSuggester`, `ObservedRelations`, `DomainModelValidator`, `DomainModelStore`, `ModelAnnotator`) và `core/web/DomainModelController`.
+- Vai trò: `aggregate | entity | value | service | other` (chuỗi thường trong JSON). Thứ tự xét: `Throwable` thành `other` + `hidden`; enum/record thành `value`, interface hoặc lớp trừu tượng không có field thành `other` (`source: type`); có định danh (`getId()`/`id()` public kể cả kế thừa, hoặc implement interface tên đơn giản `Identifiable`) thì: bị class cùng context sở hữu qua field (kể cả `List<X>`, mảng) là `entity`, ngược lại có state đổi được (field không final, hoặc final kiểu `Collection`/`Map`) là `aggregate`, còn bất biến là `entity`; không định danh: không có field instance nào (chỉ hành vi) là `service` (`source: type`), có state đổi được là `service`, bất biến là `value`. Sở hữu không tính khi class chứa là lớp con của class bị chứa (composite, vd. `BundleProduct` chứa `List<Product>`). Quan hệ: field/tham số ctor-method public tới class domain khác (field thắng param), cộng cặp quan sát từ flow (`observed:<id kịch bản>`), cặp đã có thì giữ nguồn tĩnh.
+- Ecommerce ra **6** context (catalog, customer, inventory, order, pricing, shipping), không phải 5: `domain.customer` có `Address`.
+- Vòng phụ thuộc store ↔ `ScenarioService` được cắt bằng cách điền `context`/`aggregate` ở `VisualizerController` (gọi `ModelAnnotator`), không ở service: `ScenarioService` không biết store, store dùng `ScenarioService` (qua `ObservedRelations`) để quan sát. Gợi ý chạy đủ 12 kịch bản nên tính lười một lần rồi cache.
+- File mô hình: property `visualizer.model.path` (mặc định `src/main/resources/domain-model.json`, tính từ thư mục làm việc của tiến trình; `spring-boot:run` chạy trong `visualizer/`). Thứ tự nạp: file, classpath `/domain-model.json`, gợi ý. P3a **chưa** tạo `domain-model.json`; việc đó làm ở P3b qua giao diện.
+- `source` ngoài danh sách trong plan: `type` (luật theo kiểu: Throwable/enum/record/interface). Các `source` khác: `identity`, `field`, `param`, `observed:<id>`, `manual`.
+- Mốc so sánh, gợi ý cho domain ecommerce (heuristic cho phép sai; user sửa ở P3b):
+
+| Class | Context | Role | Source |
+|---|---|---|---|
+| Product, BundleProduct, DigitalProduct, PhysicalProduct, SubscriptionProduct | catalog | aggregate | identity |
+| Category, ProductType | catalog | value | type |
+| OutOfStockException, ProductNotFoundException (ẩn) | catalog | other | type |
+| Address | customer | value | field |
+| InventoryManager | inventory | service | field |
+| Warehouse | inventory | aggregate | identity |
+| WarehouseTransferService | inventory | service | type |
+| Order | order | aggregate | identity |
+| OrderLine | order | value | field |
+| Cart | order | service | field |
+| DiscountCode | pricing | value | field |
+| Discountable, PricingRule | pricing | other | type |
+| Shipment | shipping | aggregate | identity |
+| ShipmentEvent, ShipmentStatus, ShippingZone | shipping | value | type |
+| ShippingFeeCalculator | shipping | service | type |
+| Shippable | shipping | other | type |
+| IllegalShipmentTransitionException (ẩn) | shipping | other | type |
+
+  Quan hệ quan sát được thêm (chưa thấy qua field/param): `Cart→Order`, `DiscountCode→Order`, `InventoryManager→Cart`, `InventoryManager→ShippingZone`, `Order→InventoryManager`, `Order→Shipment`, `Order→ShippingZone`, `Shipment→InventoryManager`, `Warehouse→InventoryManager`. Hạn chế đã biết: `OrderLine` thành `value` vì không có `getId()`; `Cart` thành `service` vì không có định danh.
+
+**Xong khi:** test P3a xanh. Gợi ý cho domain ecommerce ra 6 context (catalog, customer, inventory, order, pricing, shipping) với aggregate hợp lý; ghi kết quả gợi ý vào plan làm mốc so sánh. `PUT` rồi `GET` trả đúng nội dung đã lưu.
 
 #### P3b — FE: trình sửa layer
 

@@ -10,7 +10,9 @@
       "title" : "domain.inventory",
       "sub" : "Warehouse · InventoryManager",
       "parent" : null,
-      "items" : [ ]
+      "items" : [ ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "warehouse:WH-HN",
       "kind" : "object",
@@ -36,7 +38,9 @@
         "value" : 4,
         "type" : "Map.Entry",
         "computed" : false
-      } ]
+      } ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "warehouse:WH-HCM",
       "kind" : "object",
@@ -56,7 +60,9 @@
         "value" : 4,
         "type" : "Map.Entry",
         "computed" : false
-      } ]
+      } ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "hub",
       "kind" : "object",
@@ -82,7 +88,9 @@
         "value" : 12,
         "type" : "Product",
         "computed" : false
-      } ]
+      } ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "order",
       "kind" : "area",
@@ -90,7 +98,9 @@
       "title" : "domain.order",
       "sub" : "Cart · Order · OrderLine",
       "parent" : null,
-      "items" : [ ]
+      "items" : [ ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "cart",
       "kind" : "object",
@@ -98,7 +108,9 @@
       "title" : "Cart",
       "sub" : "Map<Product, qty>",
       "parent" : "order",
-      "items" : [ ]
+      "items" : [ ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "orders",
       "kind" : "collection",
@@ -106,7 +118,9 @@
       "title" : "List<Order> · World",
       "sub" : "đơn đã tạo",
       "parent" : "order",
-      "items" : [ ]
+      "items" : [ ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "catalog",
       "kind" : "area",
@@ -114,7 +128,9 @@
       "title" : "domain.catalog",
       "sub" : "Product và các lớp con",
       "parent" : null,
-      "items" : [ ]
+      "items" : [ ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "catalog:product:LAPTOP",
       "kind" : "object",
@@ -128,7 +144,9 @@
         "value" : "20.0tr",
         "type" : "BigDecimal",
         "computed" : false
-      } ]
+      } ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "catalog:product:PHONE",
       "kind" : "object",
@@ -142,7 +160,9 @@
         "value" : "12.0tr",
         "type" : "BigDecimal",
         "computed" : false
-      } ]
+      } ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "catalog:product:BOOK",
       "kind" : "object",
@@ -156,7 +176,9 @@
         "value" : "150.0k",
         "type" : "BigDecimal",
         "computed" : false
-      } ]
+      } ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "pricing",
       "kind" : "area",
@@ -164,7 +186,9 @@
       "title" : "domain.pricing",
       "sub" : "PricingRule · DiscountCode",
       "parent" : null,
-      "items" : [ ]
+      "items" : [ ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "shipping",
       "kind" : "area",
@@ -172,7 +196,9 @@
       "title" : "domain.shipping",
       "sub" : "Shipment · ShippingZone · Address",
       "parent" : null,
-      "items" : [ ]
+      "items" : [ ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "zone:INNER_CITY",
       "kind" : "object",
@@ -186,7 +212,9 @@
         "value" : "20.0k",
         "type" : "BigDecimal",
         "computed" : false
-      } ]
+      } ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "zone:OTHER_CITY",
       "kind" : "object",
@@ -200,7 +228,9 @@
         "value" : "35.0k",
         "type" : "BigDecimal",
         "computed" : false
-      } ]
+      } ],
+      "context" : null,
+      "aggregate" : null
     }, {
       "id" : "shipments",
       "kind" : "collection",
@@ -208,12 +238,14 @@
       "title" : "List<Shipment> · World",
       "sub" : "vận đơn đã tạo",
       "parent" : "shipping",
-      "items" : [ ]
+      "items" : [ ],
+      "context" : null,
+      "aggregate" : null
     } ]
   },
   "events" : [ {
     "seq" : 1,
-    "at" : "2026-10-30T06:09:16.974659Z",
+    "at" : "2026-10-30T08:23:40.513563Z",
     "thread" : "main",
     "className" : "Cart",
     "method" : "add",
@@ -248,7 +280,9 @@
         "title" : "domain.inventory",
         "sub" : "Warehouse · InventoryManager",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "warehouse:WH-HN",
         "kind" : "object",
@@ -274,7 +308,9 @@
           "value" : 4,
           "type" : "Map.Entry",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "warehouse:WH-HCM",
         "kind" : "object",
@@ -294,7 +330,9 @@
           "value" : 4,
           "type" : "Map.Entry",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "hub",
         "kind" : "object",
@@ -320,7 +358,9 @@
           "value" : 12,
           "type" : "Product",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "order",
         "kind" : "area",
@@ -328,7 +368,9 @@
         "title" : "domain.order",
         "sub" : "Cart · Order · OrderLine",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "cart",
         "kind" : "object",
@@ -342,7 +384,9 @@
           "value" : 1,
           "type" : "Product",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "orders",
         "kind" : "collection",
@@ -350,7 +394,9 @@
         "title" : "List<Order> · World",
         "sub" : "đơn đã tạo",
         "parent" : "order",
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "catalog",
         "kind" : "area",
@@ -358,7 +404,9 @@
         "title" : "domain.catalog",
         "sub" : "Product và các lớp con",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "catalog:product:LAPTOP",
         "kind" : "object",
@@ -372,7 +420,9 @@
           "value" : "20.0tr",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "catalog:product:PHONE",
         "kind" : "object",
@@ -386,7 +436,9 @@
           "value" : "12.0tr",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "catalog:product:BOOK",
         "kind" : "object",
@@ -400,7 +452,9 @@
           "value" : "150.0k",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "pricing",
         "kind" : "area",
@@ -408,7 +462,9 @@
         "title" : "domain.pricing",
         "sub" : "PricingRule · DiscountCode",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "shipping",
         "kind" : "area",
@@ -416,7 +472,9 @@
         "title" : "domain.shipping",
         "sub" : "Shipment · ShippingZone · Address",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "zone:INNER_CITY",
         "kind" : "object",
@@ -430,7 +488,9 @@
           "value" : "20.0k",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "zone:OTHER_CITY",
         "kind" : "object",
@@ -444,7 +504,9 @@
           "value" : "35.0k",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "shipments",
         "kind" : "collection",
@@ -452,7 +514,9 @@
         "title" : "List<Shipment> · World",
         "sub" : "vận đơn đã tạo",
         "parent" : "shipping",
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       } ]
     },
     "events" : [ {
@@ -473,7 +537,7 @@
     "causedBy" : null
   }, {
     "seq" : 2,
-    "at" : "2026-10-30T06:09:16.976435Z",
+    "at" : "2026-10-30T08:23:40.515262Z",
     "thread" : "main",
     "className" : "StockAuditor",
     "method" : "onStockReserved",
@@ -505,7 +569,9 @@
         "title" : "domain.inventory",
         "sub" : "Warehouse · InventoryManager",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "warehouse:WH-HN",
         "kind" : "object",
@@ -531,7 +597,9 @@
           "value" : 4,
           "type" : "Map.Entry",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "warehouse:WH-HCM",
         "kind" : "object",
@@ -551,7 +619,9 @@
           "value" : 4,
           "type" : "Map.Entry",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "hub",
         "kind" : "object",
@@ -577,7 +647,9 @@
           "value" : 12,
           "type" : "Product",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "order",
         "kind" : "area",
@@ -585,7 +657,9 @@
         "title" : "domain.order",
         "sub" : "Cart · Order · OrderLine",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "cart",
         "kind" : "object",
@@ -599,7 +673,9 @@
           "value" : 2,
           "type" : "Product",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "orders",
         "kind" : "collection",
@@ -607,7 +683,9 @@
         "title" : "List<Order> · World",
         "sub" : "đơn đã tạo",
         "parent" : "order",
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "catalog",
         "kind" : "area",
@@ -615,7 +693,9 @@
         "title" : "domain.catalog",
         "sub" : "Product và các lớp con",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "catalog:product:LAPTOP",
         "kind" : "object",
@@ -629,7 +709,9 @@
           "value" : "20.0tr",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "catalog:product:PHONE",
         "kind" : "object",
@@ -643,7 +725,9 @@
           "value" : "12.0tr",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "catalog:product:BOOK",
         "kind" : "object",
@@ -657,7 +741,9 @@
           "value" : "150.0k",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "pricing",
         "kind" : "area",
@@ -665,7 +751,9 @@
         "title" : "domain.pricing",
         "sub" : "PricingRule · DiscountCode",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "shipping",
         "kind" : "area",
@@ -673,7 +761,9 @@
         "title" : "domain.shipping",
         "sub" : "Shipment · ShippingZone · Address",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "zone:INNER_CITY",
         "kind" : "object",
@@ -687,7 +777,9 @@
           "value" : "20.0k",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "zone:OTHER_CITY",
         "kind" : "object",
@@ -701,7 +793,9 @@
           "value" : "35.0k",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "shipments",
         "kind" : "collection",
@@ -709,14 +803,16 @@
         "title" : "List<Shipment> · World",
         "sub" : "vận đơn đã tạo",
         "parent" : "shipping",
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       } ]
     },
     "events" : [ ],
     "causedBy" : "ev-1"
   }, {
     "seq" : 3,
-    "at" : "2026-10-30T06:09:16.978376Z",
+    "at" : "2026-10-30T08:23:40.517327Z",
     "thread" : "main",
     "className" : "Cart",
     "method" : "add",
@@ -748,7 +844,9 @@
         "title" : "domain.inventory",
         "sub" : "Warehouse · InventoryManager",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "warehouse:WH-HN",
         "kind" : "object",
@@ -774,7 +872,9 @@
           "value" : 4,
           "type" : "Map.Entry",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "warehouse:WH-HCM",
         "kind" : "object",
@@ -794,7 +894,9 @@
           "value" : 4,
           "type" : "Map.Entry",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "hub",
         "kind" : "object",
@@ -820,7 +922,9 @@
           "value" : 12,
           "type" : "Product",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "order",
         "kind" : "area",
@@ -828,7 +932,9 @@
         "title" : "domain.order",
         "sub" : "Cart · Order · OrderLine",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "cart",
         "kind" : "object",
@@ -842,7 +948,9 @@
           "value" : 2,
           "type" : "Product",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "orders",
         "kind" : "collection",
@@ -850,7 +958,9 @@
         "title" : "List<Order> · World",
         "sub" : "đơn đã tạo",
         "parent" : "order",
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "catalog",
         "kind" : "area",
@@ -858,7 +968,9 @@
         "title" : "domain.catalog",
         "sub" : "Product và các lớp con",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "catalog:product:LAPTOP",
         "kind" : "object",
@@ -872,7 +984,9 @@
           "value" : "20.0tr",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "catalog:product:PHONE",
         "kind" : "object",
@@ -886,7 +1000,9 @@
           "value" : "12.0tr",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "catalog:product:BOOK",
         "kind" : "object",
@@ -900,7 +1016,9 @@
           "value" : "150.0k",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "pricing",
         "kind" : "area",
@@ -908,7 +1026,9 @@
         "title" : "domain.pricing",
         "sub" : "PricingRule · DiscountCode",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "shipping",
         "kind" : "area",
@@ -916,7 +1036,9 @@
         "title" : "domain.shipping",
         "sub" : "Shipment · ShippingZone · Address",
         "parent" : null,
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "zone:INNER_CITY",
         "kind" : "object",
@@ -930,7 +1052,9 @@
           "value" : "20.0k",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "zone:OTHER_CITY",
         "kind" : "object",
@@ -944,7 +1068,9 @@
           "value" : "35.0k",
           "type" : "BigDecimal",
           "computed" : false
-        } ]
+        } ],
+        "context" : null,
+        "aggregate" : null
       }, {
         "id" : "shipments",
         "kind" : "collection",
@@ -952,7 +1078,9 @@
         "title" : "List<Shipment> · World",
         "sub" : "vận đơn đã tạo",
         "parent" : "shipping",
-        "items" : [ ]
+        "items" : [ ],
+        "context" : null,
+        "aggregate" : null
       } ]
     },
     "events" : [ {

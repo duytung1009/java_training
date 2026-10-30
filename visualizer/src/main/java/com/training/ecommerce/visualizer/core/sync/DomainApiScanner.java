@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
@@ -45,20 +46,37 @@ public final class DomainApiScanner {
             throw new IllegalArgumentException("spec không được null");
         }
         String prefix = spec.basePackage() + ".";
-        ClassLoader loader = spec.anchor().getClassLoader();
         TreeSet<String> lines = new TreeSet<>();
-        for (String className : classNames(spec, prefix)) {
-            Class<?> type;
-            try {
-                type = Class.forName(className, false, loader);
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException("Không nạp được " + className, e);
-            }
+        for (Class<?> type : classes(spec)) {
             if (isPublic(type)) {
                 describe(type, prefix, lines);
             }
         }
         return new ArrayList<>(lines);
+    }
+
+    /**
+     * Nạp (không khởi tạo) mọi class dưới package gốc của domain, trừ lớp ẩn danh/cục bộ. Gồm cả class không
+     * public và class lồng; người gọi tự lọc theo nhu cầu. Sắp xếp theo tên đầy đủ.
+     *
+     * @throws IllegalArgumentException nếu spec null
+     */
+    public static List<Class<?>> classes(DomainApiSpec spec) {
+        if (spec == null) {
+            throw new IllegalArgumentException("spec không được null");
+        }
+        String prefix = spec.basePackage() + ".";
+        ClassLoader loader = spec.anchor().getClassLoader();
+        List<Class<?>> loaded = new ArrayList<>();
+        for (String className : classNames(spec, prefix)) {
+            try {
+                loaded.add(Class.forName(className, false, loader));
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException("Không nạp được " + className, e);
+            }
+        }
+        loaded.sort(Comparator.comparing(Class::getName));
+        return loaded;
     }
 
     private static List<String> classNames(DomainApiSpec spec, String prefix) {
