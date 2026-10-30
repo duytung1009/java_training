@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 
 /**
  * Nơi giữ mô hình domain hiện hành. Thứ tự nạp: file ở {@code visualizer.model.path} (origin {@code file}),
- * rồi {@code /domain-model.json} trên classpath ({@code classpath}), rồi gợi ý từ reflection ({@code suggestion}).
+ * rồi file trên classpath ở {@code visualizer.model.resource}, mặc định {@code /domain-model.json} ({@code classpath}), rồi gợi ý từ reflection ({@code suggestion}).
  *
  * <p>Đường dẫn mặc định {@code src/main/resources/domain-model.json} tính từ thư mục làm việc của tiến trình;
  * {@code spring-boot:run} chạy trong {@code visualizer/} nên đó là file trong module. Kết quả được cache và
@@ -30,11 +30,10 @@ import java.util.function.Supplier;
 @Component
 public class DomainModelStore {
 
-    private static final String CLASSPATH_RESOURCE = "/domain-model.json";
-
     private final DomainApiSpec spec;
     private final Supplier<List<DomainModel.RelationDef>> observed;
     private final Path path;
+    private final String classpathResource; // null: không đọc classpath
     private final JsonMapper mapper = JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
 
     private ModelSnapshot current;
@@ -44,15 +43,17 @@ public class DomainModelStore {
      * Dựng store cho Spring. {@link ScenarioService} chỉ được dùng để quan sát quan hệ; việc điền
      * context/aggregate vào node làm ở controller nên không có vòng phụ thuộc.
      *
-     * @param modelPath đường dẫn file mô hình
-     * @throws IllegalArgumentException nếu tham số null/rỗng
+     * @param modelPath     đường dẫn file mô hình
+     * @param modelResource đường dẫn classpath dự phòng khi chưa có file; rỗng thì bỏ qua classpath
+     * @throws IllegalArgumentException nếu adapter, scenarios null hoặc modelPath rỗng
      */
     @Autowired
     public DomainModelStore(VisualizerAdapter<?> adapter, ScenarioService scenarios,
                             @Value("${visualizer.model.path:src/main/resources/domain-model.json}")
-                            String modelPath) {
+                            String modelPath,
+                            @Value("${visualizer.model.resource:/domain-model.json}") String modelResource) {
         this(requireAdapter(adapter).domainApi(), observer(scenarios, adapter.domainApi()),
-                Path.of(requireText(modelPath)));
+                Path.of(requireText(modelPath)), modelResource == null || modelResource.isBlank() ? null : modelResource);
     }
 
     private static VisualizerAdapter<?> requireAdapter(VisualizerAdapter<?> adapter) {
@@ -83,12 +84,22 @@ public class DomainModelStore {
      * @throws IllegalArgumentException nếu tham số null
      */
     public DomainModelStore(DomainApiSpec spec, Supplier<List<DomainModel.RelationDef>> observed, Path path) {
+        this(spec, observed, path, null);
+    }
+
+    /**
+     * @param classpathResource đường dẫn classpath dự phòng khi chưa có file, null thì không đọc classpath
+     * @throws IllegalArgumentException nếu spec, observed hoặc path null
+     */
+    public DomainModelStore(DomainApiSpec spec, Supplier<List<DomainModel.RelationDef>> observed, Path path,
+                            String classpathResource) {
         if (spec == null || observed == null || path == null) {
             throw new IllegalArgumentException("spec, observed và path không được null");
         }
         this.spec = spec;
         this.observed = observed;
         this.path = path;
+        this.classpathResource = classpathResource;
     }
 
     /** Mô hình hiện hành kèm nguồn gốc; được cache cho tới khi {@link #save}. */
@@ -155,7 +166,8 @@ public class DomainModelStore {
                 return new ModelSnapshot("file", mapper.readValue(Files.readString(path, StandardCharsets.UTF_8),
                         DomainModel.class));
             }
-            try (InputStream in = DomainModelStore.class.getResourceAsStream(CLASSPATH_RESOURCE)) {
+            try (InputStream in = classpathResource == null ? null
+                    : DomainModelStore.class.getResourceAsStream(classpathResource)) {
                 if (in != null) {
                     return new ModelSnapshot("classpath", mapper.readValue(
                             new String(in.readAllBytes(), StandardCharsets.UTF_8), DomainModel.class));

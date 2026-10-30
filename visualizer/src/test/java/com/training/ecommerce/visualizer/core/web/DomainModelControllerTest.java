@@ -38,6 +38,8 @@ class DomainModelControllerTest {
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
         registry.add("visualizer.model.path", () -> DIR.resolve("sub").resolve("domain-model.json").toString());
+        // repo đã có domain-model.json trên classpath; bỏ classpath để "chưa lưu" thật sự trả gợi ý
+        registry.add("visualizer.model.resource", () -> "");
     }
 
     @Autowired

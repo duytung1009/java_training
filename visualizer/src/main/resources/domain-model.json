@@ -1,0 +1,326 @@
+{
+  "version" : 1,
+  "contexts" : [ {
+    "id" : "catalog",
+    "title" : "catalog",
+    "color" : null
+  }, {
+    "id" : "customer",
+    "title" : "customer",
+    "color" : null
+  }, {
+    "id" : "inventory",
+    "title" : "inventory",
+    "color" : null
+  }, {
+    "id" : "order",
+    "title" : "order",
+    "color" : null
+  }, {
+    "id" : "pricing",
+    "title" : "pricing",
+    "color" : null
+  }, {
+    "id" : "shipping",
+    "title" : "shipping",
+    "color" : null
+  } ],
+  "classes" : [ {
+    "cls" : "Address",
+    "context" : "customer",
+    "role" : "value",
+    "hidden" : false,
+    "source" : "field"
+  }, {
+    "cls" : "BundleProduct",
+    "context" : "catalog",
+    "role" : "aggregate",
+    "hidden" : false,
+    "source" : "identity"
+  }, {
+    "cls" : "Cart",
+    "context" : "order",
+    "role" : "service",
+    "hidden" : false,
+    "source" : "field"
+  }, {
+    "cls" : "Category",
+    "context" : "catalog",
+    "role" : "value",
+    "hidden" : false,
+    "source" : "type"
+  }, {
+    "cls" : "DigitalProduct",
+    "context" : "catalog",
+    "role" : "aggregate",
+    "hidden" : false,
+    "source" : "identity"
+  }, {
+    "cls" : "DiscountCode",
+    "context" : "pricing",
+    "role" : "value",
+    "hidden" : false,
+    "source" : "field"
+  }, {
+    "cls" : "Discountable",
+    "context" : "pricing",
+    "role" : "other",
+    "hidden" : false,
+    "source" : "type"
+  }, {
+    "cls" : "IllegalShipmentTransitionException",
+    "context" : "shipping",
+    "role" : "other",
+    "hidden" : true,
+    "source" : "type"
+  }, {
+    "cls" : "InventoryManager",
+    "context" : "inventory",
+    "role" : "service",
+    "hidden" : false,
+    "source" : "field"
+  }, {
+    "cls" : "Order",
+    "context" : "order",
+    "role" : "aggregate",
+    "hidden" : false,
+    "source" : "identity"
+  }, {
+    "cls" : "OrderLine",
+    "context" : "order",
+    "role" : "value",
+    "hidden" : false,
+    "source" : "field"
+  }, {
+    "cls" : "OutOfStockException",
+    "context" : "catalog",
+    "role" : "other",
+    "hidden" : true,
+    "source" : "type"
+  }, {
+    "cls" : "PhysicalProduct",
+    "context" : "catalog",
+    "role" : "aggregate",
+    "hidden" : false,
+    "source" : "identity"
+  }, {
+    "cls" : "PricingRule",
+    "context" : "pricing",
+    "role" : "other",
+    "hidden" : false,
+    "source" : "type"
+  }, {
+    "cls" : "Product",
+    "context" : "catalog",
+    "role" : "aggregate",
+    "hidden" : false,
+    "source" : "identity"
+  }, {
+    "cls" : "ProductNotFoundException",
+    "context" : "catalog",
+    "role" : "other",
+    "hidden" : true,
+    "source" : "type"
+  }, {
+    "cls" : "ProductType",
+    "context" : "catalog",
+    "role" : "value",
+    "hidden" : false,
+    "source" : "type"
+  }, {
+    "cls" : "Shipment",
+    "context" : "shipping",
+    "role" : "aggregate",
+    "hidden" : false,
+    "source" : "identity"
+  }, {
+    "cls" : "ShipmentEvent",
+    "context" : "shipping",
+    "role" : "value",
+    "hidden" : false,
+    "source" : "type"
+  }, {
+    "cls" : "ShipmentStatus",
+    "context" : "shipping",
+    "role" : "value",
+    "hidden" : false,
+    "source" : "type"
+  }, {
+    "cls" : "Shippable",
+    "context" : "shipping",
+    "role" : "other",
+    "hidden" : false,
+    "source" : "type"
+  }, {
+    "cls" : "ShippingFeeCalculator",
+    "context" : "shipping",
+    "role" : "service",
+    "hidden" : false,
+    "source" : "type"
+  }, {
+    "cls" : "ShippingZone",
+    "context" : "shipping",
+    "role" : "value",
+    "hidden" : false,
+    "source" : "type"
+  }, {
+    "cls" : "SubscriptionProduct",
+    "context" : "catalog",
+    "role" : "aggregate",
+    "hidden" : false,
+    "source" : "identity"
+  }, {
+    "cls" : "Warehouse",
+    "context" : "inventory",
+    "role" : "aggregate",
+    "hidden" : false,
+    "source" : "identity"
+  }, {
+    "cls" : "WarehouseTransferService",
+    "context" : "inventory",
+    "role" : "service",
+    "hidden" : false,
+    "source" : "type"
+  } ],
+  "relations" : [ {
+    "from" : "BundleProduct",
+    "to" : "Category",
+    "source" : "param"
+  }, {
+    "from" : "BundleProduct",
+    "to" : "Product",
+    "source" : "field"
+  }, {
+    "from" : "Cart",
+    "to" : "DiscountCode",
+    "source" : "param"
+  }, {
+    "from" : "Cart",
+    "to" : "Order",
+    "source" : "observed:overview"
+  }, {
+    "from" : "Cart",
+    "to" : "Product",
+    "source" : "field"
+  }, {
+    "from" : "DigitalProduct",
+    "to" : "Category",
+    "source" : "param"
+  }, {
+    "from" : "DiscountCode",
+    "to" : "Order",
+    "source" : "observed:overview"
+  }, {
+    "from" : "Discountable",
+    "to" : "DiscountCode",
+    "source" : "param"
+  }, {
+    "from" : "IllegalShipmentTransitionException",
+    "to" : "ShipmentStatus",
+    "source" : "field"
+  }, {
+    "from" : "InventoryManager",
+    "to" : "Cart",
+    "source" : "observed:overview"
+  }, {
+    "from" : "InventoryManager",
+    "to" : "Order",
+    "source" : "param"
+  }, {
+    "from" : "InventoryManager",
+    "to" : "Product",
+    "source" : "field"
+  }, {
+    "from" : "InventoryManager",
+    "to" : "ShippingZone",
+    "source" : "observed:shipping-fee"
+  }, {
+    "from" : "InventoryManager",
+    "to" : "Warehouse",
+    "source" : "param"
+  }, {
+    "from" : "Order",
+    "to" : "InventoryManager",
+    "source" : "observed:overview"
+  }, {
+    "from" : "Order",
+    "to" : "OrderLine",
+    "source" : "field"
+  }, {
+    "from" : "Order",
+    "to" : "Shipment",
+    "source" : "observed:overview"
+  }, {
+    "from" : "Order",
+    "to" : "ShippingZone",
+    "source" : "observed:overview"
+  }, {
+    "from" : "OrderLine",
+    "to" : "Product",
+    "source" : "field"
+  }, {
+    "from" : "PhysicalProduct",
+    "to" : "Address",
+    "source" : "param"
+  }, {
+    "from" : "PhysicalProduct",
+    "to" : "Category",
+    "source" : "param"
+  }, {
+    "from" : "Product",
+    "to" : "Category",
+    "source" : "field"
+  }, {
+    "from" : "ProductType",
+    "to" : "Product",
+    "source" : "param"
+  }, {
+    "from" : "Shipment",
+    "to" : "Address",
+    "source" : "field"
+  }, {
+    "from" : "Shipment",
+    "to" : "InventoryManager",
+    "source" : "observed:shipment-returned"
+  }, {
+    "from" : "Shipment",
+    "to" : "ShipmentEvent",
+    "source" : "field"
+  }, {
+    "from" : "Shipment",
+    "to" : "ShipmentStatus",
+    "source" : "field"
+  }, {
+    "from" : "ShipmentEvent",
+    "to" : "ShipmentStatus",
+    "source" : "field"
+  }, {
+    "from" : "Shippable",
+    "to" : "Address",
+    "source" : "param"
+  }, {
+    "from" : "ShippingFeeCalculator",
+    "to" : "Address",
+    "source" : "param"
+  }, {
+    "from" : "ShippingFeeCalculator",
+    "to" : "Order",
+    "source" : "param"
+  }, {
+    "from" : "ShippingZone",
+    "to" : "Address",
+    "source" : "param"
+  }, {
+    "from" : "SubscriptionProduct",
+    "to" : "Category",
+    "source" : "param"
+  }, {
+    "from" : "Warehouse",
+    "to" : "InventoryManager",
+    "source" : "observed:overview"
+  }, {
+    "from" : "WarehouseTransferService",
+    "to" : "Warehouse",
+    "source" : "param"
+  } ]
+}

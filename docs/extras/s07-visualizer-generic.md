@@ -169,6 +169,15 @@ Chia ba lượt tuần tự: P3a → P3b → P3c.
 - Báo lệch: dựa trên banner sync và `domain-api.txt`, liệt kê class mới chưa xếp và class trong file không còn tồn tại; có nút đưa class mới vào context gợi ý.
 - Hàm thuần `model/draft.js` (áp thao tác lên mô hình, gộp/tách context) và `model/drift.js` (so mô hình với danh sách class) có test `node --test`.
 
+**Đã làm (P3b):** code ở `static/js/model/` (`draft.js`, `drift.js`, hàm thuần), `static/js/panels/model-editor.js` (drawer bên phải, nút **Mô hình** ở header, trước nút `?`), `api.js` (`getModel`, `getSuggestion`, `saveModel`), `scene.setDim`.
+- Gán class vào context bằng **dropdown** trên từng dòng class, không kéo thả (theo mục Rủi ro). Dòng class có context, vai trò, checkbox ẩn và nhãn nguồn; lỗi validate (`errors[].cls`) hiện ngay dưới class lỗi, lỗi không có `cls` và lỗi 409 hiện ở đầu drawer. Quan hệ bị bỏ vẫn hiện gạch ngang kèm nút khôi phục cho tới khi lưu (chỉ giữ trong bộ nhớ, reload thì mất).
+- Báo lệch tính từ `GET /model/suggestion` (danh sách class hiện tại của domain), không đọc `domain-api.txt`. `adoptAdded` đưa class mới vào cùng context gợi ý (thêm context còn thiếu) và các quan hệ gợi ý nối class đó với class đã có; **Bỏ** class không còn trong domain thì xoá luôn quan hệ của nó.
+- Bản nháp: `localStorage` key `viz.model.draft` = `{ baseOrigin, model }`, ghi sau mỗi thay đổi, xoá khi **Lưu** thành công hoặc **Bỏ nháp**. Mở trang: có nháp thì dùng nháp, không thì `GET /model`. Badge `nháp` hiện khi nháp khác bản đã lưu. Chế độ fixture: nút **Mô hình** bị tắt (cần BE).
+- "Áp ngay" ở P3b gồm hai thứ: bảng chú thích khi click khối có thêm dòng `context · role` (và `aggregate X`) tính từ nháp hiện hành; khối của class `hidden` trong nháp bị làm mờ. `scene.setDim(predicate)` gắn class CSS `dim` (`filter: opacity(.25)`, không dùng `opacity` vì animation pop-in giữ opacity) lên group của khối mà `predicate(node)` đúng, áp lại cuối mỗi `sync`/`reset` vì khối con được tạo lại. Tầng và bộ lọc để P3c.
+- Test JS: `node --test 'visualizer/src/test/js/*.test.mjs'` (Node 22 không nhận đường dẫn thư mục, phải dùng glob có nháy).
+- Khi review trên trình duyệt: class có context không khai báo (vd. file sửa tay) hiện ở nhóm "Chưa xếp" để lỗi validate của nó không bị mất; lỗi của class không có dòng trong panel đẩy lên đầu. Màn hẹp (≤ 480px) tên class xuống dòng riêng.
+- `domain-model.json` của repo dựng từ gợi ý qua giao diện (**Lưu**, chưa sửa tay). Vì file này nằm trên classpath, store có thêm property `visualizer.model.resource` (mặc định `/domain-model.json`, rỗng thì bỏ classpath); test controller đặt rỗng để kiểm trường hợp chưa lưu.
+
 **Xong khi:** trên trình duyệt dựng được mô hình cho ecommerce từ gợi ý, lưu thành `domain-model.json`, reload vẫn giữ. File được commit làm mô hình mặc định của repo.
 
 #### P3c — Xem theo tầng + bộ lọc (đọc từ mô hình đã lưu)
@@ -186,7 +195,7 @@ Chia ba lượt tuần tự: P3a → P3b → P3c.
 
 ```bash
 ./mvnw -pl visualizer -am test
-node --test visualizer/src/test/js/
+node --test 'visualizer/src/test/js/*.test.mjs'
 ./mvnw test -DexcludedGroups=docker      # đảm bảo app/domain không bị ảnh hưởng
 ```
 

@@ -23,6 +23,7 @@
     <option value="2">2×</option>
   </select>
   <button id="reset">↺ Reset</button>
+  <button id="model-btn" class="model-btn" title="Trình sửa mô hình domain (context, vai trò, quan hệ)">Mô hình</button>
   <button id="about" class="about-btn" title="Hành trình phát triển visualizer" aria-label="Hành trình phát triển visualizer">?</button>
 </header>
 <div class="legend"><!-- mục legend của domain do adapter.legend thêm vào đầu (main.js) -->
@@ -41,6 +42,7 @@
   </div>
 </main>
 <footer id="status"></footer>
+<aside id="model-editor" class="model-editor" aria-label="Trình sửa mô hình domain" hidden></aside>
 <dialog id="about-dlg" class="about" aria-label="Hành trình phát triển visualizer">
   <div class="about-top"><h2>HÀNH TRÌNH · DOMAIN VISUALIZER</h2><button class="about-close" aria-label="Đóng">×</button></div>
   <div class="about-body"></div>

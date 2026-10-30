@@ -39,6 +39,14 @@ class DomainModelStoreTest {
     }
 
     @Test
+    void khongCoFileThiDocClasspathTruocGoiY() {
+        ModelSnapshot snap = new DomainModelStore(SPEC, () -> List.of(), dir.resolve("domain-model.json"),
+                "/model/fallback-model.json").current();
+        assertThat(snap.origin()).isEqualTo("classpath");
+        assertThat(snap.model().classes()).extracting(ClassDef::cls).containsExactly("Order");
+    }
+
+    @Test
     void luuRoiCurrentTraDungMoHinhOriginFile() {
         DomainModelStore store = store(dir.resolve("sub/dir/domain-model.json"));
         store.current(); // nạp cache là gợi ý trước

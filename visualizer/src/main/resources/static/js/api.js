@@ -41,3 +41,30 @@ export async function getSync() {
   try { return await json(await fetch('/api/viz/sync')); }
   catch { return null; }
 }
+
+// Mô hình domain (P3b); fixture hoặc lỗi mạng thì trả null
+export async function getModel() { // → { origin, model } | null
+  if (fixtureMode) return null;
+  try { return await json(await fetch('/api/viz/model')); }
+  catch { return null; }
+}
+
+export async function getSuggestion() { // → DomainModel | null
+  if (fixtureMode) return null;
+  try { return await json(await fetch('/api/viz/model/suggestion')); }
+  catch { return null; }
+}
+
+// PUT mô hình; không ném lỗi với 400/409: trả { ok, status, body } để editor hiện lỗi (lỗi mạng: status 0)
+export async function saveModel(model) {
+  if (fixtureMode) return null;
+  try {
+    const res = await fetch('/api/viz/model', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(model),
+    });
+    const body = await res.json().catch(() => null);
+    return { ok: res.ok, status: res.status, body };
+  } catch (err) {
+    return { ok: false, status: 0, body: { detail: `Không gọi được BE: ${err.message}` } };
+  }
+}

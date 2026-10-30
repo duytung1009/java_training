@@ -51,6 +51,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   const blocks = new Map(); // id (root hoặc con) → { id, root, kind, color, small, g, frame, head, titleEl, subEl, rect, more }
   let world = null, selected = null, nodes = new Map();
   let layout = null, layoutKey = '', groundKey = '', wirePaths = [];
+  let dimPred = null; // predicate(node) → boolean: khối nào làm mờ (class 'dim'); đặt qua setDim
   let zoom = 1, natW = 0, natH = 0; // kích thước tự nhiên theo viewBox; width/height = nat × zoom
   const warnedLayout = new Set();
   const tiles = new Map(); // `${blockId}/${key}` → { g, polygon, text, name, val, title, value, pre, anim }
@@ -357,7 +358,19 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     }
     if (selected && !frames[selected]) select(null);
     else if (selected) onSelect(selected, describe(selected));
+    applyDim();
   }
+
+  // Khối được tạo lại theo node nên phải áp lại sau mỗi sync/reset; khối không có node (vd. "+N") không mờ
+  function applyDim() {
+    for (const b of blocks.values()) {
+      const n = nodeOf(b.id);
+      b.g.classList.toggle('dim', !!(dimPred && n && dimPred(n)));
+    }
+  }
+
+  // predicate(node) → true thì khối mờ đi; null bỏ mờ
+  function setDim(predicate) { dimPred = predicate ?? null; applyDim(); }
 
   function flash(ids, ok) {
     for (const id of ids ?? []) {
@@ -404,7 +417,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   enablePan(svg.parentElement);
   enableZoom(svg.parentElement);
   build();
-  return { sync, flash, flow, reset, select };
+  return { sync, flash, flow, reset, select, setDim };
 }
 
 // Kéo chuột để cuộn bản đồ; dịch chuyển < 4px vẫn là click (chọn/bỏ chọn khối)
