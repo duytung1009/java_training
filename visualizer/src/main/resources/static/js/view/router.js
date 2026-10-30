@@ -1,26 +1,31 @@
 // Bộ định tuyến tầng: giữ trạng thái tầng (context → aggregate → instance) và bộ lọc, bọc scene isometric + level-view
+// (bản đồ 2D phẳng: tầng context, aggregate, và tầng instance khi có focus ctx/agg → chỉ vẽ phần thuộc focus).
 // sau cùng giao diện player đang dùng: reset(world), sync(world, opts), flow(f, ok, ms, after, event), flash(ids, ok).
 // reset/sync luôn chuyển cho scene (đổi tầng về instance là tức thì); flow/flash chỉ đến view đang hiện.
 import { h } from '../dom.js';
 import { classOfNode, lookup, contextById } from '../model/draft.js';
 import {
   parseHash, toHash, normalizeState, nodeLookup, blockOf, buildContextBlocks, buildAggregateBlocks,
-  resolveFlowAt, countFlows, gridLayout, pairKey,
+  resolveFlowAt, countFlows, layoutGraph, edgeWidth, hasFocus, buildInstanceBlocks, instanceLayout, itemRows, contextColor,
 } from './levels.js';
-import { DEFAULT, isActive, eventMatches, flowMatches, nodeMatches, changedNodeIds, inSelection } from './filters.js';
+import { DEFAULT, isActive, eventMatches, flowMatches, nodeMatches, changedNodeIds } from './filters.js';
 
 const LEVEL_LABEL = { context: 'Context', aggregate: 'Aggregate', instance: 'Instance' };
 const TITLE = { context: 'BẢN ĐỒ CONTEXT', aggregate: 'BẢN ĐỒ AGGREGATE' };
-const HINT = { context: '· click một context để xem aggregate', aggregate: '· click một aggregate để xem instance, click cổng để sang context khác' };
+const HINT = { context: '· click một context để xem aggregate', aggregate: '· rê chuột để xem quan hệ, click aggregate để xem instance, click cổng để sang context khác' };
+const FOCUS_TITLE = 'BẢN ĐỒ INSTANCE';
+const FOCUS_HINT = '· click một khối để xem chú thích, click cổng để sang nơi khác';
 const same = (a, b) => a.level === b.level && a.ctx === b.ctx && a.agg === b.agg;
 
-// els: { isoSvg, flatSvg, title, hint, crumbs, switcher }; getBlocked(): đang có drawer/dialog nên Esc không lùi tầng
+// els: { isoSvg, flatSvg, title, hint, crumbs, switcher }; isBlocked(): đang có drawer/dialog nên Esc không lùi tầng;
+// onView(iso): gọi mỗi lần vẽ lại, iso = đang hiện bản đồ isometric (bảng chú thích chỉ có nghĩa ở đó)
+// onSelect(id, node): chọn một khối ở bản đồ 2D (cùng đường với onSelect của scene, để hiện bảng chú thích)
 // Nhãn cạnh: chỉ hiện khi đã có lời gọi / event chạy qua, bỏ phần bằng 0 cho đỡ rối
 function edgeLabel(calls = 0, events = 0) {
   return [calls ? `${calls} lời gọi` : '', events ? `${events} event` : ''].filter(Boolean).join(' · ');
 }
 
-export function createRouter({ scene, view, els, prefixes = [], isBlocked = () => false }) {
+export function createRouter({ scene, view, els, prefixes = [], isBlocked = () => false, onSelect = () => {}, onView = () => {} }) {
   let model = null, filters = { ...DEFAULT };
   let state = parseHash(location.hash);
   let baseWorld = null, prevWorld = null, curWorld = null;
@@ -29,7 +34,9 @@ export function createRouter({ scene, view, els, prefixes = [], isBlocked = () =
   let played = [];              // flow đã phát từ lần reset (để đếm trên cạnh)
   const seen = new Map();       // id đầu mút của flow → node, tra được cả khi world đã đổi
   const instanceTitle = els.title.textContent, instanceHint = els.hint.textContent;
-  let wasInstance = true;
+  let mode = 'iso';             // 'iso' | 'ctx' | 'agg:<ctx>' | 'focus:<ctx>/<agg>': đổi mode thì bỏ chọn khối
+  let selId = null;             // khối đang chọn ở bản đồ 2D tầng instance
+  let inst = null;              // kết quả buildInstanceBlocks lần vẽ gần nhất (để resolve flow về khối "+N")
 
   const eff = () => normalizeState(state, model);
   // Không có mô hình thì context/aggregate không có nghĩa: bỏ qua hai điều kiện này
@@ -40,17 +47,55 @@ export function createRouter({ scene, view, els, prefixes = [], isBlocked = () =
   function dimmed(node) {
     if (model && lookup(model, classOfNode(node))?.hidden === true) return true;
     const f = effFilters();
-    if (isActive(f) && !nodeMatches(f, node, model, changedRun)) return true;
-    const s = eff();
-    // Focus: chỉ làm mờ (không gỡ khối) để giữ nguyên bố cục của adapter
-    return s.level === 'instance' && !!model && !!s.ctx
-      && !inSelection({ contexts: [s.ctx], aggregates: s.agg ? [s.agg] : [] }, model, node);
+    return isActive(f) && !nodeMatches(f, node, model, changedRun);
   }
 
-  // ---- Level view (context / aggregate) ----
+  // Node "đã chạm" trong lượt chạy: đổi so với đầu lượt hoặc là đầu mút của flow đã phát (ưu tiên khi cắt "+N")
+  const playedIds = () => new Set([...seen].flatMap(([id, n]) => [id, n.id]));
+  const touchedIds = () => new Set([...changedRun, ...playedIds()]);
+
+  // ---- Tầng instance có focus: bản đồ 2D thu gọn ----
+  function renderFocus(s) {
+    const world = curWorld ?? { nodes: [] };
+    const f = effFilters(), active = isActive(f);
+    inst = buildInstanceBlocks(model, world, s, touchedIds(), { endpoints: seen.values() });
+    const blocks = [...inst.blocks, ...inst.ports];
+    const matching = new Set();
+    for (const n of world.nodes) {
+      const b = blockOf(s, model, n, inst);
+      if (b && (!active || nodeMatches(f, n, model, changedRun))) matching.add(b);
+    }
+    if (selId && !blocks.some(b => b.id === selId)) { selId = null; onSelect(null, null); }
+    const lay = instanceLayout(blocks), color = contextColor(model, s.ctx);
+    view.render({
+      blocks: blocks.map(b => ({
+        ...b, color: b.color ?? color, rows: b.items ? itemRows(b.items) : undefined,
+        dim: active && !matching.has(b.id), touched: changed.has(b.id), selected: b.id === selId,
+      })),
+      edges: [], labels: lay.labels, rects: lay.rects, width: lay.width, height: lay.height,
+      onOpen: b => {
+        if (b.port) return go(b.agg ? { level: 'instance', ctx: s.ctx, agg: b.agg } : { level: 'aggregate', ctx: b.ctx, agg: null });
+        if (b.summary) return;
+        selId = selId === b.id ? null : b.id;
+        renderView();
+        syncSelection();
+      },
+    });
+  }
+
+  // Đẩy node đang chọn (đã cập nhật theo world hiện tại) ra bảng chú thích
+  function syncSelection() {
+    if (!selId) return onSelect(null, null);
+    const n = lookupNow()(selId);
+    onSelect(selId, n ? { ...n, children: [] } : null);
+  }
+
+  // ---- Level view (context / aggregate / instance có focus) ----
   function renderView() {
     const s = eff();
-    if (s.level === 'instance' || !model) return;
+    if (!model) return;
+    if (hasFocus(s)) return renderFocus(s);
+    if (s.level === 'instance') return;
     const world = curWorld ?? { nodes: [] };
     const f = effFilters(), active = isActive(f);
     const matching = new Set(), touched = new Set();
@@ -61,29 +106,22 @@ export function createRouter({ scene, view, els, prefixes = [], isBlocked = () =
       if (changed.has(n.id)) touched.add(b);
     }
     const counts = countFlows(s, model, id => seen.get(id), played);
-    let blocks, edges, sub;
-    if (s.level === 'context') {
-      const built = buildContextBlocks(model, world);
-      blocks = built.blocks;
-      sub = b => `${b.count} instance`;
-      const known = new Set(built.edges.map(e => pairKey(e.a, e.b)));
-      edges = [...built.edges.map(e => ({ ...e, ...(counts.get(pairKey(e.a, e.b)) ?? {}) })),
-        ...[...counts].filter(([k]) => !known.has(k)).map(([, c]) => ({ ...c, relations: 0 }))]
-        .filter(e => blocks.some(b => b.id === e.a) && blocks.some(b => b.id === e.b))
-        .map(e => ({ a: e.a, b: e.b, label: edgeLabel(e.calls, e.events), tip: `${e.relations} quan hệ trong mô hình` }));
-    } else {
-      const built = buildAggregateBlocks(model, world, s.ctx);
-      blocks = [...built.blocks, ...built.ports];
-      sub = b => (b.port ? 'cổng' : `${b.role} · ${b.count} instance`);
-      edges = [...counts.values()].map(c => ({ a: c.a, b: c.b, label: edgeLabel(c.calls, c.events) }));
-    }
-    const grid = gridLayout(blocks);
+    const built = s.level === 'context' ? buildContextBlocks(model, world, counts) : buildAggregateBlocks(model, world, s.ctx, counts);
+    const blocks = [...built.blocks, ...(built.ports ?? [])];
+    const lay = layoutGraph(blocks, built.edges);
+    // Nhãn trên cạnh: "id" (tham chiếu theo id giữa hai aggregate) và bộ đếm lời gọi/event đã chạy (chỉ hiện khi > 0)
+    const edges = built.edges.map(e => ({
+      ...e, points: lay.routes[e.id], width: e.style === 'param' ? 1 : edgeWidth(e.relations),
+      label: [e.style === 'id' ? 'id' : '', edgeLabel(e.calls, e.events)].filter(Boolean).join(' · '),
+    }));
     view.render({
-      blocks: blocks.map(b => ({ ...b, sub: sub(b), dim: active && !matching.has(b.id), touched: touched.has(b.id) })),
-      edges, rects: grid.rects, width: grid.width, height: grid.height,
+      blocks: blocks.map(b => ({
+        ...b, card: true, dim: active && !matching.has(b.id), touched: touched.has(b.id),
+      })),
+      edges, rects: lay.rects, width: lay.width, height: lay.height,
       onOpen: b => {
         if (s.level === 'context' || b.port) go({ level: 'aggregate', ctx: b.ctx, agg: null });
-        else go({ level: 'instance', ctx: s.ctx, agg: b.title });
+        else go({ level: 'instance', ctx: s.ctx, agg: b.key ?? b.title });
       },
     });
   }
@@ -102,8 +140,10 @@ export function createRouter({ scene, view, els, prefixes = [], isBlocked = () =
   }
 
   function renderChrome(s) {
-    els.title.textContent = TITLE[s.level] ?? instanceTitle;
-    els.hint.textContent = HINT[s.level] ?? instanceHint;
+    const focus = hasFocus(s);
+    els.title.textContent = focus ? FOCUS_TITLE : TITLE[s.level] ?? instanceTitle;
+    els.hint.textContent = focus ? FOCUS_HINT : HINT[s.level] ?? instanceHint;
+    els.hint.title = els.hint.textContent; // dòng gợi ý bị cắt bằng "…" khi hẹp: bản đầy đủ nằm ở tooltip
     for (const [lv, b] of Object.entries(switchBtns)) {
       b.disabled = !model;
       b.classList.toggle('on', lv === s.level);
@@ -124,13 +164,17 @@ export function createRouter({ scene, view, els, prefixes = [], isBlocked = () =
     });
   }
 
+  function clearSelection() { selId = null; scene.select(null); }
+
   function refresh() {
-    const s = eff(), inst = s.level === 'instance';
+    const s = eff(), iso = s.level === 'instance' && !hasFocus(s);
     // Ẩn bằng class (đẩy ra ngoài màn hình), không display:none: scene vẫn đo được độ dài chữ khi sync lúc đang ẩn
-    els.isoSvg.classList.toggle('lv-off', !inst);
-    els.flatSvg.toggleAttribute('hidden', inst); // SVGElement không có property hidden như HTMLElement
-    if (!inst && wasInstance) scene.select(null); // bảng chú thích chỉ có ở tầng instance
-    wasInstance = inst;
+    els.isoSvg.classList.toggle('lv-off', !iso);
+    els.flatSvg.toggleAttribute('hidden', iso); // SVGElement không có property hidden như HTMLElement
+    const next = iso ? 'iso' : hasFocus(s) ? `focus:${s.ctx}/${s.agg ?? ''}` : s.level === 'context' ? 'ctx' : `agg:${s.ctx}`;
+    if (next !== mode) { mode = next; clearSelection(); } // bảng chú thích thuộc về bản đồ vừa rời đi
+    if (!hasFocus(s)) inst = null;
+    onView(iso);
     scene.setDim(dimmed);
     renderChrome(s);
     renderView();
@@ -176,6 +220,7 @@ export function createRouter({ scene, view, els, prefixes = [], isBlocked = () =
     changedRun = changedNodeIds(baseWorld, curWorld);
     scene.sync(world, opts); // áp lại làm mờ với tập thay đổi mới
     renderView();
+    if (selId) syncSelection();
   }
 
   async function flow(f, ok, ms, after, event) {
@@ -185,19 +230,21 @@ export function createRouter({ scene, view, els, prefixes = [], isBlocked = () =
     if (isActive(fl) && ((event && !eventMatches(fl, event, model, lk)) || !flowMatches(fl, f, model, lk))) return;
     for (const id of [f.from, f.to]) { const n = lk(id); if (n) seen.set(id, n); }
     played.push(f);
-    if (s.level === 'instance') return scene.flow(f, ok, ms, after);
-    const r = resolveFlowAt(s, model, lk, f);
+    if (s.level === 'instance' && !hasFocus(s)) return scene.flow(f, ok, ms, after);
+    // Tầng instance có focus: vẽ lại trước để đầu mút vừa chạm có khối (không bị gộp vào "+N") và cổng của nó
+    if (hasFocus(s)) renderView();
+    const r = resolveFlowAt(s, model, lk, f, inst);
     if (!r) return;
     if (r.kind === 'flash') { view.flash([r.block], ok); return; }
-    renderView(); // bộ đếm trên cạnh tăng ngay khi mũi tên bắt đầu
+    if (!hasFocus(s)) renderView(); // bộ đếm trên cạnh tăng ngay khi mũi tên bắt đầu
     return view.flow(r, f.kind, ok, ms, f.label);
   }
 
   function flash(ids, ok) {
     const s = eff();
-    if (s.level === 'instance') return scene.flash(ids, ok);
+    if (s.level === 'instance' && !hasFocus(s)) return scene.flash(ids, ok);
     const lk = lookupNow();
-    view.flash([...new Set((ids ?? []).map(id => blockOf(s, model, lk(id))).filter(Boolean))], ok);
+    view.flash([...new Set((ids ?? []).map(id => blockOf(s, model, lk(id), inst)).filter(Boolean))], ok);
   }
 
   // Dòng log có khớp bộ lọc không (event không tra được node thì coi là khớp)
@@ -208,9 +255,11 @@ export function createRouter({ scene, view, els, prefixes = [], isBlocked = () =
     return eventMatches(fl, e, model, id => (lk ??= nodeLookup(baseWorld, e.worldAfter, e.worldAfter, prefixes))(id));
   }
 
+  scene.setPriority(n => changedRun.has(n.id) || seen.has(n.id));
   refresh();
   return {
     reset, sync, flow, flash,
+    select(id) { if (id == null) { clearSelection(); renderView(); } }, // đóng bảng chú thích: bỏ chọn ở cả hai bản đồ
     setModel(m) { model = m ?? null; refresh(); },
     setFilters(f) { filters = f; refresh(); },
     // Đổi mô hình và bộ lọc cùng lúc, vẽ lại một lần

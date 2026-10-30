@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DEFAULT, isActive, normalize, aggregateOptions, eventMatches, flowMatches, nodeMatches, changedNodeIds, threadsOf,
+  DEFAULT, isActive, activeCount, normalize, aggregateOptions, eventMatches, flowMatches, nodeMatches, changedNodeIds, threadsOf,
 } from '../../main/resources/static/js/view/filters.js';
 import { nodeLookup } from '../../main/resources/static/js/view/levels.js';
 
@@ -96,4 +96,10 @@ test('changedNodeIds: node mới hoặc items đổi, so theo node id', () => {
   assert.deepEqual([...changedNodeIds(before, now)].sort(), ['a', 'c', 'd']);
   assert.equal(changedNodeIds(before, before).size, 0);
   assert.equal(changedNodeIds(null, null).size, 0);
+});
+
+test('activeCount: đếm số chiều lọc đang bật', () => {
+  assert.equal(activeCount(DEFAULT), 0);
+  assert.equal(activeCount({ ...DEFAULT, contexts: ['a', 'b'], outcome: 'OK', changedOnly: true }), 3);
+  assert.equal(activeCount({ ...DEFAULT, aggregates: ['A'], flowKind: 'EVENT', thread: 't' }), 3);
 });

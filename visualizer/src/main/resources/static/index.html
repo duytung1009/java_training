@@ -26,16 +26,28 @@
   <button id="model-btn" class="model-btn" title="Trình sửa mô hình domain (context, vai trò, quan hệ)">Mô hình</button>
   <button id="about" class="about-btn" title="Hành trình phát triển visualizer" aria-label="Hành trình phát triển visualizer">?</button>
 </header>
-<div class="legend"><!-- mục legend của domain do adapter.legend thêm vào đầu (main.js) -->
+
+<div id="sync" class="sync" role="alert" hidden></div>
+<main>
+  <section class="panel map"><h2><em id="map-title">BẢN ĐỒ ISOMETRIC 2.5D · domain/</em><span id="map-hint">· click một khối để xem chú thích</span><span id="crumbs" class="crumbs"></span><button id="legend-toggle" class="fb-toggle" type="button" aria-expanded="false" aria-controls="legend">Chú thích</button><button id="filter-toggle" class="fb-toggle" type="button" aria-expanded="false" aria-controls="filter-bar"></button><span id="lv-switch" class="lv-switch" role="group" aria-label="Tầng xem"></span></h2><div id="filter-bar" class="filter-bar" role="group" aria-label="Bộ lọc" hidden></div><div class="map-view"><svg id="map" role="img" aria-label="Bản đồ isometric các domain object"></svg><svg id="level-map" class="level-map" role="img" aria-label="Bản đồ theo tầng context / aggregate" hidden></svg></div><div id="legend" class="legend" role="group" aria-label="Chú thích" hidden>
+  <div class="lg-head"><span class="lg-title">Chú thích</span><button class="lg-close" type="button" aria-label="Đóng chú thích">×</button></div>
+  <div class="lg-items lg-iso"><!-- mục legend của domain do adapter.legend thêm vào đầu (main.js) -->
   <span><i style="border-color:var(--err)"></i>Exception</span>
   <span><i style="border-color:var(--muted)"></i>object</span>
   <span><i class="k-coll" style="border-color:var(--muted)"></i>collection</span>
   <span><i class="k-area" style="border-color:var(--muted)"></i>package</span>
   <span><i class="k-calc" style="border-color:var(--muted)"></i>dynamic value</span>
-</div>
-<div id="sync" class="sync" role="alert" hidden></div>
-<main>
-  <section class="panel map"><h2><em id="map-title">BẢN ĐỒ ISOMETRIC 2.5D · domain/</em> <span id="map-hint">· click một khối để xem chú thích</span><span id="crumbs" class="crumbs"></span><span id="lv-switch" class="lv-switch" role="group" aria-label="Tầng xem"></span></h2><div id="filter-bar" class="filter-bar" aria-label="Bộ lọc"></div><div class="map-view"><svg id="map" role="img" aria-label="Bản đồ isometric các domain object"></svg><svg id="level-map" class="level-map" role="img" aria-label="Bản đồ theo tầng context / aggregate" hidden></svg></div><aside id="info" class="info" hidden></aside></section>
+  </div>
+  <div class="lg-items lg-2d" hidden>
+  <span><svg class="lg-line" width="30" height="10" aria-hidden="true"><line x1="1" y1="5" x2="23" y2="5" class="solid"/><path d="M20 1.5L27 5L20 8.5" fill="none" class="solid"/></svg>quan hệ trong mô hình, mũi tên tới upstream</span>
+  <span><svg class="lg-line" width="30" height="10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" class="dashed"/></svg>tham chiếu theo id / chỉ quan sát</span>
+  <span><svg class="lg-line" width="30" height="10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" class="dotted"/></svg>chỉ tham số (param)</span>
+  <span><b class="lg-ud">U</b> upstream · <b class="lg-ud">D</b> downstream</span>
+  <span><i class="k-agg"></i>ranh giới aggregate</span>
+  <span><i class="k-port"></i>cổng sang context khác</span>
+  <span><svg class="lg-line" width="30" height="10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" class="event"/></svg>domain event đang chạy</span>
+  </div>
+</div><aside id="info" class="info" hidden></aside></section>
   <div class="right">
     <section class="panel log"><h2>CALL LOG</h2><ol id="log"></ol></section>
     <section class="panel diff"><h2>STATE CHANGES · before → after</h2><div class="body" id="diff"></div></section>

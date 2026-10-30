@@ -1,6 +1,7 @@
 // Vẽ bản đồ SVG: panel, ô con, đường nối và animation
 import { el, iso, diamond, wirePath, css, flat, sleep, arrowMarkers, restartFlash, fadeOut } from './iso.js';
 import { adapter } from '../../adapter/index.js';
+import { touchedFirst } from '../view/levels.js';
 import { ROOTS, PLACED, WIRES as WIRES_BASE, HEADER, CHILD_MARGIN, CHILD_GAP, computeLayout, resolveFlow, checkLayout } from './layout.js';
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -51,6 +52,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   let world = null, selected = null, nodes = new Map();
   let layout = null, layoutKey = '', groundKey = '', wirePaths = [];
   let dimPred = null; // predicate(node) → boolean: khối nào làm mờ (class 'dim'); đặt qua setDim
+  let priorityPred = null; // predicate(node) → boolean: node "đã chạm" được xếp trước khi container cắt "+N"; đặt qua setPriority
   let zoom = 1, natW = 0, natH = 0; // kích thước tự nhiên theo viewBox; width/height = nat × zoom
   const warnedLayout = new Set();
   const tiles = new Map(); // `${blockId}/${key}` → { g, polygon, text, name, val, title, value, pre, anim }
@@ -312,7 +314,10 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     const cs = r.child, gap = CHILD_GAP;
     const { cols, cap } = layout.grids[rid];
     let shown = kids, hidden = [];
-    if (kids.length > cap) { shown = kids.slice(0, cap - 1); hidden = kids.slice(cap - 1); }
+    if (kids.length > cap) { // node đã chạm xếp trước nên phần bị gộp vào "+N" là phần chưa chạm
+      const ordered = touchedFirst(kids, priorityPred);
+      shown = ordered.slice(0, cap - 1); hidden = ordered.slice(cap - 1);
+    }
     const slots = shown.map(n => ({ id: n.id, node: n }));
     const moreId = `${rid}/${MORE}`;
     if (hidden.length) slots.push({ id: moreId, more: hidden });
@@ -368,6 +373,9 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   // predicate(node) → true thì khối mờ đi; null bỏ mờ
   function setDim(predicate) { dimPred = predicate ?? null; applyDim(); }
 
+  // predicate(node) → true thì node được ưu tiên giữ lại khi container quá chỗ; hiệu lực từ lần sync kế tiếp
+  function setPriority(predicate) { priorityPred = predicate ?? null; }
+
   function flash(ids, ok) {
     for (const id of ids ?? []) {
       const f = frames[id];
@@ -410,7 +418,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   enablePan(svg.parentElement);
   enableZoom(svg.parentElement);
   build();
-  return { sync, flash, flow, reset, select, setDim };
+  return { sync, flash, flow, reset, select, setDim, setPriority };
 }
 
 // Kéo chuột để cuộn bản đồ; dịch chuyển < 4px vẫn là click (chọn/bỏ chọn khối)

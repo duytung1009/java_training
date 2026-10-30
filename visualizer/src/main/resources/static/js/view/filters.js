@@ -24,6 +24,10 @@ export function normalize(raw) {
 export const isActive = f =>
   f.contexts.length > 0 || f.aggregates.length > 0 || f.outcome !== 'all' || f.flowKind !== 'all' || f.thread != null || f.changedOnly;
 
+// Số chiều lọc đang bật (hiện trên nút "Lọc")
+export const activeCount = f =>
+  [f.contexts.length > 0, f.aggregates.length > 0, f.outcome !== 'all', f.flowKind !== 'all', f.thread != null, f.changedOnly].filter(Boolean).length;
+
 // Danh sách aggregate chọn được: khoá aggregate của class không ẩn thuộc các context đã chọn (rỗng = mọi context), theo thứ tự
 // model.classes. Chỉ giữ khoá có vai trò aggregate: service/value lẻ vẫn có khối riêng ở tầng aggregate nhưng không làm rối bộ lọc
 export function aggregateOptions(model, contexts = []) {

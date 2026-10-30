@@ -15,7 +15,15 @@ select option { background: var(--panel); }
 button:hover:not(:disabled), select:hover { border-color: var(--c-log); }
 button:disabled { opacity: .4; cursor: default; }
 .badge { font-size: 11px; color: var(--c-alt); border: 1px solid var(--c-alt); padding: 0 6px; }
-.legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 8px 16px; color: var(--muted); border-bottom: 1px solid var(--line); }
+/* Chú thích nổi ở góc dưới trái bản đồ isometric (đối diện bảng lọc ở trên phải, bảng chú thích khối ở dưới phải) */
+.legend { position: absolute; left: 8px; bottom: 8px; z-index: 4; width: min(300px, calc(100% - 16px)); max-height: 40%; overflow-y: auto;
+  padding: 4px 10px 6px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(0, 0, 0, .55); font-size: 11px; color: var(--muted); }
+.legend[hidden] { display: none; }
+.lg-head { display: flex; justify-content: space-between; align-items: center; }
+.lg-title { color: var(--c-map); letter-spacing: .08em; text-transform: uppercase; }
+.lg-close { border: 0; padding: 0 6px; font-size: 14px; color: var(--muted); }
+.lg-items { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; }
+@media (max-width: 600px) { .lg-items { grid-template-columns: 1fr; } }
 .legend i { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border: 1.5px solid; }
 .legend i.k-coll { border-style: dashed; background: rgba(214, 216, 222, .12); } .legend i.k-area { border-style: dotted; }
 .legend i.k-calc { border-style: dashed; width: 7px; height: 7px; }
@@ -169,35 +177,94 @@ footer { padding: 6px 16px 16px; color: var(--muted); }
 .model-editor button:disabled { opacity: .4; cursor: default; }
 
 /* Xem theo tầng: tiêu đề, breadcrumb, nút chuyển tầng */
-.map h2 em { font-style: normal; }
-.map h2 .crumbs { margin-left: 10px; letter-spacing: 0; }
+/* Tiêu đề bản đồ: tiêu đề | gợi ý | breadcrumb | Chú thích | Lọc | nút chuyển tầng. Gợi ý có flex-basis 0 nên không bao giờ
+   chiếm chỗ của phần khác: thiếu chỗ thì gợi ý co (cắt …) trước, vẫn thiếu thì các nút xuống dòng. Dựa vào bề ngang khung bản đồ
+   chứ không phải cửa sổ (ở màn rộng bản đồ chỉ ~60% nên media query theo viewport không bắt được) */
+.map > h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; white-space: nowrap; }
+.map h2 em { font-style: normal; flex: none; }
+.map h2 #map-hint { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Breadcrumb giữ đủ bề ngang (chỉ hint co lại); quá dài mới cắt "…" */
+.map h2 .crumbs { flex: 0 0 auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0; }
 .crumb { border: 0; padding: 0 2px; font-size: 11px; color: var(--text); text-decoration: underline dotted; }
-.lv-switch { float: right; letter-spacing: 0; }
-.lv-btn { font-size: 10px; padding: 0 8px; margin-left: -1px; }
-.lv-btn.on { color: var(--c-map); border-color: var(--c-map); }
+.lv-switch { flex: none; margin-left: auto; display: inline-flex; padding: 2px; letter-spacing: 0; }
+.lv-btn, .fb-toggle { font-size: 10px; padding: 0 8px; }
+.lv-btn { margin-left: -1px; }
+.lv-btn.on { color: var(--c-map); border-color: var(--c-map); z-index: 1; }
+/* Vòng focus nằm bên trong nút và nổi lên trên nút kề (nút sau chồng 1px lên nút trước nên vòng ngoài bị che) */
+.lv-btn:focus-visible, .fb-toggle:focus-visible { outline: 1px solid var(--c-map); outline-offset: -2px; position: relative; z-index: 1; }
+@media (max-width: 600px) { .map h2 #map-hint { display: none; } }
 /* Svg isometric đẩy ra ngoài màn hình khi đang xem tầng khác (không display:none để scene còn đo được chữ) */
 .map-view svg.lv-off { position: absolute; top: 0; left: -100000px; visibility: hidden; pointer-events: none; }
 .map-view svg[hidden] { display: none; }
-.map-view .level-map { min-width: 0; max-width: 100%; height: auto; font-family: inherit; }
+/* Tầng context / aggregate / instance thu gọn: khung bản đồ luôn cao hết chỗ trống (bằng max-height của khung isometric),
+   svg 2D giữ kích thước tự nhiên (width/height do level-view đặt), chỉ thu nhỏ khi panel hẹp hơn; không phóng to khi ít khối */
+.map-view:has(> .level-map:not([hidden])) { min-height: calc(100vh - 150px); }
+.map-view .level-map { display: block; margin: 0 auto; width: auto; min-width: 0; max-width: 100%; height: auto; font-family: inherit; } /* margin auto: căn giữa khi hẹp hơn khung */
 .lv-block { cursor: pointer; }
-.lv-block rect { fill-opacity: .08; stroke-width: 1.5; }
-.lv-block:hover rect { fill-opacity: .16; }
-.lv-block.port rect { stroke-dasharray: 5 4; fill-opacity: .03; }
-.lv-block.touched rect { stroke-width: 3.5; fill-opacity: .2; }
+.lv-block .frame { fill-opacity: .08; stroke-width: 1.5; }
+.lv-block:hover .frame { fill-opacity: .16; }
+.lv-block.port .frame { stroke-dasharray: 5 4; fill-opacity: .03; }
+.lv-block.box .frame { stroke-dasharray: 7 4; fill-opacity: .05; } /* khung aggregate */
+.lv-member { fill: var(--text); fill-opacity: .06; stroke: none; }
+.lv-sep { stroke: var(--line); stroke-width: 1; }
+.lv-block, .lv-edge { transition: opacity .12s; }
+.lv-block.faded, .lv-edge.faded { opacity: .25; }
+/* Tầng instance thu gọn: dòng key/value trong khối, nhãn nhóm aggregate, khối đang chọn */
+.lv-row { fill: var(--muted); font-size: 10.5px; }
+.lv-row.val { fill: var(--text); }
+.lv-group { fill: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.lv-block.sel .frame { stroke-width: 3; fill-opacity: .22; }
+.lv-block.touched .frame { stroke-width: 3.5; fill-opacity: .2; }
 .lv-block.dim { filter: opacity(.25); }
 .lv-title { fill: var(--text); font-size: 13px; font-weight: 600; }
 .lv-sub { fill: var(--muted); font-size: 11px; }
-.lv-edge line { stroke: var(--wire); stroke-width: 1.5; }
-.lv-edge text { fill: var(--muted); font-size: 10px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.lv-edge .line { fill: none; stroke: var(--muted); stroke-linejoin: round; }
+.lv-edge .hit { fill: none; stroke: transparent; stroke-width: 10; } /* vùng rê chuột rộng hơn nét vẽ */
+.lv-edge.id .line, .lv-edge.observed .line { stroke-dasharray: 6 4; }
+.lv-edge.observed .line { stroke-opacity: .6; }
+.lv-edge.param .line { stroke-dasharray: 1.5 4; stroke-linecap: round; }
+.lv-edge:hover .line { stroke: var(--text); }
+.lv-end { fill: var(--muted); font-size: 9px; font-weight: 700; pointer-events: none; }
+.lv-badge rect { fill: var(--panel); stroke: var(--line); }
+.lv-badge text { fill: var(--muted); font-size: 10px; }
 
-/* Thanh lọc */
-.filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 4px 10px; border-bottom: 1px solid var(--line); font-size: 11px; color: var(--muted); }
-.fb-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+/* Bảng lọc nổi: phủ lên bản đồ ở góc phải, ngay dưới tiêu đề, không đẩy chiều cao trang */
+.fb-toggle { flex: none; }
+.fb-toggle[aria-expanded="true"] { color: var(--c-map); border-color: var(--c-map); }
+.fb-toggle.active { color: var(--bg); background: var(--c-map); border-color: var(--c-map); }
+.fb-badge { display: inline-block; min-width: 14px; padding: 0 3px; margin-left: 2px; border-radius: 7px; text-align: center; background: var(--c-map); color: var(--bg); }
+.fb-badge[hidden] { display: none; }
+.fb-toggle.active .fb-badge { background: var(--bg); color: var(--c-map); }
+.filter-bar { position: absolute; top: 32px; right: 8px; z-index: 5; width: 420px; max-width: calc(100% - 16px); max-height: 70%; overflow-y: auto;
+  padding: 6px 10px 8px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(0, 0, 0, .55); font-size: 11px; color: var(--muted); }
+.filter-bar[hidden] { display: none; }
+.fb-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.fb-title { color: var(--c-map); letter-spacing: .08em; text-transform: uppercase; }
+.fb-close { border: 0; padding: 0 6px; font-size: 14px; color: var(--muted); }
+.fb-group { margin-bottom: 6px; }
 .fb-group[hidden] { display: none; }
-.fb-label { color: var(--muted); }
+.fb-row { display: flex; align-items: baseline; gap: 8px; }
+.fb-label { color: var(--muted); margin-right: auto; }
+.fb-link { border: 0; padding: 0; font-size: 10px; color: var(--c-log); text-decoration: underline dotted; }
+.fb-chips { display: flex; flex-wrap: wrap; gap: 4px; max-height: 96px; overflow-y: auto; margin-top: 2px; }
 .fb-chip { border: 1px solid var(--line); padding: 0 6px; cursor: pointer; color: var(--muted); }
 .fb-chip.on { color: var(--text); border-color: var(--c-map); }
 .fb-chip input { display: none; }
+.fb-misc { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
 .fb-item { white-space: nowrap; }
 .filter-bar select, .fb-clear { font-size: 11px; padding: 0 6px; }
 .log li.dim { opacity: .3; }
+
+/* Chú thích ký hiệu cho bản đồ 2D */
+.lg-items[hidden] { display: none; }
+.lg-line { display: inline-block; flex: none; width: 30px; height: 10px; } /* ghi đè svg { display:block; width:100% } chung */
+/* Ký hiệu 2D: câu giải thích dài nên một cột, ký hiệu và chữ cùng một dòng */
+.lg-2d { grid-template-columns: 1fr; }
+.lg-2d > span { display: flex; align-items: center; gap: 8px; }
+.lg-line line, .lg-line path { stroke: var(--muted); stroke-width: 1.5; }
+.lg-line .dashed { stroke-dasharray: 6 4; }
+.lg-line .dotted { stroke-dasharray: 1.5 4; stroke-linecap: round; }
+.lg-line .event { stroke: var(--event); stroke-width: 2.5; stroke-dasharray: 1 5; stroke-linecap: round; }
+.lg-ud { color: var(--text); }
+.legend i.k-agg { width: 12px; height: 9px; border-style: dashed; border-color: var(--lv-1); }
+.legend i.k-port { width: 12px; height: 9px; border-style: dashed; border-color: var(--lv-2); background: rgba(224, 137, 79, .08); }

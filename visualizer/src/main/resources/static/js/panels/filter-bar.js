@@ -1,12 +1,13 @@
-// Thanh lọc trên bản đồ: context, aggregate (chip chọn nhiều), kết quả, loại flow, thread, "chỉ object có thay đổi", Xoá lọc.
-// Lựa chọn lưu ở localStorage (viz.filters); logic lọc nằm ở view/filters.js.
+// Bảng lọc nổi trên bản đồ (nút "Lọc" ở tiêu đề mở/đóng): context, aggregate (chip chọn nhiều, mỗi nhóm một hàng cuộn được),
+// kết quả, loại flow, thread, "chỉ object có thay đổi", Xoá lọc.
+// Lựa chọn lưu ở localStorage (viz.filters), trạng thái mở/đóng ở viz.filters.open; logic lọc nằm ở view/filters.js.
 import { h, selectEl } from '../dom.js';
 import { readJson, writeJson } from '../storage.js';
 import { contextById } from '../model/draft.js';
-import { DEFAULT, normalize, isActive, aggregateOptions } from '../view/filters.js';
+import { DEFAULT, normalize, isActive, activeCount, aggregateOptions } from '../view/filters.js';
 import { shortThread } from './log.js';
 
-const KEY = 'viz.filters';
+const KEY = 'viz.filters', OPEN_KEY = 'viz.filters.open';
 
 const load = () => normalize(readJson(KEY));
 const save = f => writeJson(KEY, f);
@@ -27,10 +28,14 @@ function prune(f, model) {
   return contexts.length === f.contexts.length && aggregates.length === f.aggregates.length ? f : { ...f, contexts, aggregates };
 }
 
-export function createFilterBar({ el, onChange }) {
-  let f = load(), model = null, threads = [];
+// el: khung bảng lọc (nổi, nằm trong .map); button: nút "Lọc" ở tiêu đề (hiện số chiều lọc đang bật)
+export function createFilterBar({ el, button, onChange }) {
+  let f = load(), model = null, threads = [], open = readJson(OPEN_KEY) === true;
 
-  const ctxGroup = h('span', 'fb-group'), aggGroup = h('span', 'fb-group');
+  const head = h('div', 'fb-head');
+  const closeBtn = h('button', 'fb-close', '×'); closeBtn.type = 'button'; closeBtn.setAttribute('aria-label', 'Đóng bộ lọc');
+  head.append(h('span', 'fb-title', 'Bộ lọc'), closeBtn);
+  const ctxGroup = h('div', 'fb-group'), aggGroup = h('div', 'fb-group');
   const outcome = select('Kết quả', [['all', 'tất cả'], ['OK', 'OK'], ['THROWN', 'THROWN']]);
   const kind = select('Flow', [['all', 'tất cả'], ['CALL', 'call'], ['EVENT', 'event']]);
   const thread = select('Thread', [['', 'tất cả']]);
@@ -38,19 +43,44 @@ export function createFilterBar({ el, onChange }) {
   const changed = h('input'); changed.type = 'checkbox';
   changedLabel.append(changed, ' chỉ object có thay đổi');
   const clear = h('button', 'fb-clear', 'Xoá lọc'); clear.type = 'button';
-  el.append(ctxGroup, aggGroup, outcome.wrap, kind.wrap, thread.wrap, changedLabel, clear);
+  const misc = h('div', 'fb-misc');
+  misc.append(outcome.wrap, kind.wrap, thread.wrap, changedLabel, clear);
+  el.append(head, ctxGroup, aggGroup, misc);
+  const badge = h('span', 'fb-badge'); badge.hidden = true;
+  button.append('Lọc ', badge);
+  button.setAttribute('aria-controls', el.id);
 
+  // Một nhóm chip: hàng nhãn (+ đếm đã chọn, "chọn hết / bỏ hết") và danh sách chip cuộn được; chip đã chọn xếp trước
   function chips(group, title, items, selected, key) {
     group.textContent = '';
     group.hidden = items.length === 0;
-    group.append(h('span', 'fb-label', title));
-    for (const { id, text } of items) {
+    const top = h('div', 'fb-row');
+    const n = items.filter(i => selected.includes(i.id)).length;
+    top.append(h('span', 'fb-label', n ? `${title} (đã chọn ${n}/${items.length})` : title));
+    const link = (text, ids) => {
+      const b = h('button', 'fb-link', text); b.type = 'button';
+      b.addEventListener('click', () => change({ [key]: ids }));
+      return b;
+    };
+    top.append(link('chọn hết', items.map(i => i.id)), link('bỏ hết', []));
+    const list = h('div', 'fb-chips');
+    for (const { id, text } of [...items.filter(i => selected.includes(i.id)), ...items.filter(i => !selected.includes(i.id))]) {
       const lb = h('label', 'fb-chip' + (selected.includes(id) ? ' on' : ''));
       const cb = h('input'); cb.type = 'checkbox'; cb.checked = selected.includes(id);
       cb.addEventListener('change', () => change({ [key]: cb.checked ? [...selected, id] : selected.filter(x => x !== id) }));
       lb.append(cb, text);
-      group.append(lb);
+      list.append(lb);
     }
+    group.append(top, list);
+  }
+
+  function renderButton() {
+    const n = activeCount(f);
+    badge.hidden = n === 0;
+    badge.textContent = String(n);
+    button.setAttribute('aria-expanded', String(open));
+    button.classList.toggle('active', n > 0 && !open); // đang lọc mà bảng đóng: nút sáng lên để biết vì sao bản đồ bị mờ
+    button.title = n ? `Bộ lọc: ${n} chiều đang bật` : 'Bộ lọc';
   }
 
   function render() {
@@ -66,6 +96,7 @@ export function createFilterBar({ el, onChange }) {
     thread.select.value = f.thread ?? '';
     changed.checked = f.changedOnly;
     clear.disabled = !isActive(f);
+    renderButton();
   }
 
   function change(patch) {
@@ -74,15 +105,36 @@ export function createFilterBar({ el, onChange }) {
     save(f); render(); onChange(f);
   }
 
+  // Bảng neo ngay dưới tiêu đề bản đồ; tiêu đề có thể xuống 2-3 dòng ở màn hẹp nên theo dõi chiều cao của nó
+  const header = button.closest('h2');
+  const placeUnderHeader = () => { if (header) el.style.top = `${header.offsetHeight}px`; };
+  if (header && typeof ResizeObserver === 'function') new ResizeObserver(placeUnderHeader).observe(header);
+
+  function setOpen(v) {
+    if (open === v) return;
+    open = v;
+    el.hidden = !open;
+    writeJson(OPEN_KEY, open);
+    renderButton();
+  }
+
   outcome.select.addEventListener('change', () => change({ outcome: outcome.select.value }));
   kind.select.addEventListener('change', () => change({ flowKind: kind.select.value }));
   thread.select.addEventListener('change', () => change({ thread: thread.select.value || null }));
   changed.addEventListener('change', () => change({ changedOnly: changed.checked }));
   clear.addEventListener('click', () => change({ ...DEFAULT }));
+  closeBtn.addEventListener('click', () => { setOpen(false); button.focus(); });
+  button.addEventListener('click', () => setOpen(!open));
+  // Esc đóng bảng (router thấy isOpen() thì không lùi tầng); click ra ngoài bảng và nút cũng đóng
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && open && !e.defaultPrevented) { setOpen(false); button.focus(); } });
+  document.addEventListener('pointerdown', e => { if (open && e.target instanceof Node && !el.contains(e.target) && !button.contains(e.target)) setOpen(false); });
+  placeUnderHeader();
+  el.hidden = !open;
   render();
 
   return {
     get: () => f,
+    isOpen: () => open,
     // Mô hình đổi: bỏ context/aggregate không còn tồn tại; bộ lọc có đổi thì gọi onChange
     setModel(m) {
       model = m ?? null;
