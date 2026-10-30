@@ -1,5 +1,6 @@
 // Vẽ bản đồ SVG: panel, ô con, đường nối và animation
-import { el, iso, diamond, wirePath, css, flat, sleep, arrowMarkers, restartFlash, fadeOut } from './iso.js';
+import { el, iso, diamond, wirePath, css, flat, sleep, arrowMarkers, restartFlash, fadeOut, CELL } from './iso.js';
+import { planeMatrix, apply, bounds, lerp, toAttr } from './projection.js';
 import { adapter } from '../../adapter/index.js';
 import { touchedFirst } from '../view/levels.js';
 import { ROOTS, PLACED, WIRES as WIRES_BASE, HEADER, CHILD_MARGIN, CHILD_GAP, computeLayout, resolveFlow, checkLayout } from './layout.js';
@@ -15,7 +16,7 @@ function tileColor(rootId, key) {
 
 const EPS = 1e-6;
 const specOf = id => ROOTS[id] ?? PLACED[id]; // area hoặc thành viên cố định
-const CELL = 35.78; // độ dài 1 ô lưới dọc trục x trên màn hình (px)
+const PROJ_MS = 400; // thời gian chuyển phép chiếu
 const ZOOM_MIN = 0.4, ZOOM_MAX = 3;
 
 // Vừa chữ vào maxPx: thu font xuống tối thiểu minPx, vẫn dài thì cắt và thêm "…". Trả về true nếu giữ nguyên chữ gốc.
@@ -53,6 +54,9 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   let layout = null, layoutKey = '', groundKey = '', wirePaths = [];
   let dimPred = null; // predicate(node) → boolean: khối nào làm mờ (class 'dim'); đặt qua setDim
   let priorityPred = null; // predicate(node) → boolean: node "đã chạm" được xếp trước khi container cắt "+N"; đặt qua setPriority
+  let projName = 'iso', plane = planeMatrix('iso'), projToken = 0; // phép chiếu hiện tại + ma trận áp lên lớp nền (đang chạy dở thì ở giữa hai đầu)
+  let isoPts = []; // điểm bao nội dung (toạ độ iso); viewBox suy ra từ (plane, isoPts) mỗi khung hình
+  const activeFlows = new Set(); // flow đang hiện: vẽ ở overlay nên phải ánh xạ lại khi ma trận đổi
   let zoom = 1, natW = 0, natH = 0; // kích thước tự nhiên theo viewBox; width/height = nat × zoom
   const warnedLayout = new Set();
   const tiles = new Map(); // `${blockId}/${key}` → { g, polygon, text, name, val, title, value, pre, anim }
@@ -63,7 +67,12 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     for (const k of Object.keys(frames)) delete frames[k];
     const defs = el('defs', {}, svg);
     arrowMarkers(defs, 'arrow-', { flow: css('--flow'), err: css('--err'), event: css('--event') });
-    for (const n of ['ground', 'wires', 'zones', 'flows', 'labels']) layers[n] = el('g', {}, svg);
+    // Lớp nền (plane) chịu ma trận phép chiếu; overlay nằm ngoài để chữ/mũi tên flow luôn đứng thẳng, không méo
+    const planeG = el('g', { class: 'plane' }, svg);
+    for (const n of ['ground', 'wires', 'zones']) layers[n] = el('g', {}, planeG);
+    layers.overlay = el('g', {}, svg);
+    layers.plane = planeG;
+    activeFlows.clear();
     wirePaths = WIRES_BASE.map(() => el('path', { fill: 'none', stroke: css('--wire'), 'stroke-width': 1.5 }, layers.wires));
     groundKey = '';
 
@@ -110,17 +119,47 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     const maxX = Math.max(...ps.map(p => p.x + p.w)) + 0.5, maxY = Math.max(...ps.map(p => p.y + p.d)) + 0.5;
     const pts = [...ps.flatMap(p => [[p.x, p.y], [p.x + p.w, p.y], [p.x + p.w, p.y + p.d], [p.x, p.y + p.d]]),
       ...lay.wires.flatMap(w => w.pts)].map(q => iso(...q));
-    const M = 24, x0 = Math.min(...pts.map(q => q[0])) - M, y0 = Math.min(...pts.map(q => q[1])) - M;
-    const vw = Math.max(...pts.map(q => q[0])) + M - x0, vh = Math.max(...pts.map(q => q[1])) + M - y0;
-    svg.setAttribute('viewBox', `${x0} ${y0} ${vw} ${vh}`);
-    natW = vw; natH = vh;
-    applyZoom();
+    isoPts = pts;
+    applyView();
     const gk = `${maxX}|${maxY}`;
     if (gk !== groundKey) {
       groundKey = gk; layers.ground.textContent = '';
       for (let x = -0.5; x < maxX; x++) for (let y = -0.5; y < maxY; y++)
         el('polygon', { points: diamond(x, y, 1, 1), fill: 'none', stroke: '#1b1f27' }, layers.ground);
     }
+  }
+
+  // Áp ma trận phép chiếu lên lớp nền + viewBox ôm nội dung sau phép chiếu, rồi zoom
+  function applyView() {
+    layers.plane.setAttribute('transform', toAttr(plane));
+    if (isoPts.length) {
+      const M = 24, b = bounds(plane, isoPts);
+      svg.setAttribute('viewBox', `${b.x - M} ${b.y - M} ${b.w + 2 * M} ${b.h + 2 * M}`);
+      natW = b.w + 2 * M; natH = b.h + 2 * M;
+      applyZoom();
+    }
+    placeFlows();
+  }
+
+  // Chuyển phép chiếu 'iso' | 'flat': lerp ma trận (viewBox đi theo), giữ tâm vùng nhìn; token huỷ lượt cũ
+  function setProjection(name, { animate = true } = {}) {
+    const to = planeMatrix(name), from = plane, token = ++projToken, box = svg.parentElement;
+    projName = name;
+    const step = m => {
+      const cw = box.clientWidth, ch = box.clientHeight;
+      const rx = box.scrollWidth ? (box.scrollLeft + cw / 2) / box.scrollWidth : 0.5;
+      const ry = box.scrollHeight ? (box.scrollTop + ch / 2) / box.scrollHeight : 0.5;
+      plane = m; applyView();
+      box.scrollLeft = rx * box.scrollWidth - cw / 2; box.scrollTop = ry * box.scrollHeight - ch / 2;
+    };
+    if (!animate || reduced()) return step(to);
+    const start = performance.now();
+    (function frame(now) {
+      if (token !== projToken) return;
+      const f = Math.min(1, (now - start) / PROJ_MS);
+      step(f < 1 ? lerp(from, to, 1 - (1 - f) ** 3) : to); // ease-out cubic
+      if (f < 1) requestAnimationFrame(frame);
+    })(start);
   }
 
   // Giữ viewBox, chỉ nhân width/height: thanh cuộn của .map-view giãn theo nên pan vẫn chạy bằng scroll
@@ -394,23 +433,35 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     // (event đã thật sự xảy ra trước lúc ném). Flow lời gọi: --flow, hoặc --err khi lời gọi lỗi.
     const isEvent = f.kind === 'EVENT';
     const kind = isEvent ? 'event' : ok ? 'flow' : 'err';
-    const p = el('path', { d: wirePath(pts), class: isEvent ? 'flow event' : 'flow', stroke: css(`--${kind}`), 'marker-end': `url(#arrow-${kind})` }, layers.flows);
+    const p = el('path', { class: isEvent ? 'flow event' : 'flow', stroke: css(`--${kind}`), 'marker-end': `url(#arrow-${kind})` }, layers.overlay);
     let label = null;
     if (isEvent && f.label) {
-      const mid = p.getPointAtLength(p.getTotalLength() / 2);
-      label = el('text', { x: mid.x, y: mid.y - 5, class: 'flow-label', 'text-anchor': 'middle' }, layers.flows);
+      label = el('text', { class: 'flow-label', 'text-anchor': 'middle' }, layers.overlay);
       label.textContent = f.label;
     }
+    const fl = { p, pts, label };
+    activeFlows.add(fl);
+    placeFlow(fl);
     await sleep(ms);
+    activeFlows.delete(fl);
     fadeOut(p, label);
   }
+
+  // Flow vẽ ở overlay (mũi tên marker không bị méo theo ma trận) nên điểm phải ánh xạ qua `plane`; nhãn đặt ở giữa đường
+  function placeFlow({ p, pts, label }) {
+    p.setAttribute('d', pts.map((q, i) => (i ? 'L' : 'M') + apply(plane, iso(...q)).join(' ')).join(' '));
+    if (!label) return;
+    const mid = p.getPointAtLength(p.getTotalLength() / 2);
+    label.setAttribute('x', mid.x); label.setAttribute('y', mid.y - 5);
+  }
+  function placeFlows() { for (const fl of activeFlows) placeFlow(fl); }
 
   // Về trạng thái ban đầu, không animation
   function reset(world) {
     for (const t of tiles.values()) t.g.remove();
     tiles.clear();
     for (const b of [...blocks.values()]) if (b.small) removeBlock(b, { animate: false });
-    layers.flows.textContent = '';
+    layers.overlay.textContent = ''; activeFlows.clear();
     for (const f of Object.values(frames)) f.classList.remove('flash-ok', 'flash-err');
     sync(world, { animate: false });
   }
@@ -418,7 +469,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   enablePan(svg.parentElement);
   enableZoom(svg.parentElement);
   build();
-  return { sync, flash, flow, reset, select, setDim, setPriority };
+  return { sync, flash, flow, reset, select, setDim, setPriority, setProjection, projection: () => projName };
 }
 
 // Kéo chuột để cuộn bản đồ; dịch chuyển < 4px vẫn là click (chọn/bỏ chọn khối)

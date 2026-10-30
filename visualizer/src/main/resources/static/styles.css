@@ -83,6 +83,7 @@ footer { padding: 6px 16px 16px; color: var(--muted); }
 .tile text { font-size: 10px; font-weight: 600; pointer-events: none; }
 .tile .val { font-size: 11px; }
 .tile .typ { font-size: 6.5px; font-weight: 400; opacity: .75; }
+.plane polygon, .plane path { vector-effect: non-scaling-stroke; } /* nét không méo theo ma trận phép chiếu (cũng không phình theo zoom) */
 .tile, .zone-frame, .child { transform-box: fill-box; transform-origin: center; }
 .pop-in { animation: popIn calc(.45s / var(--spd)) cubic-bezier(.3, 1.6, .5, 1) both; }
 .pop-out { animation: popOut calc(.35s / var(--spd)) ease-in both; }
@@ -186,7 +187,9 @@ footer { padding: 6px 16px 16px; color: var(--muted); }
 /* Breadcrumb giữ đủ bề ngang (chỉ hint co lại); quá dài mới cắt "…" */
 .map h2 .crumbs { flex: 0 0 auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0; }
 .crumb { border: 0; padding: 0 2px; font-size: 11px; color: var(--text); text-decoration: underline dotted; }
-.lv-switch { flex: none; margin-left: auto; display: inline-flex; padding: 2px; letter-spacing: 0; }
+.lv-switch { flex: none; margin-left: 6px; display: inline-flex; padding: 2px; letter-spacing: 0; }
+#proj-switch { margin-left: auto; } .lv-switch[hidden] { display: none; } /* hai nhóm nút nằm sát nhau bên phải; khi #proj-switch ẩn thì #lv-switch tự đẩy phải */
+#proj-switch[hidden] + .lv-switch { margin-left: auto; }
 .lv-btn, .fb-toggle { font-size: 10px; padding: 0 8px; }
 .lv-btn { margin-left: -1px; }
 .lv-btn.on { color: var(--c-map); border-color: var(--c-map); z-index: 1; }

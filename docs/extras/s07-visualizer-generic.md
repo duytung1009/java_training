@@ -237,6 +237,28 @@ Sửa khi review trên trình duyệt: breadcrumb không co (thiếu 1px subpixe
 
 **Đã làm (P3e):** `static/js/view/graph-layout.js` (mới) + `graph-layout.test.mjs`; `levels.js` (`buildContextBlocks`, `buildAggregateBlocks` trả cạnh có hướng + style, `countFlows` thêm `fwd`/`back`, `layoutGraph`, `edgeWidth`; bỏ `gridLayout`), `level-view.js` (thẻ khối, khung aggregate, đường vuông góc, U/D, nhãn có nền, rê chuột, flow theo đường), `router.js`, `panels/legend.js` (`setFlat`), `index.html`, `styles.css`, `main.js`; test cập nhật trong `levels.test.mjs`. Không đổi Java.
 
+### P4 — Điều hướng đi sâu: Tổng quan → Package → Instance, mỗi tầng chuyển được 2.5D / phẳng
+
+**Vì sao.** Các bản đồ context/aggregate (P3c–P3e) vẽ theo mô hình domain, không phải theo thứ người xem đang thấy, nên mỗi lần đổi tầng là mất định hướng. P4 thay bằng điều hướng đi sâu ngay trên bản đồ đang xem, có animation chuyển tiếp.
+
+| Tầng | Nội dung | Bộ vẽ | Vào bằng |
+|---|---|---|---|
+| 1. Tổng quan | bản đồ isometric hiện tại, mọi package | `scene.js`, bố cục vẽ tay của adapter | mặc định |
+| 2. Package | một area (vd. `domain.inventory`): các khối bên trong và **cổng** sang package khác có dây nối hoặc lời gọi | `scene.js`, camera zoom vào area, phần khác ẩn đi | double click (hoặc Enter) một package |
+| 3. Instance | object được chọn (đủ key/value), bên gọi ở trái, bên được gọi ở phải | bộ vẽ mới, xếp tự động (ego graph) | double click một object ở tầng 2 |
+
+**Quyết định.**
+1. **Phép chiếu là một ma trận affine.** Mọi thứ trong scene nằm trên mặt đất (kể cả chữ, nghiêng bằng `flat()`), nên các layer được gói vào `<g class="plane">`: phẳng = `FLAT ∘ ISO⁻¹`, 2.5D = ma trận đơn vị. Bố cục giữ nguyên; đổi phép chiếu có animation nội suy ma trận. Chữ cần đứng thẳng (nhãn flow) nằm ở lớp phủ ngoài `plane`. Lựa chọn lưu ở `viz.proj`, dùng chung cho cả 3 tầng, mặc định 2.5D.
+2. **Package lấy từ layout của adapter** (`ROOTS`); mô hình domain vẫn dùng cho bộ lọc và nhãn vai trò.
+3. **Thao tác.** Click một lần vẫn chọn và mở chú thích; double click hoặc Enter để đi sâu; bảng chú thích có nút `Xem bên trong ›` (cho màn hình cảm ứng); Esc hoặc breadcrumb để lùi lại, có animation ngược. Vị trí đang xem nằm ở URL hash `#area=…&node=…`. Bật `prefers-reduced-motion` thì không có animation.
+4. **Gỡ** bộ chuyển tầng Context/Aggregate/Instance, các bản đồ context/aggregate và instance có focus, cùng code không còn dùng; giữ `graph-layout.js` cho tầng 3.
+
+**Các bước.** P4a: `js/map/projection.js` (hàm thuần, có test) + `scene.setProjection` + nút `2.5D | Phẳng`. P4b: router mới (overview/area/node, hash, breadcrumb, Esc, double click), gỡ tầng cũ. P4c: tầng Package trong scene (camera tween, cắt dây thành cổng, flow tới cổng). P4d: tầng Instance (ego graph có phép chiếu, chuyển tiếp từ khối thành thẻ, click hàng xóm để nhảy sang). P4e: kiểm tra 3 tầng × 2 phép chiếu.
+
+**Đã làm (P4a):** `js/map/projection.js` (mới: `multiply`, `invert`, `apply`, `bounds`, `lerp`, `GRID`, `planeMatrix`) + `projection.test.mjs`; `iso.js` xuất `TW/TH/OX/OY/CELL`; `scene.js` gói `ground/wires/zones` vào `plane`, viewBox suy ra từ (ma trận, điểm bao) mỗi khung hình, `setProjection` nội suy ma trận 400ms giữ tâm vùng nhìn; flow và nhãn event vẽ ở lớp `overlay` ngoài `plane` (điểm ánh xạ qua ma trận) nên mũi tên không méo; `panels/projection-toggle.js` (nút `2.5D | Phẳng`, lưu `viz.proj`); CSS `vector-effect: non-scaling-stroke` cho nét trong `plane` (hệ quả: nét không còn dày lên khi zoom). Tiêu đề đổi thành `BẢN ĐỒ TỔNG QUAN`.
+
+**Không làm.** Bố cục tự động cho tầng tổng quan khi adapter không có layout vẽ tay; context map theo mô hình (có thể đưa vào trình sửa mô hình sau).
+
 ## 5. Kiểm chứng
 
 ```bash

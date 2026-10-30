@@ -1,6 +1,7 @@
 // Phép chiếu isometric + helper SVG
 export const SVGNS = 'http://www.w3.org/2000/svg';
-const TW = 64, TH = 32, OX = 360, OY = 56;
+export const TW = 64, TH = 32, OX = 360, OY = 56;
+export const CELL = Math.hypot(TW / 2, TH / 2); // độ dài 1 ô lưới dọc trục x trên màn hình (px)
 
 export const iso = (x, y) => [OX + (x - y) * TW / 2, OY + (x + y) * TH / 2];
 export const diamond = (x, y, w, d) =>

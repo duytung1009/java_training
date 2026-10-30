@@ -11,6 +11,7 @@ import { createLevelView } from './view/level-view.js';
 import { createRouter } from './view/router.js';
 import { createFilterBar } from './panels/filter-bar.js';
 import { createLegend } from './panels/legend.js';
+import { createProjectionToggle } from './panels/projection-toggle.js';
 import { threadsOf } from './view/filters.js';
 import { PREFIXES } from './map/layout.js';
 import { adapter } from '../adapter/index.js';
@@ -35,6 +36,8 @@ const scene = createScene($('map'), { onSelect });
 $('info').addEventListener('click', e => { if (e.target.closest('.close')) router.select(null); });
 
 const legend = createLegend({ el: $('legend'), button: $('legend-toggle') });
+const projToggle = createProjectionToggle({ el: $('proj-switch'), onChange: v => scene.setProjection(v) });
+scene.setProjection(projToggle.get(), { animate: false });
 
 // Router tầng đứng giữa player và bản đồ: instance → scene isometric, context/aggregate → bản đồ 2D phẳng
 const router = createRouter({
@@ -43,7 +46,7 @@ const router = createRouter({
   els: { isoSvg: $('map'), flatSvg: $('level-map'), title: $('map-title'), hint: $('map-hint'), crumbs: $('crumbs'), switcher: $('lv-switch') },
   prefixes: PREFIXES,
   onSelect,
-  onView: iso => legend.setFlat(!iso),
+  onView: iso => { legend.setFlat(!iso); projToggle.setVisible(iso); },
   isBlocked: () => !$('model-editor').hidden || $('about-dlg').open || filterBar.isOpen() || legend.isShown(), // Esc đang dành cho drawer / dialog / bảng lọc
 });
 
