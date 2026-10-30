@@ -6,7 +6,11 @@ import { renderInfo } from './panels/info.js';
 import { renderSync } from './panels/sync.js';
 import { initAbout } from './panels/about.js';
 import { createModelEditor } from './panels/model-editor.js';
-import { classOfNode, lookup } from './model/draft.js';
+import { createLevelView } from './view/level-view.js';
+import { createRouter } from './view/router.js';
+import { createFilterBar } from './panels/filter-bar.js';
+import { threadsOf } from './view/filters.js';
+import { PREFIXES } from './map/layout.js';
 import { adapter } from '../adapter/index.js';
 
 const $ = id => document.getElementById(id);
@@ -29,23 +33,43 @@ const scene = createScene($('map'), {
 });
 $('info').addEventListener('click', e => { if (e.target.closest('.close')) scene.select(null); });
 
-// Áp mô hình lên bản đồ: class bị ẩn thì làm mờ khối, và vẽ lại bảng chú thích
+// Router tầng đứng giữa player và bản đồ: instance → scene isometric, context/aggregate → bản đồ 2D phẳng
+const router = createRouter({
+  scene,
+  view: createLevelView($('level-map')),
+  els: { isoSvg: $('map'), flatSvg: $('level-map'), title: $('map-title'), hint: $('map-hint'), crumbs: $('crumbs'), switcher: $('lv-switch') },
+  prefixes: PREFIXES,
+  isBlocked: () => !$('model-editor').hidden || $('about-dlg').open, // Esc đang dành cho drawer / dialog
+});
+
+const player = createPlayer({
+  scene: router,
+  els: { log: $('log'), diff: $('diff'), status: $('status') },
+  onState: s => setButtons(s),
+  eventFilter: e => router.eventMatches(e),
+});
+
+// Bộ lọc đổi: làm mờ lại bản đồ + log
+const filterBar = createFilterBar({ el: $('filter-bar'), onChange: f => { router.setFilters(f); player.refresh(); } });
+router.setFilters(filterBar.get());
+
+// Áp mô hình lên bản đồ: class bị ẩn thì làm mờ khối, tầng/bộ lọc vẽ lại, và vẽ lại bảng chú thích
 function applyModel(model) {
   currentModel = model;
-  scene.setDim(node => lookup(currentModel, classOfNode(node))?.hidden === true);
+  filterBar.setModel(model);
+  router.setFilters(filterBar.get());
+  router.setModel(model);
+  player.refresh();
   if (selection) renderInfo($('info'), selection.id, selection.node, currentModel);
 }
 const editor = createModelEditor({ el: $('model-editor'), button: $('model-btn'), onChange: applyModel });
 
-const player = createPlayer({
-  scene,
-  els: { log: $('log'), diff: $('diff'), status: $('status') },
-  onState: s => setButtons(s),
-});
-
 async function loadScenario(id) {
   try {
-    player.load(await api.run(id));
+    const run = await api.run(id);
+    filterBar.setThreads(threadsOf(run.events));
+    router.setFilters(filterBar.get());
+    player.load(run);
   } catch (err) {
     $('status').textContent = `Lỗi tải kịch bản: ${err.message}`;
   }

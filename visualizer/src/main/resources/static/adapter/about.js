@@ -112,12 +112,23 @@ const STAGES = [
       'Shipment hiện thành khối con của domain.shipping với ô status / failed / fee / tracking, diff cho thấy trạng thái đổi qua từng bước; đường nối mới orders → shipping, hoàn kho đi lại đường shipping → hub.',
     ],
   },
+  {
+    title: 'Visualizer tổng quát: tách lõi, event, mô hình, tầng và bộ lọc',
+    why: 'Visualizer dính chặt vào ecommerce (id, toạ độ, tên class nằm lẫn trong lõi), chưa thấy domain event, và bản đồ chỉ có một mức chi tiết nên domain lớn thì rối.',
+    what: [
+      'P1: tách lõi (core) khỏi adapter ecommerce, có test kiến trúc chặn lõi import domain; phía FE, dữ liệu riêng của domain nằm sau adapter/index.js.',
+      'P2: domain event hiện thành flow kiểu event (nét chấm) và dòng con trong call log, phát sau lời gọi sinh ra nó.',
+      'P3: mô hình domain (context, aggregate, quan hệ) gợi ý từ reflection, sửa trên giao diện bằng nút Mô hình và lưu thành domain-model.json.',
+      'Xem theo tầng context map → aggregate → instance (click khối để vào sâu, breadcrumb và Esc để lùi, hash URL giữ tầng), cùng bộ lọc context, aggregate, kết quả, loại flow, thread, chỉ object có thay đổi.',
+    ],
+  },
 ];
 
 const PRODUCT = [
   '5 vùng package, khối object / collection / area, ô computed tách khỏi state.',
   '12 kịch bản: tổng quan một lượt mua từ kho tới đơn, giỏ hàng → đơn, giá theo loại sản phẩm, trừ kho thành công / thất bại, chuyển kho, chuyển kho song song không deadlock, tranh nhau món hàng cuối, phí ship, nhập hàng kho → hub, vận đơn giao thành công / bị trả về.',
   'Run / Pause / Step / Back / Reset, tốc độ 0.5–2×, call log có badge thread, diff before → after, bảng chú thích khi click khối.',
+  'Mô hình domain sửa được trên giao diện, xem theo ba tầng context → aggregate → instance với bộ lọc (context, aggregate, kết quả, loại flow, thread, chỉ object có thay đổi); domain event hiện như flow nét chấm.',
   'Banner cảnh báo khi visualizer lệch với domain + skill visualizer-sync; không sửa một dòng nào trong domain/ hay app/.',
 ];
 

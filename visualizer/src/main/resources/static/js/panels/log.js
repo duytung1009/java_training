@@ -19,14 +19,16 @@ export function shortPayload(p, max = 60) {
   return s.length > max ? s.slice(0, max - 1) + '…' : s;
 }
 
-export function renderLog(ol, events, selected, onSelect) {
+// matches(event) → false thì dòng bị làm mờ (không ẩn, để chỉ số bước giữ nguyên); không truyền thì giữ nguyên như cũ
+export function renderLog(ol, events, selected, onSelect, matches) {
   ol.textContent = '';
   // Chỉ tô màu khi có từ 2 thread trở lên; một thread thì giữ màu xám như cũ
   const threads = [...new Set(events.map(e => e.thread))];
   const colorOf = t => threads.length > 1 ? THREAD_COLORS[threads.indexOf(t) % THREAD_COLORS.length] : null;
   events.forEach((e, i) => {
     const thrown = e.outcome === 'THROWN';
-    const li = h('li', (thrown ? 'thrown ' : '') + (i === selected ? 'sel' : ''));
+    const dim = matches && !matches(e);
+    const li = h('li', (thrown ? 'thrown ' : '') + (i === selected ? 'sel' : '') + (dim ? ' dim' : ''));
     const m = h('span', 'm');
     m.append(`${e.className}.`, h('b', '', e.method), `(${(e.args ?? []).join(', ')})`);
     if (thrown) {
@@ -43,7 +45,7 @@ export function renderLog(ol, events, selected, onSelect) {
     // Mỗi domain event một dòng con ngay dưới lời gọi (JSON cũ không có `events` thì bỏ qua)
     for (const ev of e.events ?? []) {
       // Dùng chung lưới cột với dòng lời gọi: hai ô trống (giờ, thread) rồi nội dung thẳng cột method
-      const row = h('li', 'ev');
+      const row = h('li', dim ? 'ev dim' : 'ev');
       const m = h('span', 'm');
       const p = h('span', 'evp', shortPayload(ev.payload));
       p.title = ev.payload ?? '';

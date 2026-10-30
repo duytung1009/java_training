@@ -6,7 +6,8 @@ import { renderDiff } from './panels/diff.js';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const GAP_MS = 500, FLOW_MS = 900;
 
-export function createPlayer({ scene, els, onState }) {
+// scene: scene isometric hoặc router tầng (cùng giao diện reset/sync/flow/flash); eventFilter(event) → false thì dòng log bị làm mờ
+export function createPlayer({ scene, els, onState, eventFilter }) {
   let run = null, cursor = 0, selected = -1;
   let playing = false, busy = false, speed = 1;
   let gen = 0; // tăng mỗi lần reset/đổi run để bước đang chờ tự huỷ
@@ -16,7 +17,7 @@ export function createPlayer({ scene, els, onState }) {
 
   function render() {
     const done = events().slice(0, cursor);
-    renderLog(els.log, done, selected, select);
+    renderLog(els.log, done, selected, select, eventFilter);
     renderDiff(els.diff, events()[selected], run);
     els.status.textContent = run
       ? `${run.scenarioId} · step ${cursor}/${events().length} · threads ${new Set(done.map(e => e.thread)).size} · exceptions ${done.filter(e => e.outcome === 'THROWN').length}`
@@ -47,7 +48,7 @@ export function createPlayer({ scene, els, onState }) {
     cursor++; selected = cursor - 1;
     render();
     for (const f of e.flows ?? (e.flow ? [e.flow] : [])) {
-      await scene.flow(f, ok, FLOW_MS / speed, e.worldAfter);
+      await scene.flow(f, ok, FLOW_MS / speed, e.worldAfter, e);
       if (g !== gen) return false;
     }
     scene.sync(e.worldAfter, { speed });
@@ -87,5 +88,5 @@ export function createPlayer({ scene, els, onState }) {
     document.documentElement.style.setProperty('--spd', s);
   }
 
-  return { load, reset, step, back, play, pause, setSpeed };
+  return { load, reset, step, back, play, pause, setSpeed, refresh: () => { if (run) render(); } };
 }
