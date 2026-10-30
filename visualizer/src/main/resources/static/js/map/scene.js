@@ -1,11 +1,10 @@
 // Vẽ bản đồ SVG: panel, ô con, đường nối và animation
-import { el, iso, diamond, wirePath, css, flat } from './iso.js';
+import { el, iso, diamond, wirePath, css, flat, sleep, arrowMarkers, restartFlash, fadeOut } from './iso.js';
 import { adapter } from '../../adapter/index.js';
 import { ROOTS, PLACED, WIRES as WIRES_BASE, HEADER, CHILD_MARGIN, CHILD_GAP, computeLayout, resolveFlow, checkLayout } from './layout.js';
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const MORE = '__more'; // ô "+N" gom các item không đủ chỗ
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // Màu ô item: "+N" cố định; còn lại do adapter.tileColor(rootId, key) quyết định, trả null/undefined thì dùng màu mặc định
 function tileColor(rootId, key) {
@@ -61,10 +60,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     tiles.clear(); blocks.clear();
     for (const k of Object.keys(frames)) delete frames[k];
     const defs = el('defs', {}, svg);
-    for (const [id, c] of [['arrow-flow', css('--flow')], ['arrow-err', css('--err')], ['arrow-event', css('--event')]]) {
-      const m = el('marker', { id, viewBox: '0 0 10 10', refX: 7, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, defs);
-      el('path', { d: 'M1 1L8 5L1 9', fill: 'none', stroke: c, 'stroke-width': 1.6 }, m);
-    }
+    arrowMarkers(defs, 'arrow-', { flow: css('--flow'), err: css('--err'), event: css('--event') });
     for (const n of ['ground', 'wires', 'zones', 'flows', 'labels']) layers[n] = el('g', {}, svg);
     wirePaths = WIRES_BASE.map(() => el('path', { fill: 'none', stroke: css('--wire'), 'stroke-width': 1.5 }, layers.wires));
     groundKey = '';
@@ -376,8 +372,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     for (const id of ids ?? []) {
       const f = frames[id];
       if (!f) continue; // id lạ: bỏ qua
-      f.classList.remove('flash-ok', 'flash-err'); void f.getBBox();
-      f.classList.add(ok ? 'flash-ok' : 'flash-err');
+      restartFlash(f, ok);
     }
   }
 
@@ -399,9 +394,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
       label.textContent = f.label;
     }
     await sleep(ms);
-    p.style.transition = 'opacity .3s'; p.style.opacity = 0;
-    setTimeout(() => p.remove(), 300);
-    if (label) { label.style.transition = 'opacity .3s'; label.style.opacity = 0; setTimeout(() => label.remove(), 300); }
+    fadeOut(p, label);
   }
 
   // Về trạng thái ban đầu, không animation

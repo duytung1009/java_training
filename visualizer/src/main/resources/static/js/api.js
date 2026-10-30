@@ -35,25 +35,16 @@ export async function getWorld() {
   return json(await fetch('/api/viz/world'));
 }
 
+// GET tuỳ chọn: fixture hoặc lỗi (mạng, HTTP) thì trả null
+const optional = url => (fixtureMode ? null : fetch(url).then(json).catch(() => null));
+
 // Trạng thái đồng bộ với domain; fixture hoặc lỗi thì trả null (không hiện banner)
-export async function getSync() {
-  if (fixtureMode) return null;
-  try { return await json(await fetch('/api/viz/sync')); }
-  catch { return null; }
-}
+export const getSync = () => optional('/api/viz/sync');
 
 // Mô hình domain (P3b); fixture hoặc lỗi mạng thì trả null
-export async function getModel() { // → { origin, model } | null
-  if (fixtureMode) return null;
-  try { return await json(await fetch('/api/viz/model')); }
-  catch { return null; }
-}
+export const getModel = () => optional('/api/viz/model'); // → { origin, model } | null
 
-export async function getSuggestion() { // → DomainModel | null
-  if (fixtureMode) return null;
-  try { return await json(await fetch('/api/viz/model/suggestion')); }
-  catch { return null; }
-}
+export const getSuggestion = () => optional('/api/viz/model/suggestion'); // → DomainModel | null
 
 // PUT mô hình; không ném lỗi với 400/409: trả { ok, status, body } để editor hiện lỗi (lỗi mạng: status 0)
 export async function saveModel(model) {

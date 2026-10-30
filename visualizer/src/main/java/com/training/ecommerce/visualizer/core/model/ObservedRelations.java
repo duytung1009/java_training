@@ -46,7 +46,7 @@ public final class ObservedRelations {
                     String to = after.getOrDefault(flow.to(), before.get(flow.to()));
                     if (from != null && to != null && !from.equals(to)
                             && knownClasses.contains(from) && knownClasses.contains(to)) {
-                        pairs.putIfAbsent(from + "\u0000" + to,
+                        pairs.putIfAbsent(DomainModelSuggester.key(from, to),
                                 new RelationDef(from, to, "observed:" + scenario.id()));
                     }
                 }

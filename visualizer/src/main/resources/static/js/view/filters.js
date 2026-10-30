@@ -1,7 +1,7 @@
 // Bộ lọc xem: context, aggregate, kết quả, loại flow, thread, "chỉ object có thay đổi". Hàm thuần (không đụng DOM).
 // Trạng thái lọc: { contexts, aggregates, outcome, flowKind, thread, changedOnly }.
 // Context/aggregate cần mô hình; không có mô hình (chế độ fixture) thì hai điều kiện này bị bỏ qua.
-import { classOfNode, contextOfNode } from '../model/draft.js';
+import { classOfNode, contextOfNode, lookup } from '../model/draft.js';
 import { aggregateKey } from './levels.js';
 
 export const DEFAULT = Object.freeze({ contexts: [], aggregates: [], outcome: 'all', flowKind: 'all', thread: null, changedOnly: false });
@@ -31,7 +31,7 @@ export function aggregateOptions(model, contexts = []) {
   for (const c of model?.classes ?? []) {
     if (c.hidden || !c.context || (contexts.length && !contexts.includes(c.context))) continue;
     const key = aggregateKey(model, c.cls);
-    if (seen.has(key) || model.classes.find(x => x.cls === key)?.role !== 'aggregate') continue;
+    if (seen.has(key) || lookup(model, key)?.role !== 'aggregate') continue;
     seen.add(key);
     out.push({ id: key, ctx: c.context });
   }
@@ -41,7 +41,7 @@ export function aggregateOptions(model, contexts = []) {
 const selecting = (f, model) => !!model && (f.contexts.length > 0 || f.aggregates.length > 0);
 
 // Node có nằm trong vùng context/aggregate đã chọn không (area chỉ xét context)
-function inSelection(f, model, node) {
+export function inSelection(f, model, node) {
   if (f.contexts.length && !f.contexts.includes(contextOfNode(model, node))) return false;
   if (f.aggregates.length && node.kind !== 'area') {
     const cls = classOfNode(node);

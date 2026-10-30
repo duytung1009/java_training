@@ -2,12 +2,12 @@
 // sau cùng giao diện player đang dùng: reset(world), sync(world, opts), flow(f, ok, ms, after, event), flash(ids, ok).
 // reset/sync luôn chuyển cho scene (đổi tầng về instance là tức thì); flow/flash chỉ đến view đang hiện.
 import { h } from '../dom.js';
-import { classOfNode, contextOfNode, lookup } from '../model/draft.js';
+import { classOfNode, lookup, contextById } from '../model/draft.js';
 import {
-  parseHash, toHash, normalizeState, nodeLookup, blockOf, aggregateKey, buildContextBlocks, buildAggregateBlocks,
+  parseHash, toHash, normalizeState, nodeLookup, blockOf, buildContextBlocks, buildAggregateBlocks,
   resolveFlowAt, countFlows, gridLayout, pairKey,
 } from './levels.js';
-import { DEFAULT, isActive, eventMatches, flowMatches, nodeMatches, changedNodeIds } from './filters.js';
+import { DEFAULT, isActive, eventMatches, flowMatches, nodeMatches, changedNodeIds, inSelection } from './filters.js';
 
 const LEVEL_LABEL = { context: 'Context', aggregate: 'Aggregate', instance: 'Instance' };
 const TITLE = { context: 'BẢN ĐỒ CONTEXT', aggregate: 'BẢN ĐỒ AGGREGATE' };
@@ -43,14 +43,8 @@ export function createRouter({ scene, view, els, prefixes = [], isBlocked = () =
     if (isActive(f) && !nodeMatches(f, node, model, changedRun)) return true;
     const s = eff();
     // Focus: chỉ làm mờ (không gỡ khối) để giữ nguyên bố cục của adapter
-    if (s.level === 'instance' && model && s.ctx) {
-      if (contextOfNode(model, node) !== s.ctx) return true;
-      if (s.agg && node.kind !== 'area') {
-        const cls = classOfNode(node);
-        if (cls == null || aggregateKey(model, cls) !== s.agg) return true;
-      }
-    }
-    return false;
+    return s.level === 'instance' && !!model && !!s.ctx
+      && !inSelection({ contexts: [s.ctx], aggregates: s.agg ? [s.agg] : [] }, model, node);
   }
 
   // ---- Level view (context / aggregate) ----
@@ -88,8 +82,7 @@ export function createRouter({ scene, view, els, prefixes = [], isBlocked = () =
       blocks: blocks.map(b => ({ ...b, sub: sub(b), dim: active && !matching.has(b.id), touched: touched.has(b.id) })),
       edges, rects: grid.rects, width: grid.width, height: grid.height,
       onOpen: b => {
-        if (s.level === 'context') go({ level: 'aggregate', ctx: b.ctx, agg: null });
-        else if (b.port) go({ level: 'aggregate', ctx: b.ctx, agg: null });
+        if (s.level === 'context' || b.port) go({ level: 'aggregate', ctx: b.ctx, agg: null });
         else go({ level: 'instance', ctx: s.ctx, agg: b.title });
       },
     });
@@ -118,7 +111,7 @@ export function createRouter({ scene, view, els, prefixes = [], isBlocked = () =
     }
     els.crumbs.textContent = '';
     if (!model || (s.level === 'instance' && !s.ctx)) return;
-    const title = id => model.contexts.find(c => c.id === id)?.title ?? id;
+    const title = id => contextById(model, id)?.title ?? id;
     const parts = [['Context map', { level: 'context', ctx: null, agg: null }]];
     if (s.ctx) parts.push([title(s.ctx), { level: 'aggregate', ctx: s.ctx, agg: null }]);
     if (s.agg) parts.push([s.agg, { level: 'instance', ctx: s.ctx, agg: s.agg }]);
@@ -220,7 +213,12 @@ export function createRouter({ scene, view, els, prefixes = [], isBlocked = () =
     reset, sync, flow, flash,
     setModel(m) { model = m ?? null; refresh(); },
     setFilters(f) { filters = f; refresh(); },
+    // Đổi mô hình và bộ lọc cùng lúc, vẽ lại một lần
+    update({ model: m, filters: f }) {
+      if (m !== undefined) model = m ?? null;
+      if (f !== undefined) filters = f;
+      refresh();
+    },
     eventMatches: matchesEvent,
-    go, up, state: eff,
   };
 }

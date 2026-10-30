@@ -1,3 +1,5 @@
+import { lookup } from './draft.js';
+
 // So mô hình đang sửa với gợi ý hiện tại (gợi ý = danh sách class của domain bây giờ). Hàm thuần.
 
 // added: ClassDef của gợi ý mà mô hình chưa có; removed: tên class mô hình có mà gợi ý không còn
@@ -14,7 +16,7 @@ export function diffModel(model, suggestion) {
 // quan hệ của gợi ý nối class vừa thêm với class đã có trong mô hình
 export function adoptAdded(model, suggestion, clsList) {
   const want = new Set(clsList);
-  const defs = suggestion.classes.filter(c => want.has(c.cls) && !model.classes.some(x => x.cls === c.cls));
+  const defs = suggestion.classes.filter(c => want.has(c.cls) && !lookup(model, c.cls));
   if (!defs.length) return model;
   const adopted = new Set(defs.map(d => d.cls));
   const known = new Set([...model.classes.map(c => c.cls), ...adopted]);

@@ -17,6 +17,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -31,17 +34,17 @@ import java.util.function.Supplier;
 public class DomainModelStore {
 
     private final DomainApiSpec spec;
-    private final Supplier<List<DomainModel.RelationDef>> observed;
+    private final Function<Set<String>, List<DomainModel.RelationDef>> observed; // nhận tên các class domain
     private final Path path;
     private final String classpathResource; // null: không đọc classpath
     private final JsonMapper mapper = JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
 
     private ModelSnapshot current;
     private DomainModel suggestion;
+    private Map<String, Class<?>> classes; // quét classpath tốn kém nên tính một lần, lười
 
     /**
-     * Dựng store cho Spring. {@link ScenarioService} chỉ được dùng để quan sát quan hệ; việc điền
-     * context/aggregate vào node làm ở controller nên không có vòng phụ thuộc.
+     * Dựng store cho Spring. {@link ScenarioService} chỉ được dùng để quan sát quan hệ.
      *
      * @param modelPath     đường dẫn file mô hình
      * @param modelResource đường dẫn classpath dự phòng khi chưa có file; rỗng thì bỏ qua classpath
@@ -52,7 +55,7 @@ public class DomainModelStore {
                             @Value("${visualizer.model.path:src/main/resources/domain-model.json}")
                             String modelPath,
                             @Value("${visualizer.model.resource:/domain-model.json}") String modelResource) {
-        this(requireAdapter(adapter).domainApi(), observer(scenarios, adapter.domainApi()),
+        this(requireAdapter(adapter).domainApi(), observer(scenarios),
                 Path.of(requireText(modelPath)), modelResource == null || modelResource.isBlank() ? null : modelResource);
     }
 
@@ -70,11 +73,11 @@ public class DomainModelStore {
         return text;
     }
 
-    private static Supplier<List<DomainModel.RelationDef>> observer(ScenarioService scenarios, DomainApiSpec spec) {
+    private static Function<Set<String>, List<DomainModel.RelationDef>> observer(ScenarioService scenarios) {
         if (scenarios == null) {
             throw new IllegalArgumentException("scenarios không được null");
         }
-        return () -> ObservedRelations.observe(scenarios, DomainModelSuggester.domainClasses(spec).keySet());
+        return known -> ObservedRelations.observe(scenarios, known);
     }
 
     /**
@@ -93,6 +96,11 @@ public class DomainModelStore {
      */
     public DomainModelStore(DomainApiSpec spec, Supplier<List<DomainModel.RelationDef>> observed, Path path,
                             String classpathResource) {
+        this(spec, observed == null ? null : known -> observed.get(), path, classpathResource);
+    }
+
+    private DomainModelStore(DomainApiSpec spec, Function<Set<String>, List<DomainModel.RelationDef>> observed,
+                             Path path, String classpathResource) {
         if (spec == null || observed == null || path == null) {
             throw new IllegalArgumentException("spec, observed và path không được null");
         }
@@ -100,6 +108,14 @@ public class DomainModelStore {
         this.observed = observed;
         this.path = path;
         this.classpathResource = classpathResource;
+    }
+
+    /** Class domain, quét một lần rồi dùng lại cho quan sát, kiểm tra và gợi ý. */
+    private Map<String, Class<?>> classes() {
+        if (classes == null) {
+            classes = DomainModelSuggester.domainClasses(spec);
+        }
+        return classes;
     }
 
     /** Mô hình hiện hành kèm nguồn gốc; được cache cho tới khi {@link #save}. */
@@ -113,7 +129,7 @@ public class DomainModelStore {
     /** Gợi ý từ reflection cộng quan hệ quan sát; tính một lần (chạy mọi kịch bản) rồi cache. */
     public synchronized DomainModel suggestion() {
         if (suggestion == null) {
-            suggestion = DomainModelSuggester.suggest(spec, observed.get());
+            suggestion = DomainModelSuggester.suggest(spec, classes(), observed.apply(classes().keySet()));
         }
         return suggestion;
     }
@@ -129,7 +145,7 @@ public class DomainModelStore {
         if (model == null) {
             throw new IllegalArgumentException("model không được null");
         }
-        List<ModelError> errors = new DomainModelValidator(DomainModelSuggester.domainClasses(spec).keySet())
+        List<ModelError> errors = new DomainModelValidator(classes().keySet())
                 .validate(model);
         if (!errors.isEmpty()) {
             throw new InvalidModelException(errors);

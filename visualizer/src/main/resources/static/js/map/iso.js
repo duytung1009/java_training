@@ -18,3 +18,24 @@ export function el(tag, attrs = {}, parent) {
   if (parent) parent.appendChild(e);
   return e;
 }
+
+export const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Mũi tên cuối đường flow: colors = { flow: màu, err: màu, ... } → <marker id="{idPrefix}{kind}">
+export function arrowMarkers(defs, idPrefix, colors) {
+  for (const [kind, color] of Object.entries(colors)) {
+    const m = el('marker', { id: `${idPrefix}${kind}`, viewBox: '0 0 10 10', refX: 7, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, defs);
+    el('path', { d: 'M1 1L8 5L1 9', fill: 'none', stroke: color, 'stroke-width': 1.6 }, m);
+  }
+}
+
+// Nháy lại từ đầu: gỡ class, ép layout (getBBox) để animation chạy lại, rồi thêm class theo kết quả
+export function restartFlash(node, ok) {
+  node.classList.remove('flash-ok', 'flash-err'); void node.getBBox();
+  node.classList.add(ok ? 'flash-ok' : 'flash-err');
+}
+
+// Mờ dần rồi gỡ nút khỏi DOM sau 300ms; bỏ qua nút null
+export function fadeOut(...nodes) {
+  for (const n of nodes) if (n) { n.style.transition = 'opacity .3s'; n.style.opacity = 0; setTimeout(() => n.remove(), 300); }
+}

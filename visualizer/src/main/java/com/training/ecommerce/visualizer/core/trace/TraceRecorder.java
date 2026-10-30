@@ -52,8 +52,6 @@ public class TraceRecorder {
     private final ThreadLocal<Deque<List<Object>>> buffers = ThreadLocal.withInitial(ArrayDeque::new);
     // Event của lời gọi cấp ngoài cùng vừa xong trên thread này (không tính react)
     private final ThreadLocal<List<Object>> lastEvents = ThreadLocal.withInitial(List::of);
-    // Id event mà lời ghi kế tiếp là phản ứng của nó; callFlows đọc rồi xoá ngay nên lời gọi lồng không kế thừa
-    private final ThreadLocal<String> pendingCause = new ThreadLocal<>();
 
     /**
      * Recorder không có domain event: {@code events} luôn rỗng.
@@ -103,6 +101,12 @@ public class TraceRecorder {
      */
     public <T> T callFlows(String className, String method, List<String> args, List<Flow> flows,
                            List<String> panels, Supplier<T> action) {
+        return callFlows(className, method, args, flows, panels, action, null);
+    }
+
+    /** Lõi của {@code callFlows}; {@code cause} là id event gây ra lời gọi (chỉ {@link #react} truyền), null nếu không có. */
+    private <T> T callFlows(String className, String method, List<String> args, List<Flow> flows,
+                            List<String> panels, Supplier<T> action, String cause) {
         if (className == null || method == null || args == null || panels == null || action == null) {
             throw new IllegalArgumentException("className, method, args, panels và action không được null");
         }
@@ -112,11 +116,10 @@ public class TraceRecorder {
         } catch (NullPointerException e) {
             throw new IllegalArgumentException("flows không được chứa phần tử null", e);
         }
-        String cause = pendingCause.get();
-        pendingCause.remove();
         Deque<List<Object>> stack = buffers.get();
         List<Object> emitted = new ArrayList<>();
         stack.push(emitted);
+        boolean topLevel = stack.size() == 1 && cause == null;
         try {
             WorldSnapshot before = snapshotter.get();
             T result;
@@ -124,11 +127,11 @@ public class TraceRecorder {
                 result = action.get();
             } catch (RuntimeException e) {
                 record(className, method, args, Outcome.THROWN, null, ExceptionInfo.of(e), safeFlows, panels, before,
-                        collect(emitted), cause, stack.size() == 1 && cause == null);
+                        collect(emitted), cause, topLevel);
                 throw e;
             }
             record(className, method, args, Outcome.OK, result == null ? null : String.valueOf(result), null,
-                    safeFlows, panels, before, collect(emitted), cause, stack.size() == 1 && cause == null);
+                    safeFlows, panels, before, collect(emitted), cause, topLevel);
             return result;
         } finally {
             stack.pop();
@@ -182,12 +185,13 @@ public class TraceRecorder {
         if (id == null) {
             throw new IllegalArgumentException("domainEvent chưa được recorder này ghi");
         }
-        pendingCause.set(id);
-        try {
-            runFlows(className, method, args, flows, panels, action);
-        } finally {
-            pendingCause.remove();
+        if (action == null) {
+            throw new IllegalArgumentException("action không được null");
         }
+        callFlows(className, method, args, flows, panels, () -> {
+            action.run();
+            return null;
+        }, id);
     }
 
     /** Event của lời gọi: trước hết các event emit cùng thread, rồi event rút từ nguồn của domain. */

@@ -2,8 +2,9 @@
 // Mỗi bước: cập nhật log/diff → các flow lần lượt → đồng bộ ô theo worldAfter → nháy panel.
 import { renderLog } from './panels/log.js';
 import { renderDiff } from './panels/diff.js';
+import { sleep } from './map/iso.js';
+import { flowsOf } from './view/filters.js';
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 const GAP_MS = 500, FLOW_MS = 900;
 
 // scene: scene isometric hoặc router tầng (cùng giao diện reset/sync/flow/flash); eventFilter(event) → false thì dòng log bị làm mờ
@@ -47,7 +48,7 @@ export function createPlayer({ scene, els, onState, eventFilter }) {
     // Log + diff hiện ngay khi bắt đầu bước; ô trên bản đồ đổi sau khi flow chạy xong
     cursor++; selected = cursor - 1;
     render();
-    for (const f of e.flows ?? (e.flow ? [e.flow] : [])) {
+    for (const f of flowsOf(e)) {
       await scene.flow(f, ok, FLOW_MS / speed, e.worldAfter, e);
       if (g !== gen) return false;
     }

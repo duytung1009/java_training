@@ -39,7 +39,7 @@ visualizer/src/main/java/com/training/ecommerce/visualizer/
               ObservedRelations, DomainModelStore, DomainModelValidator
     trace/    TraceRecorder, TraceEvent, Flow (+ kind, label), ObjectChange, Outcome, ExceptionInfo,
               DomainEventView
-    view/     WorldSnapshot, WorldView, NodeView (+ aggregate, context), ItemView
+    view/     WorldSnapshot, WorldView, NodeView, ItemView
     scenario/ Scenario<W>, ScenarioService, RunResult, ParallelRunner, ScenarioNotFoundException
     web/      VisualizerController, DomainModelController (/api/viz/model…), RestExceptionHandler,
               ScenarioSummary
@@ -114,7 +114,7 @@ Chia ba lượt tuần tự: P3a → P3b → P3c.
      - ghi nguyên tử (file tạm + move);
      - `PUT` mô hình không hợp lệ → 400 kèm danh sách lỗi;
      - không ghi được file → 409 kèm thông báo.
-   - `NodeView` thêm `context`, `aggregate`, điền từ mô hình hiện hành theo `cls`. Node có class chưa xếp thì `context = null`.
+   - Đã bỏ khi dọn code: FE tự tính context/aggregate từ mô hình/bản nháp (`draft.js`), nên server không điền vào node nữa; vì vậy cũng không còn vòng phụ thuộc store ↔ ScenarioService.
 2. **Endpoint**: `GET /api/viz/model/suggestion`, `GET /api/viz/model`, `PUT /api/viz/model`.
 3. **Đường dẫn file**: property `visualizer.model.path`, mặc định `src/main/resources/domain-model.json`. Đường dẫn tính từ thư mục module, vì `spring-boot:run` chạy trong `visualizer/`. Store đọc file theo đường dẫn này trước rồi mới tới classpath, để bản vừa lưu có hiệu lực ngay mà không cần build lại.
 4. **Định dạng file** (có `version` để đổi schema sau này):
@@ -126,10 +126,10 @@ Chia ba lượt tuần tự: P3a → P3b → P3c.
      "relations": [{ "from": "Order", "to": "Shipment", "source": "observed" }] }
    ```
 
-**Đã làm (P3a):** code ở `visualizer/.../core/model/` (`DomainModel`, `DomainModelSuggester`, `ObservedRelations`, `DomainModelValidator`, `DomainModelStore`, `ModelAnnotator`) và `core/web/DomainModelController`.
+**Đã làm (P3a):** code ở `visualizer/.../core/model/` (`DomainModel`, `DomainModelSuggester`, `ObservedRelations`, `DomainModelValidator`, `DomainModelStore`) và `core/web/DomainModelController`.
 - Vai trò: `aggregate | entity | value | service | other` (chuỗi thường trong JSON). Thứ tự xét: `Throwable` thành `other` + `hidden`; enum/record thành `value`, interface hoặc lớp trừu tượng không có field thành `other` (`source: type`); có định danh (`getId()`/`id()` public kể cả kế thừa, hoặc implement interface tên đơn giản `Identifiable`) thì: bị class cùng context sở hữu qua field (kể cả `List<X>`, mảng) là `entity`, ngược lại có state đổi được (field không final, hoặc final kiểu `Collection`/`Map`) là `aggregate`, còn bất biến là `entity`; không định danh: không có field instance nào (chỉ hành vi) là `service` (`source: type`), có state đổi được là `service`, bất biến là `value`. Sở hữu không tính khi class chứa là lớp con của class bị chứa (composite, vd. `BundleProduct` chứa `List<Product>`). Quan hệ: field/tham số ctor-method public tới class domain khác (field thắng param), cộng cặp quan sát từ flow (`observed:<id kịch bản>`), cặp đã có thì giữ nguồn tĩnh.
 - Ecommerce ra **6** context (catalog, customer, inventory, order, pricing, shipping), không phải 5: `domain.customer` có `Address`.
-- Vòng phụ thuộc store ↔ `ScenarioService` được cắt bằng cách điền `context`/`aggregate` ở `VisualizerController` (gọi `ModelAnnotator`), không ở service: `ScenarioService` không biết store, store dùng `ScenarioService` (qua `ObservedRelations`) để quan sát. Gợi ý chạy đủ 12 kịch bản nên tính lười một lần rồi cache.
+- Đã bỏ `ModelAnnotator` khi dọn code (xem trên), nên `VisualizerController` không còn phụ thuộc store. Gợi ý chạy đủ 12 kịch bản nên tính lười một lần rồi cache.
 - File mô hình: property `visualizer.model.path` (mặc định `src/main/resources/domain-model.json`, tính từ thư mục làm việc của tiến trình; `spring-boot:run` chạy trong `visualizer/`). Thứ tự nạp: file, classpath `/domain-model.json`, gợi ý. P3a **chưa** tạo `domain-model.json`; việc đó làm ở P3b qua giao diện.
 - `source` ngoài danh sách trong plan: `type` (luật theo kiểu: Throwable/enum/record/interface). Các `source` khác: `identity`, `field`, `param`, `observed:<id>`, `manual`.
 - Mốc so sánh, gợi ý cho domain ecommerce (heuristic cho phép sai; user sửa ở P3b):

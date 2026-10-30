@@ -1,8 +1,8 @@
 // Bản đồ 2D phẳng cho tầng context / aggregate: khối chữ nhật + cạnh + mũi tên flow.
 // Là <svg> thứ hai trong cùng panel bản đồ; router quyết định khi nào hiện. Không biết domain: nhận khối đã dựng sẵn.
-import { el, css } from '../map/iso.js';
+import { el, css, sleep, arrowMarkers, restartFlash, fadeOut } from '../map/iso.js';
+import { ellipsize } from '../dom.js';
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 const MAX_CHARS = 24; // tiêu đề dài hơn thì cắt (bản đầy đủ nằm ở <title>)
 
 // Điểm trên viền chữ nhật r theo hướng về tâm của o
@@ -14,10 +14,9 @@ function anchor(r, o) {
   return [cx + dx * k, cy + dy * k];
 }
 
-const cut = (t, n) => (t.length > n ? t.slice(0, n - 1) + '…' : t);
-
 export function createLevelView(svg) {
   let rects = {};
+  let flowColor = {}; // màu mũi tên đọc một lần ở build()
   const frames = new Map(); // id khối → <rect>, để nháy
   const layers = {};
 
@@ -25,10 +24,8 @@ export function createLevelView(svg) {
     svg.textContent = '';
     const defs = el('defs', {}, svg);
     // id riêng (lv-): svg isometric có bộ marker cùng tên mà có thể đang ẩn
-    for (const [id, c] of [['flow', css('--flow')], ['err', css('--err')], ['event', css('--event')]]) {
-      const m = el('marker', { id: `lv-arrow-${id}`, viewBox: '0 0 10 10', refX: 7, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, defs);
-      el('path', { d: 'M1 1L8 5L1 9', fill: 'none', stroke: c, 'stroke-width': 1.6 }, m);
-    }
+    flowColor = { flow: css('--flow'), err: css('--err'), event: css('--event') };
+    arrowMarkers(defs, 'lv-arrow-', flowColor);
     for (const n of ['edges', 'blocks', 'flows']) layers[n] = el('g', {}, svg);
   }
 
@@ -56,7 +53,7 @@ export function createLevelView(svg) {
       const g = el('g', { class: 'lv-block' + (b.port ? ' port' : '') + (b.dim ? ' dim' : '') + (b.touched ? ' touched' : '') }, layers.blocks);
       const frame = el('rect', { x: p.x, y: p.y, width: p.w, height: p.h, style: `stroke:${b.color};fill:${b.color}` }, g);
       frames.set(b.id, frame);
-      el('text', { x: p.x + 12, y: p.y + 28, class: 'lv-title' }, g).textContent = cut(b.title, MAX_CHARS);
+      el('text', { x: p.x + 12, y: p.y + 28, class: 'lv-title' }, g).textContent = ellipsize(b.title, MAX_CHARS);
       el('text', { x: p.x + 12, y: p.y + 50, class: 'lv-sub' }, g).textContent = b.sub ?? '';
       el('title', {}, g).textContent = b.title;
       g.addEventListener('click', e => { e.stopPropagation(); onOpen?.(b); });
@@ -67,8 +64,7 @@ export function createLevelView(svg) {
     for (const id of ids ?? []) {
       const f = frames.get(id);
       if (!f) continue;
-      f.classList.remove('flash-ok', 'flash-err'); void f.getBBox();
-      f.classList.add(ok ? 'flash-ok' : 'flash-err');
+      restartFlash(f, ok);
     }
   }
 
@@ -80,7 +76,7 @@ export function createLevelView(svg) {
     const k = isEvent ? 'event' : ok ? 'flow' : 'err';
     const [x1, y1] = anchor(a, b), [x2, y2] = anchor(b, a);
     const p = el('path', {
-      d: `M${x1} ${y1}L${x2} ${y2}`, class: isEvent ? 'flow event' : 'flow', stroke: css(`--${k}`), 'marker-end': `url(#lv-arrow-${k})`,
+      d: `M${x1} ${y1}L${x2} ${y2}`, class: isEvent ? 'flow event' : 'flow', stroke: flowColor[k], 'marker-end': `url(#lv-arrow-${k})`,
     }, layers.flows);
     let t = null;
     if (isEvent && label) {
@@ -88,7 +84,7 @@ export function createLevelView(svg) {
       t.textContent = label;
     }
     await sleep(ms);
-    for (const n of [p, t]) if (n) { n.style.transition = 'opacity .3s'; n.style.opacity = 0; setTimeout(() => n.remove(), 300); }
+    fadeOut(p, t);
   }
 
   function clearFlows() { layers.flows.textContent = ''; }

@@ -112,13 +112,16 @@ const key = (p, q) => [p, q].sort().join('|');
 const ENDPOINTS = new Set(WIRES.flatMap(w => [w.a, w.b]));
 const warned = new Set();
 
+// Đoán đầu mút theo tiền tố id (prefixes: [[tiềnTố, idĐầuMút]]); không khớp thì undefined
+export const guessByPrefix = (id, prefixes = PREFIXES) => prefixes.find(([pre]) => String(id).startsWith(pre))?.[1];
+
 // Id → id đầu tiên trên chuỗi cha là đầu mút của một đường (không có thì lên tới root).
 // parentOf(id) trả id cha hoặc undefined; con lạ thì đoán theo tiền tố
 export function rootOf(id, parentOf = () => undefined) {
   for (let i = 0; i < 5 && id && !ENDPOINTS.has(id); i++) {
     const p = parentOf(id);
     if (p) { id = p; continue; }
-    return PREFIXES.find(([pre]) => id.startsWith(pre))?.[1] ?? id;
+    return guessByPrefix(id) ?? id;
   }
   return id;
 }

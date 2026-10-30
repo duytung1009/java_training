@@ -1,7 +1,8 @@
 // Xem theo tầng: context map → aggregate → instance. Hàm thuần (không đụng DOM) để test bằng node --test.
 // Trạng thái tầng: { level, ctx, agg }; khối (block) là đơn vị vẽ ở mỗi tầng, id khối có tiền tố:
 //   ctx:<context> · agg:<aggregate hoặc class> · port:<context khác> · (tầng instance) chính node id.
-import { classOfNode, contextOfNode, aggregateOf, lookup } from '../model/draft.js';
+import { classOfNode, contextOfNode, aggregateOf, lookup, contextById } from '../model/draft.js';
+import { guessByPrefix } from '../map/layout.js';
 
 export const LEVELS = ['context', 'aggregate', 'instance'];
 export const DEFAULT_STATE = Object.freeze({ level: 'instance', ctx: null, agg: null });
@@ -26,7 +27,7 @@ export function toHash(state) {
 export function normalizeState(state, model) {
   const first = model?.contexts?.[0]?.id ?? null;
   if (!model || !first) return { ...DEFAULT_STATE };
-  const known = id => model.contexts.some(c => c.id === id);
+  const known = id => !!contextById(model, id);
   const ctx = known(state.ctx) ? state.ctx : null;
   if (state.level === 'context') return { level: 'context', ctx: null, agg: null };
   if (state.level === 'aggregate') return { level: 'aggregate', ctx: ctx ?? first, agg: null };
@@ -41,7 +42,7 @@ export function nodeLookup(worldBefore, worldNow, worldAfter, prefixes = []) {
     if (id == null) return undefined;
     const n = byId.get(id);
     if (n) return n;
-    const root = prefixes.find(([pre]) => String(id).startsWith(pre))?.[1];
+    const root = guessByPrefix(id, prefixes);
     return root != null ? byId.get(root) : undefined;
   };
 }
@@ -58,7 +59,7 @@ export function blockOf(state, model, node) {
   if (node.kind === 'area') return null;
   const cls = classOfNode(node);
   if (cls == null) return null;
-  return `agg:${aggregateOf(model, cls) ?? cls}`;
+  return `agg:${aggregateKey(model, cls)}`;
 }
 
 // Khoá aggregate của một class: aggregate chứa nó, không có thì chính class (service, value lẻ…)
@@ -73,7 +74,12 @@ export function contextColor(model, ctxId) {
 }
 
 const isObject = n => n.kind === 'object';
-export const pairKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+// Cặp không phân biệt hướng: [nhỏ, lớn]
+export const orderedPair = (a, b) => (a < b ? [a, b] : [b, a]);
+export const pairKey = (a, b) => orderedPair(a, b).join('|');
+
+// Context của hai đầu quan hệ r (undefined nếu class không có trong mô hình)
+const relContexts = (model, r) => [lookup(model, r.from)?.context, lookup(model, r.to)?.context];
 
 // Khối context (theo thứ tự model.contexts, bỏ context không có class) + cạnh = quan hệ gộp theo cặp context
 export function buildContextBlocks(model, world) {
@@ -90,11 +96,11 @@ export function buildContextBlocks(model, world) {
   const shown = new Set(blocks.map(b => b.ctx));
   const pairs = new Map();
   for (const r of model?.relations ?? []) {
-    const a = lookup(model, r.from)?.context, b = lookup(model, r.to)?.context;
+    const [a, b] = relContexts(model, r);
     if (!a || !b || a === b || !shown.has(a) || !shown.has(b)) continue;
     const k = pairKey(a, b), e = pairs.get(k);
     if (e) e.relations++;
-    else pairs.set(k, { a: `ctx:${[a, b].sort()[0]}`, b: `ctx:${[a, b].sort()[1]}`, relations: 1 });
+    else { const [lo, hi] = orderedPair(a, b); pairs.set(k, { a: `ctx:${lo}`, b: `ctx:${hi}`, relations: 1 }); }
   }
   return { blocks, edges: [...pairs.values()] };
 }
@@ -119,7 +125,7 @@ export function buildAggregateBlocks(model, world, ctx) {
   }
   const other = new Set();
   for (const r of model?.relations ?? []) {
-    const a = lookup(model, r.from)?.context, b = lookup(model, r.to)?.context;
+    const [a, b] = relContexts(model, r);
     if (a === ctx && b && b !== ctx) other.add(b);
     if (b === ctx && a && a !== ctx) other.add(a);
   }
@@ -146,7 +152,7 @@ export function countFlows(state, model, lookupNode, flows) {
     if (r?.kind !== 'arrow') continue;
     const k = pairKey(r.from, r.to);
     let e = out.get(k);
-    if (!e) { e = { a: r.from < r.to ? r.from : r.to, b: r.from < r.to ? r.to : r.from, calls: 0, events: 0 }; out.set(k, e); }
+    if (!e) { const [a, b] = orderedPair(r.from, r.to); e = { a, b, calls: 0, events: 0 }; out.set(k, e); }
     if (f.kind === 'EVENT') e.events++; else e.calls++;
   }
   return out;

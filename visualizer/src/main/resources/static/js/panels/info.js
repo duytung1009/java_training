@@ -1,7 +1,7 @@
 // Bảng chú thích khi click một khối trên bản đồ: class domain, vai trò, API chính, trạng thái hiện tại
 import { ROOTS, PLACED } from '../map/layout.js';
 import { adapter } from '../../adapter/index.js';
-import { classOfNode, contextOfNode, lookup, aggregateOf } from '../model/draft.js';
+import { classOfNode, contextOfNode, lookup, aggregateOf, contextById } from '../model/draft.js';
 
 const KIND = { object: 'object', collection: 'collection', area: 'area (package)' };
 
@@ -12,7 +12,7 @@ function modelLine(model, node) {
   if (!model) return '';
   const ctxId = contextOfNode(model, node);
   const def = lookup(model, classOfNode(node));
-  const ctx = model.contexts.find(c => c.id === ctxId);
+  const ctx = contextById(model, ctxId);
   const parts = [ctx ? ctx.title : 'chưa xếp'];
   if (def) {
     parts.push(def.role + (def.hidden ? ' (ẩn)' : ''));

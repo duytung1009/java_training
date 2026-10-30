@@ -80,12 +80,6 @@ class DomainModelControllerTest {
                 .andExpect(jsonPath("$.model.contexts[0].color").value("--hub"))
                 .andExpect(jsonPath("$.model.classes", hasSize(1)))
                 .andExpect(jsonPath("$.model.classes[0].cls").value("Warehouse"));
-
-        // Mô hình mới có hiệu lực ngay trên world: Warehouse thuộc inventory, các class khác chưa xếp
-        mockMvc.perform(get("/api/viz/world"))
-                .andExpect(jsonPath("$.nodes[1].context").value("inventory"))
-                .andExpect(jsonPath("$.nodes[1].aggregate").value("Warehouse"))
-                .andExpect(jsonPath("$.nodes[3].context").value((Object) null));
     }
 
     @Test
@@ -102,11 +96,9 @@ class DomainModelControllerTest {
     }
 
     @Test
-    void runTraVeNodeCoContext() throws Exception {
+    void runTraVeWorldBefore() throws Exception {
         mockMvc.perform(post("/api/viz/scenarios/decrease-stock-ok/run"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.worldBefore.nodes[1].id").value("warehouse:WH-HN"))
-                .andExpect(jsonPath("$.worldBefore.nodes[1].context").value("inventory"))
-                .andExpect(jsonPath("$.events[0].worldAfter.nodes[1].context").value("inventory"));
+                .andExpect(jsonPath("$.worldBefore.nodes[1].id").value("warehouse:WH-HN"));
     }
 }

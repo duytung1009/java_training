@@ -1,4 +1,5 @@
 import * as api from './api.js';
+import { h } from './dom.js';
 import { createScene } from './map/scene.js';
 import { createPlayer } from './player.js';
 import { initControls } from './controls.js';
@@ -19,9 +20,9 @@ initAbout($('about'), $('about-dlg'));
 
 // Legend của domain (adapter.legend: [{ color, label }]) đứng trước các mục chung trong index.html
 for (const { color, label } of [...adapter.legend].reverse()) {
-  const i = document.createElement('i');
+  const i = h('i');
   i.style.borderColor = `var(${color})`;
-  const span = document.createElement('span');
+  const span = h('span');
   span.append(i, label);
   document.querySelector('.legend').prepend(span);
 }
@@ -57,8 +58,7 @@ router.setFilters(filterBar.get());
 function applyModel(model) {
   currentModel = model;
   filterBar.setModel(model);
-  router.setFilters(filterBar.get());
-  router.setModel(model);
+  router.update({ model, filters: filterBar.get() });
   player.refresh();
   if (selection) renderInfo($('info'), selection.id, selection.node, currentModel);
 }
@@ -68,7 +68,6 @@ async function loadScenario(id) {
   try {
     const run = await api.run(id);
     filterBar.setThreads(threadsOf(run.events));
-    router.setFilters(filterBar.get());
     player.load(run);
   } catch (err) {
     $('status').textContent = `Lỗi tải kịch bản: ${err.message}`;

@@ -12,7 +12,23 @@ function editClass(m, cls, patch) {
 
 const hasContext = (m, id) => m.contexts.some(c => c.id === id);
 
-export const lookup = (m, cls) => (m?.classes ?? []).find(c => c.cls === cls) ?? null;
+// Chỉ mục theo mô hình (memo bằng WeakMap): thao tác draft luôn trả object mới nên không bao giờ lỗi thời
+const indexes = new WeakMap();
+function indexOf(m) {
+  let ix = indexes.get(m);
+  if (!ix) {
+    const byCls = new Map();
+    for (const c of m.classes ?? []) if (!byCls.has(c.cls)) byCls.set(c.cls, c); // trùng cls: lấy cái đầu, như find
+    const byCtx = new Map();
+    for (const c of m.contexts ?? []) if (!byCtx.has(c.id)) byCtx.set(c.id, c);
+    indexes.set(m, ix = { byCls, byCtx, agg: new Map() });
+  }
+  return ix;
+}
+
+export const lookup = (m, cls) => (m && typeof m === 'object' ? indexOf(m).byCls.get(cls) ?? null : null);
+
+export const contextById = (m, id) => (m && typeof m === 'object' ? indexOf(m).byCtx.get(id) ?? null : null);
 
 // Tên class của node: object → cls; collection List<X> → X; area và node không có cls → null
 export function classOfNode(node) {
@@ -39,6 +55,12 @@ export function contextOfNode(m, node) {
 export function aggregateOf(m, cls) {
   const def = lookup(m, cls);
   if (!def) return null;
+  const memo = indexOf(m).agg;
+  if (!memo.has(cls)) memo.set(cls, computeAggregateOf(m, def, cls));
+  return memo.get(cls);
+}
+
+function computeAggregateOf(m, def, cls) {
   if (def.role === 'aggregate') return def.cls;
   if (def.role !== 'entity' && def.role !== 'value') return null;
   const owners = [...new Set(m.relations.filter(r => r.source === 'field' && r.to === cls).map(r => r.from))]

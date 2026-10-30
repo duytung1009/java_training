@@ -76,7 +76,21 @@ public final class DomainModelSuggester {
         if (spec == null || observed == null) {
             throw new IllegalArgumentException("spec và observed không được null");
         }
-        Map<String, Class<?>> classes = domainClasses(spec);
+        return suggest(spec, domainClasses(spec), observed);
+    }
+
+    /**
+     * Như {@link #suggest(DomainApiSpec, List)} nhưng dùng tập class đã quét sẵn (kết quả của
+     * {@link #domainClasses}), để người gọi không phải quét lại classpath.
+     *
+     * @param classes class domain khoá theo tên đơn giản
+     * @throws IllegalArgumentException nếu spec, classes hoặc observed null
+     */
+    public static DomainModel suggest(DomainApiSpec spec, Map<String, Class<?>> classes,
+                                      List<RelationDef> observed) {
+        if (spec == null || classes == null || observed == null) {
+            throw new IllegalArgumentException("spec, classes và observed không được null");
+        }
         Map<Class<?>, String> names = new LinkedHashMap<>();
         classes.forEach((name, type) -> names.put(type, name));
         String prefix = spec.basePackage() + ".";
@@ -123,7 +137,8 @@ public final class DomainModelSuggester {
         return new DomainModel(DomainModel.CURRENT_VERSION, contexts, defs, sortedRelations);
     }
 
-    private static String key(String from, String to) {
+    /** Khoá của một cặp quan hệ from→to. */
+    static String key(String from, String to) {
         return from + "\u0000" + to;
     }
 

@@ -1,5 +1,5 @@
 // Call log: một dòng mỗi event đã chạy
-import { h } from '../dom.js';
+import { h, ellipsize } from '../dom.js';
 
 // pool-1-thread-2 → p1-t2, http-nio-8081-exec-3 → http-3; tên lạ thì cắt, tên đầy đủ nằm ở title
 export function shortThread(name) {
@@ -7,17 +7,11 @@ export function shortThread(name) {
   if (m) return `p${m[1]}-t${m[2]}`;
   const http = /^http-nio-\d+-exec-(\d+)$/.exec(name);
   if (http) return `http-${http[1]}`;
-  return name.length > 7 ? name.slice(0, 6) + '…' : name;
+  return ellipsize(name, 7);
 }
 
 // Màu thread theo thứ tự xuất hiện đầu tiên (không dùng đỏ: dành cho exception)
 const THREAD_COLORS = ['#6f9cf0', '#e0894f', '#74c48a', '#a78bfa', '#4fb8b0', '#e8c46a', '#e88fb4', '#9ab4ff'];
-
-// Payload dài thì cắt, bản đầy đủ nằm ở title
-export function shortPayload(p, max = 60) {
-  const s = String(p ?? '');
-  return s.length > max ? s.slice(0, max - 1) + '…' : s;
-}
 
 // matches(event) → false thì dòng bị làm mờ (không ẩn, để chỉ số bước giữ nguyên); không truyền thì giữ nguyên như cũ
 export function renderLog(ol, events, selected, onSelect, matches) {
@@ -47,7 +41,7 @@ export function renderLog(ol, events, selected, onSelect, matches) {
       // Dùng chung lưới cột với dòng lời gọi: hai ô trống (giờ, thread) rồi nội dung thẳng cột method
       const row = h('li', dim ? 'ev dim' : 'ev');
       const m = h('span', 'm');
-      const p = h('span', 'evp', shortPayload(ev.payload));
+      const p = h('span', 'evp', ellipsize(String(ev.payload ?? ''), 60) /* bản đầy đủ ở title */);
       p.title = ev.payload ?? '';
       m.append(`⚡ ${ev.type} `, p);
       if (ev.context) m.append(` · ${ev.context}`);

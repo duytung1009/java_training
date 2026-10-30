@@ -1,6 +1,7 @@
 // Trình sửa mô hình domain (drawer bên phải): dựng context / vai trò / quan hệ từ gợi ý của BE, lưu thành domain-model.json.
 // Bản nháp để trong localStorage (bọc try/catch, không có storage thì app vẫn chạy); mọi thay đổi gọi onChange(model).
-import { h } from '../dom.js';
+import { h, selectEl as select } from '../dom.js';
+import { readJson, writeJson, removeKey } from '../storage.js';
 import * as api from '../api.js';
 import * as D from '../model/draft.js';
 import { diffModel, adoptAdded } from '../model/drift.js';
@@ -9,28 +10,12 @@ const DRAFT_KEY = 'viz.model.draft';
 const UNSET = '';
 
 const store = {
-  read() {
-    try { const v = JSON.parse(localStorage.getItem(DRAFT_KEY)); return v?.model ? v : null; }
-    catch { return null; }
-  },
-  write(baseOrigin, model) { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ baseOrigin, model })); } catch { /* không có storage: bỏ qua */ } },
-  clear() { try { localStorage.removeItem(DRAFT_KEY); } catch { /* bỏ qua */ } },
+  read() { const v = readJson(DRAFT_KEY); return v?.model ? v : null; },
+  write(baseOrigin, model) { writeJson(DRAFT_KEY, { baseOrigin, model }); },
+  clear() { removeKey(DRAFT_KEY); },
 };
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-
-function select(options, value, onPick, label) {
-  const s = h('select');
-  if (label) s.setAttribute('aria-label', label);
-  for (const [v, text] of options) {
-    const o = h('option', '', text);
-    o.value = v;
-    s.appendChild(o);
-  }
-  s.value = value;
-  s.addEventListener('change', () => onPick(s.value));
-  return s;
-}
 
 // el: <aside> của drawer; button: nút mở ở header; onChange(model): gọi mỗi khi mô hình hiện hành đổi
 export function createModelEditor({ el, button, onChange = () => {} }) {
@@ -42,7 +27,6 @@ export function createModelEditor({ el, button, onChange = () => {} }) {
   let top = '';            // thông báo đầu drawer (409, lỗi thêm context…)
   let renaming = null;     // id context đang đổi tên
   let newCtx = { id: '', title: '' };
-  let open = false;
 
   const body = h('div', 'me-body');
   const head = h('div', 'me-top');
@@ -72,11 +56,11 @@ export function createModelEditor({ el, button, onChange = () => {} }) {
   }
 
   async function openDrawer() {
-    open = true; el.hidden = false; render();
+    el.hidden = false; render();
     suggestion = await api.getSuggestion();
     render();
   }
-  const closeDrawer = () => { open = false; el.hidden = true; };
+  const closeDrawer = () => { el.hidden = true; };
 
   async function save() {
     const res = await api.saveModel(model);
@@ -272,7 +256,7 @@ export function createModelEditor({ el, button, onChange = () => {} }) {
   }
 
   function render() {
-    if (!open) return;
+    if (el.hidden) return;
     const scroll = body.scrollTop;
     renderTop();
     body.textContent = '';
@@ -289,6 +273,6 @@ export function createModelEditor({ el, button, onChange = () => {} }) {
   }
 
   el.hidden = true;
-  button.addEventListener('click', () => (open ? closeDrawer() : openDrawer()));
-  return { load, current: () => model };
+  button.addEventListener('click', () => (el.hidden ? openDrawer() : closeDrawer()));
+  return { load };
 }
