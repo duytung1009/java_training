@@ -125,8 +125,8 @@ export function createFilterBar({ el, button, onChange }) {
   clear.addEventListener('click', () => change({ ...DEFAULT }));
   closeBtn.addEventListener('click', () => { setOpen(false); button.focus(); });
   button.addEventListener('click', () => setOpen(!open));
-  // Esc đóng bảng (router thấy isOpen() thì không lùi tầng); click ra ngoài bảng và nút cũng đóng
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && open && !e.defaultPrevented) { setOpen(false); button.focus(); } });
+  // Esc đóng bảng (preventDefault + router thấy isOpen() nên không lùi tầng); click ra ngoài bảng và nút cũng đóng
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && open && !e.defaultPrevented) { e.preventDefault(); setOpen(false); button.focus(); } });
   document.addEventListener('pointerdown', e => { if (open && e.target instanceof Node && !el.contains(e.target) && !button.contains(e.target)) setOpen(false); });
   placeUnderHeader();
   el.hidden = !open;

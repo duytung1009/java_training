@@ -1,3 +1,4 @@
+// (Chưa dùng: chờ P4d, tầng Instance sẽ dùng lại file này và graph-layout.js.)
 // Bản đồ 2D phẳng cho tầng context / aggregate: khối chữ nhật + cạnh + mũi tên flow.
 // Là <svg> thứ hai trong cùng panel bản đồ; router quyết định khi nào hiện. Không biết domain: nhận khối đã dựng sẵn.
 import { el, css, sleep, arrowMarkers, restartFlash, fadeOut } from '../map/iso.js';

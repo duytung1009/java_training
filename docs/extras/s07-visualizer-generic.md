@@ -257,6 +257,19 @@ Sửa khi review trên trình duyệt: breadcrumb không co (thiếu 1px subpixe
 
 **Đã làm (P4a):** `js/map/projection.js` (mới: `multiply`, `invert`, `apply`, `bounds`, `lerp`, `GRID`, `planeMatrix`) + `projection.test.mjs`; `iso.js` xuất `TW/TH/OX/OY/CELL`; `scene.js` gói `ground/wires/zones` vào `plane`, viewBox suy ra từ (ma trận, điểm bao) mỗi khung hình, `setProjection` nội suy ma trận 400ms giữ tâm vùng nhìn; flow và nhãn event vẽ ở lớp `overlay` ngoài `plane` (điểm ánh xạ qua ma trận) nên mũi tên không méo; `panels/projection-toggle.js` (nút `2.5D | Phẳng`, lưu `viz.proj`); CSS `vector-effect: non-scaling-stroke` cho nét trong `plane` (hệ quả: nét không còn dày lên khi zoom). Tiêu đề đổi thành `BẢN ĐỒ TỔNG QUAN`.
 
+**Đã làm (P4b):**
+- `view/levels.js` đổi tên thành `view/nav.js`, chỉ còn `parseNav`, `toHash`, `normalizeNav`, `nodeLookup`, `aggregateKey`, `touchedFirst`. Code của context map, aggregate và instance có focus bị xoá cùng test (`levels.test.mjs` → `nav.test.mjs`). `level-view.js` và `graph-layout.js` được giữ lại để P4d dùng.
+- `projection.js` thêm `fitRect`, `visibleRect`, `lerpRect` (có test).
+- `scene.js` thêm `areas`, `areaOf`, `focusArea` (camera tween ~450ms từ vùng đang thấy tới khung area), `onOpen` (double click hoặc Enter, khối có `tabindex`) và class `out` làm mờ phần ngoài area.
+  - Đích của camera luôn tính lại từ ma trận và bố cục hiện tại, nên `sync`, đổi phép chiếu hay đổi kích thước khung giữa chừng không làm khung nhìn nhảy.
+- `router.js` viết lại: hash `#area=`, `hashchange` (nút back), tiêu đề, breadcrumb, Esc, `open`, `openLabel`.
+- Bảng chú thích có nút `Xem bên trong ›`.
+- Gỡ bộ chuyển tầng, `#level-map` và phần ký hiệu 2D trong chú thích.
+- Esc:
+  - Bảng chú thích chỉ đóng bằng Esc khi focus nằm trong bảng, vì đây là bảng mở lâu; ngoài ra Esc dùng để lùi tầng.
+  - Bảng lọc gọi `preventDefault` khi đóng, nên cùng một lần Esc không lùi tầng nữa.
+- Bản đồ không cho bôi đen chữ, để double click không chọn chữ.
+
 **Không làm.** Bố cục tự động cho tầng tổng quan khi adapter không có layout vẽ tay; context map theo mô hình (có thể đưa vào trình sửa mô hình sau).
 
 ## 5. Kiểm chứng

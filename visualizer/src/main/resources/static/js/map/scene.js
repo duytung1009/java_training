@@ -1,8 +1,8 @@
 // Vẽ bản đồ SVG: panel, ô con, đường nối và animation
 import { el, iso, diamond, wirePath, css, flat, sleep, arrowMarkers, restartFlash, fadeOut, CELL } from './iso.js';
-import { planeMatrix, apply, bounds, lerp, toAttr } from './projection.js';
+import { planeMatrix, apply, bounds, lerp, toAttr, fitRect, visibleRect, lerpRect } from './projection.js';
 import { adapter } from '../../adapter/index.js';
-import { touchedFirst } from '../view/levels.js';
+import { touchedFirst } from '../view/nav.js';
 import { ROOTS, PLACED, WIRES as WIRES_BASE, HEADER, CHILD_MARGIN, CHILD_GAP, computeLayout, resolveFlow, checkLayout } from './layout.js';
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -18,6 +18,8 @@ const EPS = 1e-6;
 const specOf = id => ROOTS[id] ?? PLACED[id]; // area hoặc thành viên cố định
 const PROJ_MS = 400; // thời gian chuyển phép chiếu
 const ZOOM_MIN = 0.4, ZOOM_MAX = 3;
+const CAM_MS = 450, FOCUS_MARGIN = 16, FOCUS_MAX_SCALE = 2.5; // camera: thời gian tween, lề quanh area (đơn vị viewBox), scale tối đa khi zoom vào area
+const easeOut = t => 1 - (1 - t) ** 3;
 
 // Vừa chữ vào maxPx: thu font xuống tối thiểu minPx, vẫn dài thì cắt và thêm "…". Trả về true nếu giữ nguyên chữ gốc.
 function fit(node, text, maxPx, basePx, minPx = 6.5) {
@@ -46,8 +48,8 @@ const FRAME = { // kiểu viền theo loại khối
 const prefix = it => dispVal(it).slice(0, dispVal(it).length - String(it.value).length); // phần '= ' đứng trước số
 const dispVal = it => it.computed && !String(it.label ?? '').startsWith('=') ? `= ${it.value}` : String(it.value);
 
-// onSelect(id, node): click một khối (id null = bỏ chọn)
-export function createScene(svg, { onSelect = () => {} } = {}) {
+// onSelect(id, node): click một khối (id null = bỏ chọn); onOpen(id): double click hoặc Enter trên khối (đi sâu vào)
+export function createScene(svg, { onSelect = () => {}, onOpen = () => {} } = {}) {
   const layers = {}, frames = {};
   const blocks = new Map(); // id (root hoặc con) → { id, root, kind, color, small, g, frame, head, titleEl, subEl, rect, more }
   let world = null, selected = null, nodes = new Map();
@@ -58,6 +60,10 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   let isoPts = []; // điểm bao nội dung (toạ độ iso); viewBox suy ra từ (plane, isoPts) mỗi khung hình
   const activeFlows = new Set(); // flow đang hiện: vẽ ở overlay nên phải ánh xạ lại khi ma trận đổi
   let zoom = 1, natW = 0, natH = 0; // kích thước tự nhiên theo viewBox; width/height = nat × zoom
+  // Camera: focus = area đang zoom vào (null = tổng quan); tw = { from, t } khi đang tween (from = vùng nhìn lúc bắt đầu, t = tiến độ 0..1);
+  // viewBox đích luôn suy ra lại từ (plane, layout, focus) ở applyView nên sync / đổi phép chiếu giữa chừng không làm camera nhảy
+  let focus = null, tw = null, camToken = 0, centre = null; // centre: area vừa rời, tâm cuộn khi quay về tổng quan
+  let fitted = false, curVB = null, lastRect = null; // fitted: svg đang đặt kích thước px theo hộp (area / tween); curVB: viewBox hiện tại
   const warnedLayout = new Set();
   const tiles = new Map(); // `${blockId}/${key}` → { g, polygon, text, name, val, title, value, pre, anim }
 
@@ -85,6 +91,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     if (selected) frames[selected]?.classList.add('sel');
     layout = null;
     applyLayout(computeLayout([]), false);
+    applyFade();
   }
 
   // Khối cục bộ: x/y gốc, d hiệu dụng (group cha/chính nó được tịnh tiến bằng transform khi bị đẩy xuống)
@@ -129,14 +136,47 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     }
   }
 
-  // Áp ma trận phép chiếu lên lớp nền + viewBox ôm nội dung sau phép chiếu, rồi zoom
+  const boxSize = () => { const b = svg.parentElement; return { w: b.clientWidth, h: b.clientHeight }; };
+  const setViewBox = r => { curVB = r; svg.setAttribute('viewBox', `${r.x} ${r.y} ${r.w} ${r.h}`); };
+  // Hộp bao (sau phép chiếu) của area theo bố cục hiệu dụng; lề ở fitRect
+  function areaBounds(id) {
+    const a = layout.areas[id];
+    return bounds(plane, [[a.x, a.y], [a.x + a.w, a.y], [a.x + a.w, a.y + a.d], [a.x, a.y + a.d]].map(q => iso(...q)));
+  }
+  const M = 24, overviewVB = () => { const b = bounds(plane, isoPts); return { x: b.x - M, y: b.y - M, w: b.w + 2 * M, h: b.h + 2 * M }; };
+
+  // Vùng nhìn đích khi tween kết thúc (đúng trạng thái cuối applyView sẽ áp): area = viewBox fit; tổng quan = zoom 1, cuộn giữa area vừa rời
+  function targetView(bs) {
+    if (focus) return fitRect(areaBounds(focus), bs, { margin: FOCUS_MARGIN, maxScale: FOCUS_MAX_SCALE }).viewBox;
+    const vb = overviewVB(), W = Math.max(bs.w, vb.w), H = W * vb.h / vb.w;
+    return visibleRect(vb, { w: W, h: H }, overviewScroll(vb, W, H, bs), bs);
+  }
+  // Cuộn để tâm area `centre` nằm giữa hộp (tổng quan, svg W×H)
+  function overviewScroll(vb, W, H, bs) {
+    if (!centre || !layout) return { left: 0, top: 0 };
+    const a = areaBounds(centre);
+    return { left: (a.x + a.w / 2 - vb.x) * W / vb.w - bs.w / 2, top: (a.y + a.h / 2 - vb.y) * H / vb.h - bs.h / 2 };
+  }
+
+  // Áp ma trận phép chiếu lên lớp nền + viewBox: tổng quan ôm nội dung (zoom nhân kích thước), area fit vào hộp, tween nội suy vùng nhìn
   function applyView() {
     layers.plane.setAttribute('transform', toAttr(plane));
     if (isoPts.length) {
-      const M = 24, b = bounds(plane, isoPts);
-      svg.setAttribute('viewBox', `${b.x - M} ${b.y - M} ${b.w + 2 * M} ${b.h + 2 * M}`);
-      natW = b.w + 2 * M; natH = b.h + 2 * M;
-      applyZoom();
+      const bs = boxSize(), cam = (focus || tw) && bs.w > 0 && bs.h > 0 && layout;
+      fitted = !!cam;
+      if (cam && tw) { // tween: svg bằng hộp, chỉ viewBox đổi nên như camera chạy
+        lastRect = lerpRect(tw.from, targetView(bs), easeOut(tw.t));
+        setViewBox(lastRect); natW = bs.w; natH = bs.h;
+        applyZoom(1);
+      } else if (cam) {
+        const f = fitRect(areaBounds(focus), bs, { margin: FOCUS_MARGIN, maxScale: FOCUS_MAX_SCALE });
+        setViewBox(f.viewBox); natW = f.width; natH = f.height;
+        applyZoom();
+      } else {
+        const b = overviewVB();
+        setViewBox(b); natW = b.w; natH = b.h;
+        applyZoom();
+      }
     }
     placeFlows();
   }
@@ -163,9 +203,11 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   }
 
   // Giữ viewBox, chỉ nhân width/height: thanh cuộn của .map-view giãn theo nên pan vẫn chạy bằng scroll
-  function applyZoom() {
-    const w = Math.round(natW * zoom), h = Math.round(natH * zoom);
+  function applyZoom(k = zoom) {
+    const w = Math.round(natW * k), h = Math.round(natH * k);
     svg.setAttribute('width', w); svg.setAttribute('height', h);
+    // Area / tween: kích thước px đặt thẳng (đè width:100% của CSS); tổng quan để CSS tự co theo bề ngang khung
+    svg.style.width = fitted ? w + 'px' : ''; svg.style.height = fitted ? h + 'px' : '';
     svg.style.setProperty('--nat-w', w + 'px'); // min-width trong CSS: hẹp thì cuộn ngang
   }
 
@@ -173,7 +215,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   function zoomAt(next, clientX, clientY) {
     const box = svg.parentElement, r = box.getBoundingClientRect();
     next = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next));
-    if (next === zoom) return;
+    if (next === zoom || tw) return; // đang tween camera: không zoom
     const px = clientX - r.left, py = clientY - r.top, k = next / zoom;
     const sl = (box.scrollLeft + px) * k - px, st = (box.scrollTop + py) * k - py;
     zoom = next; applyZoom();
@@ -204,6 +246,10 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     const color = css(specOf(root).color), st = FRAME[kind] ?? FRAME.object;
     const g = el('g', { class: cls }, parent);
     if (selectable) g.addEventListener('click', e => { e.stopPropagation(); select(selected === id ? null : id); });
+    // Double click / Enter: đi sâu. stopPropagation để dblclick nền (reset zoom) không chạy khi trúng khối, và khối lồng nhau chỉ mở khối trong cùng
+    g.setAttribute('tabindex', 0);
+    g.addEventListener('dblclick', e => { e.stopPropagation(); onOpen(id); });
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.repeat) { e.stopPropagation(); e.preventDefault(); onOpen(id); } });
     const frame = el('polygon', { fill: color, 'fill-opacity': st.fill, stroke: color, 'stroke-width': small ? 1.2 : 1.5, class: 'zone-frame' }, g);
     if (st.dash) frame.setAttribute('stroke-dasharray', st.dash);
     if (st.cap) frame.setAttribute('stroke-linecap', st.cap);
@@ -399,6 +445,7 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
     if (selected && !frames[selected]) select(null);
     else if (selected) onSelect(selected, describe(selected));
     applyDim();
+    applyFade();
   }
 
   // Khối được tạo lại theo node nên phải áp lại sau mỗi sync/reset; khối không có node (vd. "+N") không mờ
@@ -456,6 +503,69 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   }
   function placeFlows() { for (const fl of activeFlows) placeFlow(fl); }
 
+  // ---- Điều hướng: package (area) và camera ----
+  const areas = () => Object.entries(ROOTS).map(([id, p]) => ({ id, title: nodeOf(id)?.title ?? p.title }));
+
+  // Area chứa khối/node `id`: root là chính nó, khối cố định theo PLACED, khối con theo container, node không vẽ (gom "+N") theo chuỗi parent
+  function areaOf(id) {
+    let cur = blocks.get(id)?.root ?? id;
+    for (let i = 0; cur != null && i < 8; i++) {
+      if (ROOTS[cur]) return cur;
+      if (PLACED[cur]) return PLACED[cur].area;
+      cur = nodes.get(cur)?.parent;
+    }
+    return null;
+  }
+
+  // Làm mờ phần ngoài area đang xem: khối gốc của area khác và đường nối không chạm area; khối lồng nhau mờ theo cha
+  function applyFade() {
+    for (const b of blocks.values()) {
+      const out = !!focus && areaOf(b.id) !== focus;
+      if (ROOTS[b.id]) b.g.classList.toggle('out', out);
+      b.g.setAttribute('tabindex', out ? -1 : 0);
+    }
+    WIRES_BASE.forEach((w, i) => wirePaths[i].classList.toggle('out', !!focus && areaOf(w.a) !== focus && areaOf(w.b) !== focus));
+  }
+
+  // Vùng viewBox đang thấy trên màn hình (đang tween thì là khung hình hiện tại)
+  function currentView() {
+    if (tw) return lastRect;
+    const box = svg.parentElement, r = svg.getBoundingClientRect();
+    if (!curVB || !r.width || !r.height) return null;
+    return visibleRect(curVB, { w: r.width, h: r.height }, { left: box.scrollLeft, top: box.scrollTop }, boxSize());
+  }
+
+  // Trạng thái cuối, không tween: áp khung rồi đặt cuộn (area: 0; tổng quan: giữa area vừa rời)
+  function settleCamera() {
+    tw = null;
+    applyView();
+    const box = svg.parentElement;
+    if (focus) { box.scrollLeft = 0; box.scrollTop = 0; return; }
+    const vb = curVB, r = svg.getBoundingClientRect(), bs = boxSize();
+    if (!vb || !r.width) return;
+    const s = overviewScroll(vb, r.width, r.height, bs);
+    box.scrollLeft = s.left; box.scrollTop = s.top;
+  }
+
+  // Camera: id = area cần zoom vào, null = về tổng quan. Tween ~450ms từ vùng đang thấy tới vùng đích (token: lượt mới huỷ lượt cũ)
+  function focusArea(id, { animate = true } = {}) {
+    id = id && ROOTS[id] ? id : null;
+    if (id === focus) return;
+    const token = ++camToken, from = animate && !reduced() ? currentView() : null;
+    if (focus) centre = focus;
+    focus = id; zoom = 1;
+    applyFade();
+    if (!from || !layout) return settleCamera();
+    tw = { from, t: 0 };
+    applyView();
+    const start = performance.now();
+    (function frame(now) {
+      if (token !== camToken) return;
+      tw.t = Math.min(1, (now - start) / CAM_MS);
+      if (tw.t < 1) { applyView(); requestAnimationFrame(frame); } else settleCamera();
+    })(start);
+  }
+
   // Về trạng thái ban đầu, không animation
   function reset(world) {
     for (const t of tiles.values()) t.g.remove();
@@ -469,7 +579,9 @@ export function createScene(svg, { onSelect = () => {} } = {}) {
   enablePan(svg.parentElement);
   enableZoom(svg.parentElement);
   build();
-  return { sync, flash, flow, reset, select, setDim, setPriority, setProjection, projection: () => projName };
+  // Hộp đổi kích thước khi đang zoom vào area: fit lại (tổng quan để CSS tự co; đang tween thì frame kế tiếp tự lấy kích thước mới)
+  new ResizeObserver(() => { if (focus && !tw) applyView(); }).observe(svg.parentElement);
+  return { sync, flash, flow, reset, select, setDim, setPriority, setProjection, projection: () => projName, areas, areaOf, focusArea };
 }
 
 // Kéo chuột để cuộn bản đồ; dịch chuyển < 4px vẫn là click (chọn/bỏ chọn khối)

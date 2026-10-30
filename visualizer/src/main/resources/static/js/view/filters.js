@@ -2,7 +2,7 @@
 // Trạng thái lọc: { contexts, aggregates, outcome, flowKind, thread, changedOnly }.
 // Context/aggregate cần mô hình; không có mô hình (chế độ fixture) thì hai điều kiện này bị bỏ qua.
 import { classOfNode, contextOfNode, lookup } from '../model/draft.js';
-import { aggregateKey } from './levels.js';
+import { aggregateKey } from './nav.js';
 
 export const DEFAULT = Object.freeze({ contexts: [], aggregates: [], outcome: 'all', flowKind: 'all', thread: null, changedOnly: false });
 

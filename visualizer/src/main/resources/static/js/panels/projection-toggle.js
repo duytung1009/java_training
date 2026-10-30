@@ -23,5 +23,5 @@ export function createProjectionToggle({ el, onChange = () => {} }) {
   }
   render();
 
-  return { get: () => value, setVisible(v) { el.hidden = !v; } };
+  return { get: () => value };
 }

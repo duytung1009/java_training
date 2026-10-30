@@ -41,3 +41,24 @@ export const planeMatrix = name => {
   if (!GRID[name]) throw new Error(`Phép chiếu lạ: ${name}`);
   return name === 'iso' ? IDENTITY : multiply(GRID[name], ISO_INV);
 };
+
+// ---- Camera: hàm thuần tính khung nhìn ----
+// Vừa nội dung (+ lề, cùng đơn vị viewBox) vào hộp {w,h} px, giữ tỉ lệ, nội dung căn giữa; scale ≤ maxScale.
+// Trả viewBox có đúng tỉ lệ của hộp (nội dung ở giữa) và kích thước svg = hộp, nên zoom 1 thì không cần cuộn.
+export function fitRect(content, box, { margin = 0, maxScale = Infinity } = {}) {
+  const c = { x: content.x - margin, y: content.y - margin, w: content.w + 2 * margin, h: content.h + 2 * margin };
+  const s = Math.min(box.w / c.w, box.h / c.h, maxScale), w = box.w / s, h = box.h / s;
+  return { viewBox: { x: c.x + c.w / 2 - w / 2, y: c.y + c.h / 2 - h / 2, w, h }, width: box.w, height: box.h };
+}
+
+// Vùng viewBox đang thấy trong hộp cuộn: svg (px) cuộn tới scroll; svg nhỏ hơn hộp thì chỉ thấy phần svg, scroll bị kẹp
+export function visibleRect(viewBox, svg, scroll, box) {
+  if (!svg.w || !svg.h) return { ...viewBox };
+  const kx = viewBox.w / svg.w, ky = viewBox.h / svg.h, clamp = (v, max) => Math.min(Math.max(v, 0), Math.max(0, max));
+  return {
+    x: viewBox.x + clamp(scroll.left, svg.w - box.w) * kx, y: viewBox.y + clamp(scroll.top, svg.h - box.h) * ky,
+    w: Math.min(box.w, svg.w) * kx, h: Math.min(box.h, svg.h) * ky,
+  };
+}
+
+export const lerpRect = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, w: a.w + (b.w - a.w) * t, h: a.h + (b.h - a.h) * t });

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT, isActive, activeCount, normalize, aggregateOptions, eventMatches, flowMatches, nodeMatches, changedNodeIds, threadsOf,
 } from '../../main/resources/static/js/view/filters.js';
-import { nodeLookup } from '../../main/resources/static/js/view/levels.js';
+import { nodeLookup } from '../../main/resources/static/js/view/nav.js';
 
 const model = {
   version: 1,

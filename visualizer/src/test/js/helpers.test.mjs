@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { orderedPair, pairKey } from '../../main/resources/static/js/view/levels.js';
 import { guessByPrefix } from '../../main/resources/static/js/map/layout.js';
 import { ellipsize } from '../../main/resources/static/js/dom.js';
 import { shortThread } from '../../main/resources/static/js/panels/log.js';
@@ -14,13 +13,6 @@ const model = () => ({
     { cls: 'Y', context: 'a', role: 'entity', hidden: false },
   ],
   relations: [{ from: 'X', to: 'Y', source: 'field' }],
-});
-
-test('orderedPair / pairKey: không phân biệt hướng, giữ định dạng "lo|hi"', () => {
-  assert.deepEqual(orderedPair('b', 'a'), ['a', 'b']);
-  assert.deepEqual(orderedPair('a', 'b'), ['a', 'b']);
-  assert.equal(pairKey('ctx:b', 'ctx:a'), 'ctx:a|ctx:b');
-  assert.equal(pairKey('a', 'b'), pairKey('b', 'a'));
 });
 
 test('guessByPrefix: khớp tiền tố đầu tiên, không khớp thì undefined', () => {

@@ -24,7 +24,8 @@ function modelLine(model, node) {
 
 // Vẽ bảng cho node (id, kind, cls, title, sub, parent, items); node null thì ẩn bảng.
 // model (tuỳ chọn): mô hình domain hiện hành để thêm dòng context · role
-export function renderInfo(el, id, node, model = null) {
+// openLabel (tuỳ chọn): có thì thêm nút `.open` với nhãn này (đi sâu vào khối; main.js nghe click)
+export function renderInfo(el, id, node, model = null, { openLabel } = {}) {
   const info = node && (adapter.infoOf(node));
   if (!id || !node || !info) { el.hidden = true; return; }
   const top = (PLACED[id] ?? ROOTS[id]) ? id : node.parent; // con: lấy màu container
@@ -36,6 +37,7 @@ export function renderInfo(el, id, node, model = null) {
   el.innerHTML = `
     <button class="close" aria-label="Đóng">×</button>
     <div class="t">${esc(node.title)} <span class="kind">${esc(KIND[node.kind] ?? node.kind)}</span></div>
+    ${openLabel ? `<button class="open" type="button">${esc(openLabel)}</button>` : ''}
     <div class="cls">${esc(info.cls)} <span>· ${esc(info.pkg)} · ${esc(info.session)}</span></div>
     ${modelLine(model, node)}
     <p>${esc(info.desc)}</p>

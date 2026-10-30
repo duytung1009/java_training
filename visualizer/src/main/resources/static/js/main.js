@@ -7,7 +7,6 @@ import { renderInfo } from './panels/info.js';
 import { renderSync } from './panels/sync.js';
 import { initAbout } from './panels/about.js';
 import { createModelEditor } from './panels/model-editor.js';
-import { createLevelView } from './view/level-view.js';
 import { createRouter } from './view/router.js';
 import { createFilterBar } from './panels/filter-bar.js';
 import { createLegend } from './panels/legend.js';
@@ -31,23 +30,25 @@ for (const { color, label } of [...adapter.legend].reverse()) {
 
 let currentModel = null; // bản nháp nếu có, không thì mô hình đã lưu; null ở chế độ fixture
 let selection = null;    // { id, node } khối đang chọn, để vẽ lại bảng khi mô hình đổi
-const onSelect = (id, node) => { selection = id && node ? { id, node } : null; renderInfo($('info'), id, node, currentModel); };
-const scene = createScene($('map'), { onSelect });
-$('info').addEventListener('click', e => { if (e.target.closest('.close')) router.select(null); });
+let router = null;       // tạo sau scene; onSelect có thể chạy trước đó nên dùng ?.
+const showInfo = (id, node) => renderInfo($('info'), id, node, currentModel, { openLabel: id ? router?.openLabel(id) : null });
+const onSelect = (id, node) => { selection = id && node ? { id, node } : null; showInfo(id, node); };
+const scene = createScene($('map'), { onSelect, onOpen: id => router.open(id) });
+$('info').addEventListener('click', e => {
+  if (e.target.closest('.close')) router.select(null);
+  else if (e.target.closest('.open') && selection) router.open(selection.id);
+});
 
-const legend = createLegend({ el: $('legend'), button: $('legend-toggle') });
+createLegend({ el: $('legend'), button: $('legend-toggle') });
 const projToggle = createProjectionToggle({ el: $('proj-switch'), onChange: v => scene.setProjection(v) });
 scene.setProjection(projToggle.get(), { animate: false });
 
-// Router tầng đứng giữa player và bản đồ: instance → scene isometric, context/aggregate → bản đồ 2D phẳng
-const router = createRouter({
+// Router đứng giữa player và bản đồ: điều hướng tổng quan → package (hash, breadcrumb, Esc) + bộ lọc
+router = createRouter({
   scene,
-  view: createLevelView($('level-map')),
-  els: { isoSvg: $('map'), flatSvg: $('level-map'), title: $('map-title'), hint: $('map-hint'), crumbs: $('crumbs'), switcher: $('lv-switch') },
+  els: { title: $('map-title'), hint: $('map-hint'), crumbs: $('crumbs') },
   prefixes: PREFIXES,
-  onSelect,
-  onView: iso => { legend.setFlat(!iso); projToggle.setVisible(iso); },
-  isBlocked: () => !$('model-editor').hidden || $('about-dlg').open || filterBar.isOpen() || legend.isShown(), // Esc đang dành cho drawer / dialog / bảng lọc
+  isBlocked: () => !$('model-editor').hidden || $('about-dlg').open || filterBar.isOpen(), // Esc đang dành cho drawer / dialog / bảng lọc
 });
 
 const player = createPlayer({
@@ -67,7 +68,7 @@ function applyModel(model) {
   filterBar.setModel(model);
   router.update({ model, filters: filterBar.get() });
   player.refresh();
-  if (selection) renderInfo($('info'), selection.id, selection.node, currentModel);
+  if (selection) showInfo(selection.id, selection.node);
 }
 const editor = createModelEditor({ el: $('model-editor'), button: $('model-btn'), onChange: applyModel });
 
