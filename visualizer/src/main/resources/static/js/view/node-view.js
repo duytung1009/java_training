@@ -8,7 +8,7 @@ import { reduced, easeOut, tween } from '../anim.js';
 import { ellipsize } from '../dom.js';
 import { CARD } from './ego.js';
 
-const PROJ_MS = 400, MARGIN = 24, MAX_SCALE = 1.5, MIN_H = 420;
+const PROJ_MS = 400, MARGIN = 24, MAX_SCALE = 1.5;
 // Bề rộng ký tự trung bình theo cỡ chữ: tiêu đề 13px ≈ 7.6, tiêu đề lớn 15px ≈ 9, dòng phụ 11px ≈ 6.6
 const fit = (text, px, charW) => ellipsize(String(text ?? ''), Math.max(3, Math.floor(px / charW)));
 // Đoạn dài nhất của đường gấp khúc → { x, y } ở giữa đoạn đó
@@ -47,22 +47,13 @@ export function createNodeView(svg, { onSelect = () => {}, onNode = () => {} } =
     svg.onclick = () => select(null);
   }
 
-  // Hộp khung nhìn: bề ngang panel, bề dọc panel nhưng không thấp quá MIN_H và không cao quá max-height của .map-view
-  function boxSize() {
-    const b = svg.parentElement;
-    return { w: b.clientWidth, h: Math.min(Math.max(b.clientHeight, MIN_H), Math.max(MIN_H, innerHeight - 150)) };
-  }
-
-  // viewBox ôm nội dung sau phép chiếu, svg = hộp
+  // viewBox ôm nội dung sau phép chiếu, cùng tỉ lệ với hộp (.map-view có chiều cao cố định theo bố cục trang); svg = 100% hộp
   function fitView() {
-    if (!size.w) return;
-    const box = boxSize();
-    if (box.w <= 0) return;
-    const b = bounds(matrix, corners({ x: 0, y: 0, w: size.w, h: size.h }));
-    const f = fitRect(b, box, { margin: MARGIN, maxScale: MAX_SCALE });
+    const b = svg.parentElement, box = { w: b.clientWidth, h: b.clientHeight };
+    if (!size.w || box.w <= 0 || box.h <= 0) return;
+    const f = fitRect(bounds(matrix, corners({ x: 0, y: 0, w: size.w, h: size.h })), box, { margin: MARGIN, maxScale: MAX_SCALE });
     svg.setAttribute('viewBox', `${f.viewBox.x} ${f.viewBox.y} ${f.viewBox.w} ${f.viewBox.h}`);
-    svg.setAttribute('width', f.width); svg.setAttribute('height', f.height);
-    svg.style.width = f.width + 'px'; svg.style.height = f.height + 'px';
+    svg.style.width = '100%'; svg.style.height = '100%';
     stale = false;
   }
 

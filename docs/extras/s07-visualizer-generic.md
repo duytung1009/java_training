@@ -321,6 +321,13 @@ Sửa khi review trên trình duyệt: breadcrumb không co (thiếu 1px subpixe
 - **Node view:** cạnh chỉ dựng lại khi dữ liệu đổi.
 - **Router:** `setState` và `target(id)` thay cho logic lặp lại.
 - **Đã gỡ:** `resolveFlow` không còn nơi dùng.
+- **Sửa thanh cuộn và lỗi nháy:**
+  - Nguyên nhân: khung `.map-view` chỉ có `max-height: calc(100vh - 150px)`, nên cao theo svg bên trong, trong khi svg lại được fit theo khung. Hằng số 150px cũng đoán thiếu, nên trang luôn thừa khoảng 6px và lúc nào cũng có thanh cuộn.
+  - Khi thanh cuộn chiếm chỗ (macOS "Always show scrollbars"), thanh cuộn hiện/ẩn làm bề ngang đổi, kéo theo bản đồ đổi cỡ, rồi lại làm thanh cuộn hiện/ẩn: cả trang nháy liên tục.
+  - Cách sửa:
+    - `body` là cột flex cao `100vh`, `main` lấy phần còn lại, `.map-view` là `flex: 1`, nên khung có chiều cao cố định. Khổ ≤1100px thì trang cuộn và khung cao `70vh`.
+    - svg ở mọi tầng, kể cả tổng quan, là `100%` khung cộng viewBox fit nội dung. Chỉ khi zoom mới đặt px (khung × zoom) và có thanh cuộn.
+    - Bỏ `--nat-w`, `centre` / `overviewScroll` và đoạn kẹp `MIN_H` / `innerHeight - 150` của node-view.
 - **Bỏ qua** (cần thiết kế lại lớn):
   - bộ đo chữ dùng chung để thay `lv-off`;
   - gộp scene và node-view thành một bộ vẽ có phép chiếu;
