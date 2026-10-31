@@ -5,7 +5,9 @@ import { h, selectEl } from '../dom.js';
 import { readJson, writeJson } from '../storage.js';
 import { contextById } from '../model/draft.js';
 import { DEFAULT, normalize, isActive, activeCount, aggregateOptions } from '../view/filters.js';
+import { touchedFirst } from '../view/nav.js';
 import { shortThread } from './log.js';
+import { createPopover } from './popover.js';
 
 const KEY = 'viz.filters', OPEN_KEY = 'viz.filters.open';
 
@@ -30,11 +32,11 @@ function prune(f, model) {
 
 // el: khung bảng lọc (nổi, nằm trong .map); button: nút "Lọc" ở tiêu đề (hiện số chiều lọc đang bật)
 export function createFilterBar({ el, button, onChange }) {
-  let f = load(), model = null, threads = [], open = readJson(OPEN_KEY) === true;
+  let f = load(), model = null, threads = [];
 
-  const head = h('div', 'fb-head');
-  const closeBtn = h('button', 'fb-close', '×'); closeBtn.type = 'button'; closeBtn.setAttribute('aria-label', 'Đóng bộ lọc');
-  head.append(h('span', 'fb-title', 'Bộ lọc'), closeBtn);
+  const head = h('div', 'fp-head');
+  const closeBtn = h('button', 'fp-close', '×'); closeBtn.type = 'button'; closeBtn.setAttribute('aria-label', 'Đóng bộ lọc');
+  head.append(h('span', 'fp-title', 'Bộ lọc'), closeBtn);
   const ctxGroup = h('div', 'fb-group'), aggGroup = h('div', 'fb-group');
   const outcome = select('Kết quả', [['all', 'tất cả'], ['OK', 'OK'], ['THROWN', 'THROWN']]);
   const kind = select('Flow', [['all', 'tất cả'], ['CALL', 'call'], ['EVENT', 'event']]);
@@ -64,7 +66,7 @@ export function createFilterBar({ el, button, onChange }) {
     };
     top.append(link('chọn hết', items.map(i => i.id)), link('bỏ hết', []));
     const list = h('div', 'fb-chips');
-    for (const { id, text } of [...items.filter(i => selected.includes(i.id)), ...items.filter(i => !selected.includes(i.id))]) {
+    for (const { id, text } of touchedFirst(items, i => selected.includes(i.id))) {
       const lb = h('label', 'fb-chip' + (selected.includes(id) ? ' on' : ''));
       const cb = h('input'); cb.type = 'checkbox'; cb.checked = selected.includes(id);
       cb.addEventListener('change', () => change({ [key]: cb.checked ? [...selected, id] : selected.filter(x => x !== id) }));
@@ -78,8 +80,7 @@ export function createFilterBar({ el, button, onChange }) {
     const n = activeCount(f);
     badge.hidden = n === 0;
     badge.textContent = String(n);
-    button.setAttribute('aria-expanded', String(open));
-    button.classList.toggle('active', n > 0 && !open); // đang lọc mà bảng đóng: nút sáng lên để biết vì sao bản đồ bị mờ
+    button.classList.toggle('active', n > 0 && !pop.isOpen()); // đang lọc mà bảng đóng: nút sáng lên để biết vì sao bản đồ bị mờ
     button.title = n ? `Bộ lọc: ${n} chiều đang bật` : 'Bộ lọc';
   }
 
@@ -110,47 +111,30 @@ export function createFilterBar({ el, button, onChange }) {
   const placeUnderHeader = () => { if (header) el.style.top = `${header.offsetHeight}px`; };
   if (header && typeof ResizeObserver === 'function') new ResizeObserver(placeUnderHeader).observe(header);
 
-  function setOpen(v) {
-    if (open === v) return;
-    open = v;
-    el.hidden = !open;
-    writeJson(OPEN_KEY, open);
-    renderButton();
-  }
-
   outcome.select.addEventListener('change', () => change({ outcome: outcome.select.value }));
   kind.select.addEventListener('change', () => change({ flowKind: kind.select.value }));
   thread.select.addEventListener('change', () => change({ thread: thread.select.value || null }));
   changed.addEventListener('change', () => change({ changedOnly: changed.checked }));
   clear.addEventListener('click', () => change({ ...DEFAULT }));
-  closeBtn.addEventListener('click', () => { setOpen(false); button.focus(); });
-  button.addEventListener('click', () => setOpen(!open));
   // Esc đóng bảng (preventDefault + router thấy isOpen() nên không lùi tầng); click ra ngoài bảng và nút cũng đóng
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && open && !e.defaultPrevented) { e.preventDefault(); setOpen(false); button.focus(); } });
-  document.addEventListener('pointerdown', e => { if (open && e.target instanceof Node && !el.contains(e.target) && !button.contains(e.target)) setOpen(false); });
+  const pop = createPopover({ el, button, key: OPEN_KEY, closeOnOutside: true, onToggle: renderButton });
   placeUnderHeader();
-  el.hidden = !open;
   render();
+
+  // Thay bộ lọc bằng `next` (cùng tham chiếu = không đổi): lưu, vẽ lại, báo onChange nếu có đổi
+  function replace(next) {
+    const moved = next !== f;
+    if (moved) { f = next; save(f); }
+    render();
+    if (moved) onChange(f);
+  }
 
   return {
     get: () => f,
-    isOpen: () => open,
+    isOpen: pop.isOpen,
     // Mô hình đổi: bỏ context/aggregate không còn tồn tại; bộ lọc có đổi thì gọi onChange
-    setModel(m) {
-      model = m ?? null;
-      const next = prune(f, model);
-      const moved = next !== f;
-      if (moved) { f = next; save(f); }
-      render();
-      if (moved) onChange(f);
-    },
+    setModel(m) { model = m ?? null; replace(prune(f, model)); },
     // Danh sách thread của run đang nạp; thread đang lọc không còn trong run thì bỏ (bộ lọc đổi thì gọi onChange)
-    setThreads(list) {
-      threads = list;
-      const moved = f.thread != null && !list.includes(f.thread);
-      if (moved) { f = { ...f, thread: null }; save(f); }
-      render();
-      if (moved) onChange(f);
-    },
+    setThreads(list) { threads = list; replace(f.thread != null && !list.includes(f.thread) ? { ...f, thread: null } : f); },
   };
 }

@@ -1,6 +1,6 @@
 // Chuyển cảnh giữa hai <svg> của panel bản đồ (scene ↔ node-map): cross-fade + một khối "ma" (div.ghost) bay từ khung nguồn tới khung đích.
 // Không biết domain: nhận hai phần tử svg và hai hình chữ nhật màn hình.
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+import { reduced } from '../anim.js';
 let cleanup = null; // kết thúc ngay lượt đang chạy (lượt mới / điều hướng dồn dập)
 
 // out: svg đang hiện; inn: svg sắp hiện (đang lv-off).

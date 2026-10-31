@@ -7,6 +7,7 @@ export const MORE_ID = 'more:children';
 
 const RANK = { parent: 0, in: 1, out: 2, wire: 3, child: 4 };
 const sum = x => x.calls + x.events;
+const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
 // Vai trò quyết định cột đặt thẻ: cha ở trên, con ở dưới; còn lại theo hướng flow (vào-thuần → trái; ra/hai chiều → phải; chỉ có dây nối → phải)
 export function roleOf(n) {
@@ -62,7 +63,7 @@ export function egoNeighbours({ focusId, nodes, flows = [], wires = [] }) {
   for (const w of wires) {
     if (w.a === focusId) link(w.b, 'wire'); else if (w.b === focusId) link(w.a, 'wire');
   }
-  return [...acc.values()].sort((x, y) => RANK[roleOf(x)] - RANK[roleOf(y)] || (x.title < y.title ? -1 : x.title > y.title ? 1 : x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
+  return [...acc.values()].sort((x, y) => RANK[roleOf(x)] - RANK[roleOf(y)] || cmp(x.title, y.title) || cmp(x.id, y.id));
 }
 
 const DEF = { cardW: 300, nbW: 170, nbH: 64, childW: 140, gapX: 90, gapY: 56, colGap: 18, childGap: 14, maxChildren: 8 };

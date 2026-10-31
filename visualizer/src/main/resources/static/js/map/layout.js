@@ -140,9 +140,3 @@ export function resolveWire(flow, parentOf, wires = WIRES) {
   }
   return { i, forward: from === wires[i].a };
 }
-
-// Trả về danh sách điểm theo chiều data, hoặc null nếu không có đường
-export function resolveFlow(flow, parentOf, wires = WIRES) {
-  const r = resolveWire(flow, parentOf, wires);
-  return r && (r.forward ? wires[r.i].pts : wires[r.i].pts.slice().reverse());
-}

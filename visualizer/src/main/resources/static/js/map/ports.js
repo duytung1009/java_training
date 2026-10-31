@@ -2,13 +2,13 @@
 const EPS = 1e-6;
 
 const within = ([x, y], r) => x >= r.x - EPS && x <= r.x + r.w + EPS && y >= r.y - EPS && y <= r.y + r.d + EPS;
-const same = (p, q) => Math.abs(p[0] - q[0]) < EPS && Math.abs(p[1] - q[1]) < EPS;
 const near = (a, b) => Math.abs(a - b) < EPS;
+const same = (p, q) => Math.abs(p[0] - q[0]) < EPS && Math.abs(p[1] - q[1]) < EPS;
 
 // Mép area mà đoạn p0 → p1 (ngang/dọc) chạm khi đi theo chiều đó, hoặc null. Điểm nằm đúng mép vẫn tính là "trong"
 function edgeHit([x0, y0], [x1, y1], r) {
-  if (near(y0, y1)) return x1 > x0 ? (x1 > r.x + r.w + EPS ? 'right' : near(x1, r.x + r.w) ? 'right' : null) : (x1 < r.x - EPS ? 'left' : near(x1, r.x) ? 'left' : null);
-  return y1 > y0 ? (y1 > r.y + r.d + EPS ? 'bottom' : near(y1, r.y + r.d) ? 'bottom' : null) : (y1 < r.y - EPS ? 'top' : near(y1, r.y) ? 'top' : null);
+  if (near(y0, y1)) return x1 > x0 ? (x1 >= r.x + r.w - EPS ? 'right' : null) : (x1 <= r.x + EPS ? 'left' : null);
+  return y1 > y0 ? (y1 >= r.y + r.d - EPS ? 'bottom' : null) : (y1 <= r.y + EPS ? 'top' : null);
 }
 
 // Đi dọc đường (đoạn ngang/dọc) từ đầu trong của area `rect` ({x, y, w, d}); fromStart=false: đầu trong là điểm cuối.

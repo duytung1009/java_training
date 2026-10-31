@@ -309,6 +309,23 @@ Sửa khi review trên trình duyệt: breadcrumb không co (thiếu 1px subpixe
 - **Chú thích:** có thêm phần ký hiệu riêng cho tầng instance.
 - **Đã xoá:** `graph-layout.js` và test của nó.
 
+**Dọn code sau P4 (/simplify):**
+- **Helper dùng chung:**
+  - `js/anim.js`: `reduced`, `easeOut`, `tween`;
+  - `js/items.js`: `dispVal`, `itemLabel`;
+  - `iso.js`: `pathD`, `corners`, `screenRect`, `drawFlow` / `placeFlowPath`, `activatable`;
+  - `panels/popover.js`: bảng chú thích và bảng lọc dùng chung, CSS `.float-panel`.
+- **Scene:**
+  - Bảng `wireView` theo từng dây; `countFlow` tách việc đếm lời gọi khỏi việc vẽ. Nhờ vậy ở tầng instance, scene đang ẩn không còn vẽ flow.
+  - Cổng chỉ vẽ lại phần thay đổi; `applyLayout` bỏ qua khi bố cục không đổi.
+- **Node view:** cạnh chỉ dựng lại khi dữ liệu đổi.
+- **Router:** `setState` và `target(id)` thay cho logic lặp lại.
+- **Đã gỡ:** `resolveFlow` không còn nơi dùng.
+- **Bỏ qua** (cần thiết kế lại lớn):
+  - bộ đo chữ dùng chung để thay `lv-off`;
+  - gộp scene và node-view thành một bộ vẽ có phép chiếu;
+  - đổi cách đặt kích thước svg.
+
 **Không làm.** Bố cục tự động cho tầng tổng quan khi adapter không có layout vẽ tay; context map theo mô hình (có thể đưa vào trình sửa mô hình sau).
 
 ## 5. Kiểm chứng

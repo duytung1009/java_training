@@ -1,5 +1,5 @@
 // Dữ liệu bố cục bản đồ của adapter ecommerce (chỉ dữ liệu, không logic): toạ độ theo ô lưới isometric.
-// Hàm tính bố cục (computeLayout, checkLayout, resolveFlow) nằm ở js/map/layout.js và đọc dữ liệu này qua adapter/index.js.
+// Hàm tính bố cục (computeLayout, checkLayout, resolveWire) nằm ở js/map/layout.js và đọc dữ liệu này qua adapter/index.js.
 // ROOTS = các package (area) cấp 1; child = kích thước khối con xếp lưới động dưới dải tiêu đề (tileW = bề rộng ô trong khối con)
 export const ROOTS = {
   inventory: { kind: 'area', x: 0,    y: 0,    w: 9.9, d: 9.2,  color: '--hub',   title: 'domain.inventory', sub: 'package' },

@@ -1,6 +1,7 @@
 // Bảng chú thích khi click một khối trên bản đồ: class domain, vai trò, API chính, trạng thái hiện tại
 import { ROOTS, PLACED } from '../map/layout.js';
 import { adapter } from '../../adapter/index.js';
+import { dispVal, itemLabel } from '../items.js';
 import { classOfNode, contextOfNode, lookup, aggregateOf, contextById } from '../model/draft.js';
 
 const KIND = { object: 'object', collection: 'collection', area: 'area (package)' };
@@ -33,7 +34,7 @@ export function renderInfo(el, id, node, model = null, { openLabel } = {}) {
   const items = node.items ?? [];
   const kids = node.children ?? [];
   el.style.setProperty('--c', `var(${root?.color ?? '--c-log'})`);
-  const row = it => `<li><span>${esc(it.computed ? '(tính ra) ' : '')}${esc(it.label ?? it.key)}</span><b>${esc(it.computed && !String(it.label ?? '').startsWith('=') ? '= ' : '')}${esc(it.value)}</b></li>`;
+  const row = it => `<li><span>${esc(it.computed ? '(tính ra) ' : '')}${esc(itemLabel(it))}</span><b>${esc(dispVal(it))}</b></li>`;
   el.innerHTML = `
     <button class="close" aria-label="Đóng">×</button>
     <div class="t">${esc(node.title)} <span class="kind">${esc(KIND[node.kind] ?? node.kind)}</span></div>

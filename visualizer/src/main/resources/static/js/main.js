@@ -34,7 +34,7 @@ let selection = null;    // { id, node } khối đang chọn, để vẽ lại b
 let router = null;       // tạo sau scene; onSelect có thể chạy trước đó nên dùng ?.
 const showInfo = (id, node) => renderInfo($('info'), id, node, currentModel, { openLabel: id ? router?.openLabel(id) : null });
 const onSelect = (id, node) => { selection = id && node ? { id, node } : null; showInfo(id, node); };
-const scene = createScene($('map'), { onSelect, onOpen: id => router.open(id), onGo: id => router.goArea(id) });
+const scene = createScene($('map'), { onSelect, onOpen: id => router.open(id), onGo: id => router.goNode(id) });
 $('info').addEventListener('click', e => {
   if (e.target.closest('.close')) router.select(null);
   else if (e.target.closest('.open') && selection) router.open(selection.id);
@@ -42,7 +42,12 @@ $('info').addEventListener('click', e => {
 
 const nodeView = createNodeView($('node-map'), { onSelect, onNode: id => router.goNode(id) });
 const legend = createLegend({ el: $('legend'), button: $('legend-toggle') });
-const setProjection = (v, opts) => { scene.setProjection(v, opts); nodeView.setProjection(v, opts); };
+// Đổi phép chiếu: chỉ view đang hiện chạy animation, view ẩn nhảy thẳng tới đích
+const setProjection = (v, { animate = true } = {}) => {
+  const atNode = router?.atNode() ?? false;
+  scene.setProjection(v, { animate: animate && !atNode });
+  nodeView.setProjection(v, { animate: animate && atNode });
+};
 const projToggle = createProjectionToggle({ el: $('proj-switch'), onChange: v => setProjection(v) });
 setProjection(projToggle.get(), { animate: false });
 
