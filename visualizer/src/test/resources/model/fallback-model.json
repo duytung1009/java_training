@@ -1,0 +1,4 @@
+{ "version": 1,
+  "contexts": [{ "id": "sales", "title": "Bán hàng", "color": null }],
+  "classes": [{ "cls": "Order", "context": "sales", "role": "aggregate", "hidden": false, "source": "manual" }],
+  "relations": [] }

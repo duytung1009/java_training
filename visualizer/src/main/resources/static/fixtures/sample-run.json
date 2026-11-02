@@ -206,7 +206,9 @@
    "flows": [
     {
      "from": "hub",
-     "to": "cart"
+     "to": "cart",
+     "kind": "CALL",
+     "label": null
     }
    ],
    "panels": [
@@ -415,7 +417,9 @@
       ]
      }
     ]
-   }
+   },
+   "events": [],
+   "causedBy": null
   },
   {
    "seq": 2,
@@ -433,7 +437,9 @@
    "flows": [
     {
      "from": "hub",
-     "to": "cart"
+     "to": "cart",
+     "kind": "CALL",
+     "label": null
     }
    ],
    "panels": [
@@ -649,7 +655,9 @@
       ]
      }
     ]
-   }
+   },
+   "events": [],
+   "causedBy": null
   },
   {
    "seq": 3,
@@ -667,7 +675,9 @@
    "flows": [
     {
      "from": "hub",
-     "to": "cart"
+     "to": "cart",
+     "kind": "CALL",
+     "label": null
     }
    ],
    "panels": [
@@ -890,7 +900,9 @@
       ]
      }
     ]
-   }
+   },
+   "events": [],
+   "causedBy": null
   },
   {
    "seq": 4,
@@ -1128,7 +1140,9 @@
       ]
      }
     ]
-   }
+   },
+   "events": [],
+   "causedBy": null
   },
   {
    "seq": 5,
@@ -1356,7 +1370,9 @@
       ]
      }
     ]
-   }
+   },
+   "events": [],
+   "causedBy": null
   },
   {
    "seq": 6,
@@ -1374,7 +1390,9 @@
    "flows": [
     {
      "from": "cart",
-     "to": "orders"
+     "to": "orders",
+     "kind": "CALL",
+     "label": null
     }
    ],
    "panels": [
@@ -1620,7 +1638,9 @@
       ]
      }
     ]
-   }
+   },
+   "events": [],
+   "causedBy": null
   },
   {
    "seq": 7,
@@ -1637,7 +1657,9 @@
    "flows": [
     {
      "from": "order:4c46",
-     "to": "hub"
+     "to": "hub",
+     "kind": "CALL",
+     "label": null
     }
    ],
    "panels": [
@@ -1888,7 +1910,9 @@
       ]
      }
     ]
-   }
+   },
+   "events": [],
+   "causedBy": null
   }
  ]
 }

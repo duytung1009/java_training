@@ -140,6 +140,10 @@ class InventoryManagerConcurrencyTest {
         @DisplayName("search trong lúc thread khác đang addProduct → không ném exception")
         void searchWhileAdding_noException() throws Exception {
             int toAdd = 3000;
+            // Mỗi thread đọc search tối đa maxSearches lần: synchronized không chia lượt công bằng, nếu 4 thread đọc
+            // search liên tục tới khi thread ghi xong thì thread ghi gần như không giành được khoá (bị bỏ đói),
+            // test chạy 6 giây tới quá 30 giây tuỳ lịch của OS. Giới hạn số vòng → thời gian chạy có chặn trên.
+            int maxSearches = 300;
             CountDownLatch writerDone = new CountDownLatch(1);
             List<Throwable> results = Concurrently.run(5, i -> i == 0
                     ? () -> {
@@ -152,7 +156,7 @@ class InventoryManagerConcurrencyTest {
                         }
                     }
                     : () -> {
-                        while (writerDone.getCount() > 0) {
+                        for (int k = 0; k < maxSearches && writerDone.getCount() > 0; k++) {
                             inventory.search(p -> p.getStock() > 0);
                         }
                     });

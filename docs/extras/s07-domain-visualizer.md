@@ -23,26 +23,37 @@ Học viên chọn một **kịch bản** (gắn với buổi S02–S06), bấm 
 | D4 | **Mỗi lượt chạy dựng thế giới mới từ dữ liệu mẫu**, API trả cả lượt (`worldBefore` + danh sách event, mỗi event kèm `worldAfter`). FE tự phát lại Play / Pause / Step; Reset = về `worldBefore`. Không SSE / WebSocket, không endpoint reset | Kết quả tất định, dễ test, không có state dùng chung giữa các request |
 | D5 | FE là **file tĩnh** trong `visualizer/src/main/resources/static/`: HTML + CSS + JS (ES modules) thuần, SVG isometric. Không npm / build tool | `spring-boot:run` là đủ |
 | D6 | Bản đồ **vẽ đúng domain hiện có**; đường `WH → hub` là wire nét liền của `InventoryManager.replenish` | Ban đầu `Warehouse` và tồn kho `InventoryManager` là hai model rời (đường nét chấm "chưa có"); nhánh warehouse-hub đã nối chúng: hub = hàng sẵn bán, kho = hàng dự trữ |
-| D7 | **Bố cục bản đồ thuộc FE.** BE chỉ trả panel id + item + `flows` (danh sách `{from, to}` theo thứ tự phát); FE tự map cặp `(from, to)` sang đường và hướng. Đường chỉ gồm đoạn ngang/dọc; `checkLayout()` trong `layout.js` cảnh báo ở console khi đường cắt qua panel hoặc panel chồng nhau | BE không biết gì về toạ độ |
+| D7 | **Bố cục bản đồ thuộc FE.** BE chỉ trả panel id + item + `flows` (danh sách `{from, to}` theo thứ tự phát); FE tự map cặp `(from, to)` sang đường và hướng. Đường chỉ gồm đoạn ngang/dọc; `checkLayout()` trong `layout.js` cảnh báo ở console khi đường cắt qua panel hoặc panel chồng nhau. *(Sửa ở G8 của `s07-visualizer-generic.md`: toạ độ vẫn ở FE nhưng nằm trong `static/adapter/`, lõi FE không chứa id ecommerce.)* | BE không biết gì về toạ độ |
 | D8 | Nhánh `extra/domain-visualizer` từ `main` (đã có S07), commit tiền tố `[S07-extra]` | — |
 
 ## 3. Kiến trúc
+
+Từ `extra/visualizer-generic` code chia thành lõi `core` (không biết domain nào) và adapter `ecommerce`; chi tiết và quyết định ở `docs/extras/s07-visualizer-generic.md`.
 
 ```
 visualizer/  (artifact ecommerce-visualizer, phụ thuộc ecommerce-domain)
 └── com.training.ecommerce.visualizer
     ├── VisualizerApplication
-    ├── trace/        TraceRecorder, TraceEvent, ObjectChange, Flow, Outcome
-    ├── world/        World (2 warehouse, InventoryManager, Cart, orders, pricing, shipping), WorldFactory, WorldSnapshotter, PanelView, ItemView
-    ├── scenario/     Scenario (interface), ScenarioRegistry, 12 kịch bản (mục 5)
-    └── web/          VisualizerController, RestExceptionHandler, DTO record
+    ├── core/
+    │   ├── spi/       VisualizerAdapter<W> (createWorld, snapshot, scenarios, domainApi)
+    │   ├── trace/     TraceRecorder (nhận Supplier<WorldSnapshot>), TraceEvent, ObjectChange, Flow, Outcome, ExceptionInfo
+    │   ├── view/      WorldSnapshot, WorldView, NodeView, ItemView
+    │   ├── scenario/  Scenario<W>, ScenarioRegistry<W>, ScenarioService, RunResult, ParallelRunner
+    │   ├── web/       VisualizerController, RestExceptionHandler, ScenarioSummary
+    │   └── sync/      DomainApiScanner, DomainApiSpec, DomainSyncService, SyncStatus
+    └── ecommerce/
+        ├── EcommerceVisualizerAdapter (bean, thứ tự 12 kịch bản — mục 5)
+        ├── world/     World (2 warehouse, InventoryManager, Cart, orders, pricing, shipping), WorldFactory, WorldSnapshotter, MoneyFormat
+        ├── scenario/  12 kịch bản, OrderSteps, ShipmentSteps
+        └── sync/      EcommerceDomainApi (main tạo lại domain-api.txt)
 resources/static/
     index.html, styles.css
-    js/ api.js, player.js (state + playback), map/iso.js, map/layout.js, map/scene.js, panels/log.js, panels/diff.js, controls.js
+    js/       (lõi FE) api.js, player.js, controls.js, map/iso.js, map/layout.js (thuật toán), map/scene.js, panels/*
+    adapter/  (dữ liệu ecommerce) index.js (contract duy nhất lõi import), layout.js (ROOTS/PLACED/WIRES), info.js, about.js, theme.css
     fixtures/sample-run.json
 ```
 
-Luật phụ thuộc: `web → scenario → trace/world → domain`. Không import `app`.
+Luật phụ thuộc: `web → scenario → trace → view`; `ecommerce → core → (không gì)`; chỉ `ecommerce` import `domain`. `core/ArchitectureTest` (ArchUnit) kiểm luật này. Không import `app`.
 
 ### 3.1 Cơ chế trace
 
