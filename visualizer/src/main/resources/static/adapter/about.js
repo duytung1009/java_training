@@ -92,8 +92,8 @@ const STAGES = [
     title: 'Kịch bản tổng quan',
     why: 'Mỗi kịch bản chỉ soi một buổi học; thiếu một lượt chạy cho thấy các package nối với nhau thế nào.',
     what: [
-      'Kịch bản overview đứng đầu danh sách: gom hàng giữa hai kho, nhập lên hub, tính giá, giỏ hàng, mã giảm giá, chốt đơn, trừ kho, phí ship — flow đi qua cả 5 vùng.',
-      'Ghép lại từ bước của các kịch bản theo buổi (OrderSteps.checkout / decreaseStock, transfer, replenish, price, ship), không viết lại logic gọi domain.',
+      'Kịch bản overview đứng đầu danh sách: gom hàng giữa hai kho, nhập lên hub, giỏ hàng, mã giảm giá, chốt đơn, trừ kho, phí ship — flow đi qua cả 5 vùng.',
+      'Ghép lại từ bước của các kịch bản theo buổi (OrderSteps.checkout / decreaseStock, transfer, replenish, ship), không viết lại logic gọi domain.',
     ],
   },
   {

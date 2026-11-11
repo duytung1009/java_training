@@ -52,13 +52,14 @@ export function screenRect(node) {
 }
 
 // Đường flow ở overlay: event → nét chấm --event kèm nhãn tên event (luôn giữ màu event kể cả khi lời gọi THROWN, vì event đã
-// thật sự xảy ra trước lúc ném); lời gọi → --flow, hoặc --err khi lỗi. kind = f.kind ('EVENT' | 'CALL'); trả { p, label }
+// thật sự xảy ra trước lúc ném); lời gọi → --flow, hoặc --err khi lỗi, nhãn (nếu có) là dữ liệu chảy theo lời gọi, vd. orderId.
+// kind = f.kind ('EVENT' | 'CALL'); trả { p, label }
 export function drawFlow(layer, { kind, ok, label, markerPrefix, colors }) {
   const isEvent = kind === 'EVENT', k = isEvent ? 'event' : ok ? 'flow' : 'err';
   const p = el('path', { class: isEvent ? 'flow event' : 'flow', stroke: colors[k], 'marker-end': `url(#${markerPrefix}${k})` }, layer);
   let text = null;
-  if (isEvent && label) {
-    text = el('text', { class: 'flow-label', 'text-anchor': 'middle' }, layer);
+  if (label) {
+    text = el('text', { class: isEvent ? 'flow-label' : 'flow-label call', 'text-anchor': 'middle' }, layer);
     text.textContent = label;
   }
   return { p, label: text };

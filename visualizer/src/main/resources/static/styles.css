@@ -103,6 +103,7 @@ footer { padding: 6px 16px 16px; color: var(--muted); }
 .flow { fill: none; stroke-width: 2; stroke-dasharray: 4 10; stroke-linecap: round; animation: flow calc(.5s / var(--spd)) linear infinite; }
 .flow.event { stroke-width: 2.5; stroke-dasharray: 1 7; }
 .flow-label { fill: var(--event); font-size: 10px; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; pointer-events: none; }
+.flow-label.call { fill: var(--flow); }
 @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes popOut { to { transform: scale(0); opacity: 0; } }
 @keyframes bumpUp { 30% { stroke: var(--ok); stroke-width: 3; } }

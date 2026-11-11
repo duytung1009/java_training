@@ -6,6 +6,7 @@ import com.training.ecommerce.domain.shipping.Shipment;
 import com.training.ecommerce.domain.shipping.ShippingFeeCalculator;
 import com.training.ecommerce.domain.shipping.ShippingZone;
 import com.training.ecommerce.visualizer.core.trace.Flow;
+import com.training.ecommerce.visualizer.core.trace.FlowKind;
 import com.training.ecommerce.visualizer.core.trace.TraceRecorder;
 import com.training.ecommerce.visualizer.ecommerce.world.MoneyFormat;
 import com.training.ecommerce.visualizer.ecommerce.world.World;
@@ -31,23 +32,29 @@ final class ShipmentSteps {
         return order;
     }
 
-    /** Phí ship cả đơn (hàm thuần, chỉ đọc đơn): flow từ khối Order sang ShippingZone được chọn. */
+    /**
+     * Phí ship cả đơn (hàm thuần, chỉ đọc đơn): flow từ khối Order sang ShippingZone được chọn, nhãn {@code totalWeight}
+     * vì vùng chỉ nhận tổng cân nặng các dòng (vùng chọn theo địa chỉ, không theo đơn).
+     */
     static BigDecimal fee(TraceRecorder recorder, Order order, Address address) {
         // Vùng được chọn nháy cùng ShippingFeeScenario; phí nằm ở ô fee của Shipment nên zone không có ô computed
         String zone = WorldSnapshotter.zoneNodeId(ShippingZone.of(address));
         return recorder.call("ShippingFeeCalculator", "feeFor",
                 List.of(WorldSnapshotter.orderRef(order), WorldSnapshotter.addressRef(address)),
-                new Flow(WorldSnapshotter.orderNodeId(order), zone), List.of(WorldSnapshotter.SHIPPING, zone),
+                new Flow(WorldSnapshotter.orderNodeId(order), zone, FlowKind.CALL, "totalWeight"), List.of(WorldSnapshotter.SHIPPING, zone),
                 () -> ShippingFeeCalculator.feeFor(order, address));
     }
 
-    /** Tạo vận đơn và hiện thành khối con của List<Shipment>. */
+    /**
+     * Tạo vận đơn và hiện thành khối con của List<Shipment>. Ở app, ShipmentService (application) làm bước này;
+     * domain.order không gọi domain.shipping, nên flow đơn → vận đơn gắn nhãn {@code orderId}: dữ liệu chảy, không phải lời gọi.
+     */
     static Shipment create(World world, TraceRecorder recorder, Order order, Address address, BigDecimal fee) {
         AtomicReference<Shipment> created = new AtomicReference<>();
         List<String> panels = new CopyOnWriteArrayList<>(List.of(WorldSnapshotter.SHIPMENTS));
         recorder.call("Shipment", "new",
                 List.of(WorldSnapshotter.orderRef(order), WorldSnapshotter.addressRef(address), MoneyFormat.full(fee)),
-                new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.SHIPMENTS), panels, () -> {
+                new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.SHIPMENTS, FlowKind.CALL, "orderId"), panels, () -> {
                     Shipment shipment = new Shipment(order.getId(), address, fee);
                     world.registerObject(WorldSnapshotter.SHIPMENTS, WorldSnapshotter.shipmentNodeId(shipment), shipment,
                             WorldSnapshotter.orderRef(order));
@@ -64,10 +71,13 @@ final class ShipmentSteps {
                 List.of(WorldSnapshotter.SHIPMENTS, WorldSnapshotter.shipmentNodeId(shipment)), action);
     }
 
-    /** Hoàn kho cho cả đơn; flow từ vận đơn về hub. */
+    /**
+     * Hoàn kho cho cả đơn; flow từ vận đơn về hub, nhãn {@code orderId}: domain.shipping không gọi domain.inventory,
+     * ShipmentService (app) lấy Order theo {@code shipment.getOrderId()} rồi gọi restock.
+     */
     static void restock(World world, TraceRecorder recorder, Order order, Shipment shipment) {
         recorder.run("InventoryManager", "restock", List.of(WorldSnapshotter.orderRef(order)),
-                new Flow(WorldSnapshotter.shipmentNodeId(shipment), WorldSnapshotter.HUB), List.of(WorldSnapshotter.HUB),
+                new Flow(WorldSnapshotter.shipmentNodeId(shipment), WorldSnapshotter.HUB, FlowKind.CALL, "orderId"), List.of(WorldSnapshotter.HUB),
                 () -> world.hub().restock(order));
     }
 }

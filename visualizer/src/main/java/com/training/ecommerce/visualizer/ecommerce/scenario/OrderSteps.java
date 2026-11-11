@@ -5,6 +5,7 @@ import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.domain.order.OrderLine;
 import com.training.ecommerce.domain.pricing.DiscountCode;
 import com.training.ecommerce.visualizer.core.trace.Flow;
+import com.training.ecommerce.visualizer.core.trace.FlowKind;
 import com.training.ecommerce.visualizer.core.trace.TraceRecorder;
 import com.training.ecommerce.visualizer.ecommerce.world.World;
 import com.training.ecommerce.visualizer.ecommerce.world.WorldSnapshotter;
@@ -61,7 +62,8 @@ final class OrderSteps {
 
     /**
      * Chốt giỏ bằng mã giảm giá ({@code Cart.toOrder(code, taxRate)}): ngoài flow giỏ → đơn còn flow mã → đơn,
-     * mã nháy cùng giỏ và đơn.
+     * mã nháy cùng giỏ và đơn. Flow mã → đơn
+     * gắn nhãn {@code rate} vì Order chỉ giữ tỉ lệ giảm, không giữ mã.
      */
     static Order checkout(World world, TraceRecorder recorder, DiscountCode code, BigDecimal tax) {
         AtomicReference<Order> created = new AtomicReference<>();
@@ -69,7 +71,7 @@ final class OrderSteps {
         List<String> toOrderPanels = new CopyOnWriteArrayList<>(List.of(WorldSnapshotter.CART, WorldSnapshotter.ORDERS,
                 WorldSnapshotter.PRICING, codeNode));
         recorder.callFlows("Cart", "toOrder", List.of(code.getCode(), tax.toPlainString()),
-                List.of(new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDERS), new Flow(codeNode, WorldSnapshotter.ORDERS)),
+                List.of(new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDERS), new Flow(codeNode, WorldSnapshotter.ORDERS, FlowKind.CALL, "rate")),
                 toOrderPanels, () -> {
                     Order order = world.cart().toOrder(code, tax);
                     world.addOrder(order);
