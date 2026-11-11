@@ -8,11 +8,14 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Hồi quy: adapter ecommerce không có domain event nên JSON kịch bản chỉ thêm trường mặc định. */
+/**
+ * Hồi quy: adapter ecommerce không có domain event nên mọi flow là CALL. Nhãn của flow CALL (nếu có) là tên dữ liệu chảy
+ * theo lời gọi (vd. {@code orderId}), dùng khi hai package không gọi nhau trực tiếp.
+ */
 class EcommerceNoEventsRegressionTest {
 
     @Test
-    void moiKichBanKhongCoEventVaMoiFlowLaCallKhongNhan() {
+    void moiKichBanKhongCoEventVaMoiFlowLaCall() {
         ScenarioService service = new ScenarioService(new EcommerceVisualizerAdapter());
 
         assertThat(service.scenarios()).isNotEmpty();
@@ -23,7 +26,9 @@ class EcommerceNoEventsRegressionTest {
                 assertThat(e.causedBy()).isNull();
                 assertThat(e.flows()).allSatisfy(f -> {
                     assertThat(f.kind()).isEqualTo(FlowKind.CALL);
-                    assertThat(f.label()).isNull();
+                    if (f.label() != null) {
+                        assertThat(f.label()).isNotBlank();
+                    }
                 });
             });
         });

@@ -5,6 +5,7 @@ import com.training.ecommerce.domain.shipping.Shipment;
 import com.training.ecommerce.domain.shipping.ShipmentStatus;
 import com.training.ecommerce.visualizer.core.scenario.Scenario;
 import com.training.ecommerce.visualizer.core.trace.Flow;
+import com.training.ecommerce.visualizer.core.trace.FlowKind;
 import com.training.ecommerce.visualizer.core.trace.Outcome;
 import com.training.ecommerce.visualizer.core.trace.TraceEvent;
 import com.training.ecommerce.visualizer.core.trace.TraceRecorder;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 class ScenarioTest {
@@ -90,7 +92,7 @@ class ScenarioTest {
         // toOrder(code, tax): flow giỏ → đơn và mã → đơn; Order chỉ giữ tỉ lệ 10% của mã
         assertThat(toOrder.args()).containsExactly("SALE10", "0.08");
         assertThat(toOrder.flows()).containsExactly(new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDERS),
-                new Flow("pricing:code:SALE10", WorldSnapshotter.ORDERS));
+                new Flow("pricing:code:SALE10", WorldSnapshotter.ORDERS, FlowKind.CALL, "rate"));
         assertThat(run.world().orders().getFirst().getDiscountRate()).isEqualByComparingTo("0.10");
         String orderNode = WorldSnapshotter.orderNodeId(run.world().orders().getFirst());
         assertThat(toOrder.panels()).containsExactly(WorldSnapshotter.CART, WorldSnapshotter.ORDERS,
@@ -189,7 +191,7 @@ class ScenarioTest {
 
         assertThat(run.events()).extracting(TraceEvent::outcome).containsOnly(Outcome.OK);
         assertThat(run.events()).extracting(TraceEvent::method).containsExactly("transfer", "replenish",
-                "calculateFinalPrice", "add", "add", "new", "toOrder", "decreaseStock", "feeFor", "new", "pickUp",
+                "add", "add", "new", "toOrder", "decreaseStock", "feeFor", "new", "pickUp",
                 "markDelivered");
         // HCM 2 → 0, HN 10 + 2 − 3 = 9, hub LAPTOP 5 + 3 − 2 = 6, PHONE 8 − 1 = 7
         assertThat(w.warehouse(WorldFactory.WH_HCM).stockOf("LAPTOP")).isZero();
@@ -210,10 +212,10 @@ class ScenarioTest {
                 new Flow(WorldSnapshotter.HUB, WorldSnapshotter.CART),
                 new Flow(WorldSnapshotter.HUB, WorldSnapshotter.CART),
                 new Flow(WorldSnapshotter.CART, WorldSnapshotter.ORDERS),
-                new Flow("pricing:code:SALE10", WorldSnapshotter.ORDERS),
+                new Flow("pricing:code:SALE10", WorldSnapshotter.ORDERS, FlowKind.CALL, "rate"),
                 new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.HUB),
-                new Flow(WorldSnapshotter.orderNodeId(order), "zone:INNER_CITY"),
-                new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.SHIPMENTS));
+                new Flow(WorldSnapshotter.orderNodeId(order), "zone:INNER_CITY", FlowKind.CALL, "totalWeight"),
+                new Flow(WorldSnapshotter.orderNodeId(order), WorldSnapshotter.SHIPMENTS, FlowKind.CALL, "orderId"));
     }
 
     @Test
@@ -333,6 +335,9 @@ class ScenarioTest {
         // Đà Nẵng → OTHER_CITY
         assertThat(run.events().stream().filter(e -> e.method().equals("feeFor")).findFirst().orElseThrow().flows())
                 .extracting(f -> f.to()).containsExactly("zone:OTHER_CITY");
+        // hoàn kho: flow vận đơn → hub mang orderId (shipping không gọi inventory)
+        assertThat(run.events().stream().filter(e -> e.method().equals("restock")).flatMap(e -> e.flows().stream()))
+                .extracting(Flow::to, Flow::label).containsOnly(tuple(WorldSnapshotter.HUB, "orderId"));
         // ca duy nhất lỗi: cancel khi IN_TRANSIT, trạng thái và history giữ nguyên
         List<TraceEvent> thrown = run.events().stream().filter(e -> e.outcome() == Outcome.THROWN).toList();
         assertThat(thrown).singleElement().satisfies(e -> {

@@ -6,7 +6,7 @@ package com.training.ecommerce.visualizer.core.trace;
  * @param from  panel id nguồn
  * @param to    panel id đích
  * @param kind  CALL (lời gọi) hoặc EVENT (domain event); null coi như CALL
- * @param label nhãn hiển thị (tên event), null với flow lời gọi
+ * @param label nhãn hiển thị: tên event, hoặc dữ liệu chảy theo flow lời gọi (vd. {@code orderId}); null nếu không cần
  */
 public record Flow(String from, String to, FlowKind kind, String label) {
 

@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * S02–S07: một lượt mua hàng đi qua mọi package, ghép từ các bước của kịch bản theo buổi.
- * Gom hàng giữa hai kho → nhập lên hub → tính giá → giỏ hàng → mã giảm giá → chốt đơn → trừ kho → phí ship cả đơn
+ * Gom hàng giữa hai kho → nhập lên hub → giỏ hàng → mã giảm giá → chốt đơn → trừ kho → phí ship cả đơn
  * → vận đơn giao thành công.
  */
 public class OverviewScenario implements Scenario<World> {
@@ -42,7 +42,7 @@ public class OverviewScenario implements Scenario<World> {
     @Override
     public String description() {
         return "Một lượt mua đi qua mọi package: transfer LAPTOP ×2 HCM → HN, replenish LAPTOP ×3 HN → hub, "
-                + "calculateFinalPrice, Cart.add LAPTOP ×2 + PHONE ×1, nhập mã SALE10, toOrder(SALE10, thuế 8%), "
+                + "Cart.add LAPTOP ×2 + PHONE ×1, nhập mã SALE10, toOrder(SALE10, thuế 8%), "
                 + "decreaseStock trừ hub, ShippingFeeCalculator.feeFor tính phí ship cả đơn về Hà Nội, "
                 + "rồi tạo Shipment và pickUp → markDelivered.";
     }
@@ -54,12 +54,10 @@ public class OverviewScenario implements Scenario<World> {
                 WorldFactory.WH_HCM, WorldFactory.WH_HN, "LAPTOP", 2);
         ReplenishScenario.replenish(world, recorder, WorldFactory.WH_HN, "LAPTOP", 3);
 
-        // 2. Catalog: giá cuối theo loại sản phẩm (đơn giá mà OrderLine sẽ chụp lại)
+        // 2. Giỏ hàng → đơn: Cart chỉ kiểm tồn kho, chưa trừ; chốt bằng mã giảm giá (domain.pricing).
+        // Đơn giá không cần tính trước: Cart.toOrder tạo OrderLine, OrderLine tự chụp calculateFinalPrice() của từng sản phẩm.
         Product laptop = world.product("LAPTOP");
         Product phone = world.product("PHONE");
-        PricingTypesScenario.price(world, recorder, laptop);
-
-        // 3. Giỏ hàng → đơn: Cart chỉ kiểm tồn kho, chưa trừ; chốt bằng mã giảm giá (domain.pricing)
         Cart cart = world.cart();
         Flow hubToCart = new Flow(WorldSnapshotter.HUB, WorldSnapshotter.CART);
         List<String> cartPanel = List.of(WorldSnapshotter.CART);
@@ -68,10 +66,10 @@ public class OverviewScenario implements Scenario<World> {
         DiscountCode sale10 = PricingTypesScenario.createCode(world, recorder, "SALE10", new BigDecimal("0.10"));
         Order order = OrderSteps.checkout(world, recorder, sale10, new BigDecimal("0.08"));
 
-        // 4. Trừ kho trên hub (all-or-nothing)
+        // 3. Trừ kho trên hub (all-or-nothing)
         OrderSteps.decreaseStock(world, recorder, order);
 
-        // 5. Giao hàng: phí ship cả đơn (chọn vùng theo địa chỉ) → tạo vận đơn → lấy hàng → giao thành công
+        // 4. Giao hàng: phí ship cả đơn (chọn vùng theo địa chỉ) → tạo vận đơn → lấy hàng → giao thành công
         Address address = new Address("1 Hàng Bài", "Hà Nội");
         BigDecimal fee = ShipmentSteps.fee(recorder, order, address);
         Shipment shipment = ShipmentSteps.create(world, recorder, order, address, fee);
