@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Đơn hàng: subtotal → discount → tax → finalAmount. Mọi số tiền có scale 2, HALF_UP.
@@ -80,10 +81,13 @@ public class Order implements Identifiable<String> {
      * @return map không sửa được
      */
     public Map<String, Integer> quantitiesByProductId() {
-        Map<String, Integer> quantities = new LinkedHashMap<>();
-        for (int i = 0; i < lineCount; i++) {
-            quantities.merge(lines[i].getProduct().getId(), lines[i].getQuantity(), Integer::sum);
-        }
+        // toMap có merge Integer::sum để cộng dồn line trùng product, LinkedHashMap để giữ thứ tự xuất hiện
+        Map<String, Integer> quantities = Arrays.stream(lines, 0, lineCount)
+                .collect(Collectors.toMap(
+                        line -> line.getProduct().getId(),
+                        OrderLine::getQuantity,
+                        Integer::sum,
+                        LinkedHashMap::new));
         return Collections.unmodifiableMap(quantities);
     }
 

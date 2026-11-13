@@ -130,7 +130,7 @@ Ngoài spec: cùng product add 2 lần (gộp hay tách line), header receipt, c
 - [x] Demo: list có đủ các loại product → in tổng doanh thu
 - [x] Thêm `BundleProduct` mà **không sửa** `PricingEngine` (chứng minh OCP)
 - [x] Test: 2 product cùng id → `HashSet.size() == 1`
-- [ ] Mô tả PR có mục "SOLID check": S/O/L/I/D, mỗi nguyên tắc 1 dòng _(chưa có PR: merge trực tiếp 21/10)_
+- [–] Mô tả PR có mục "SOLID check": S/O/L/I/D, mỗi nguyên tắc 1 dòng _(bỏ qua: merge trực tiếp 21/10, không có PR)_
 - [x] Không có cây kế thừa sâu quá 3 tầng
 - [x] Code S02 (`OrderLine`, `InventoryManager`) vẫn chạy với `Product` mới
 
@@ -180,14 +180,16 @@ Ngoài spec: `getBasePrice()` của BundleProduct, so sánh city không phân bi
 | 5 | `Cart`: `add(product, qty)` cộng dồn, `remove`, `changeQuantity` (về 0 thì bỏ), `getItems()` không sửa được từ ngoài, `toOrder(discountRate, taxRate)` | `domain/order` | mới; `Map` giữ thứ tự thêm |
 | 6 | `S04Demo` | `demo` | catalog qua Repository, giỏ hàng, lỗi thiếu hàng / không tìm thấy |
 
+> Đã merge (tag `s04-done`).
+
 **Acceptance**
-- [ ] `Repository` generic dùng được cho `Product` mà không ép kiểu; không có raw type
-- [ ] `InventoryManager` không còn `Product[]`; tra theo id bằng `Map`
-- [ ] `Cart` gộp cùng sản phẩm bằng `Map.merge` (hoặc tương đương); `getItems()` trả về view / bản copy không sửa được
-- [ ] Domain exception là unchecked, message rõ ràng; code/test S02–S03 vẫn xanh (hoặc nâng cấp có chủ đích, ghi rõ)
-- [ ] Không sửa collection trong lúc for-each (dùng `removeIf` / `Iterator.remove`)
-- [ ] Key của `HashMap`/`HashSet` là bất biến (id `final`)
-- [ ] Bonus: API nhận nhiều product dùng wildcard, ví dụ `saveAll(Collection<? extends T>)`
+- [x] `Repository` generic dùng được cho `Product` mà không ép kiểu; không có raw type
+- [x] `InventoryManager` không còn `Product[]`; tra theo id bằng `Map`
+- [x] `Cart` gộp cùng sản phẩm bằng `Map.merge` (hoặc tương đương); `getItems()` trả về view / bản copy không sửa được
+- [x] Domain exception là unchecked, message rõ ràng; code/test S02–S03 vẫn xanh (hoặc nâng cấp có chủ đích, ghi rõ)
+- [x] Không sửa collection trong lúc for-each (dùng `removeIf` / `Iterator.remove`)
+- [x] Key của `HashMap`/`HashSet` là bất biến (id `final`)
+- [x] Bonus: API nhận nhiều product dùng wildcard, ví dụ `saveAll(Collection<? extends T>)`
 
 **Spec hành vi** (chốt 21/10, test: `app/src/test/java/com/training/ecommerce/infrastructure/persistence/inmemory/InMemoryRepositoryTest.java`, `domain/src/test/java/com/training/ecommerce/domain/{order/CartTest, catalog/DomainExceptionTest}.java`; test S02–S03 giữ nguyên)
 
@@ -233,14 +235,16 @@ Ngoài spec: `Repository.saveAll(null)`, `Cart.changeQuantity(null, …)` trả 
 | 6 | `ReportService`: doanh thu theo category, top N sản phẩm bán chạy (theo số lượng), tách đơn lớn / nhỏ theo ngưỡng | `application/report` (từ 28/10) | mới; pure, không sửa input |
 | 7 | `S05Demo` | `demo` | in giá sau chuỗi rule + 3 báo cáo |
 
+> Đã merge (tag `s05-done`).
+
 **Acceptance**
-- [ ] Không còn vòng `for`/`while` trong `InventoryManager`, `Order`, `PricingEngine`, `ReportService`; dùng Stream, method reference khi làm code dễ đọc hơn. Ngoại lệ (chốt 21/10): bước có side effect (trừ tồn kho trong `decreaseStock`) dùng vòng `for` cho rõ ý, không dùng `forEach`
-- [ ] Mỗi quy tắc giá là một hàm; ghép bằng `andThen` / `reduce(identity, andThen)`; thêm rule mới không sửa engine (OCP)
-- [ ] Báo cáo dùng `groupingBy` + `reducing` cho `BigDecimal`, `partitioningBy`, top N bằng `sorted` + `limit`; key trùng không ném exception (merge function hoặc `groupingBy`)
-- [ ] Logic tính toán pure: không sửa list / `Order` đầu vào, không đọc giờ hệ thống; test không cần mock
-- [ ] Test S02 + S03 vẫn xanh sau refactor (hoặc được nâng cấp có chủ đích, ghi rõ)
-- [ ] Không `forEach` để add vào list bên ngoài, không đặt logic trong `peek`, không `Optional.get()` trần
-- [ ] `findById` trả `Optional` ở `InventoryManager` và `Repository` (đổi D1 của S04, chốt 21/10)
+- [x] Không còn vòng `for`/`while` trong `InventoryManager`, `Order`, `PricingEngine`, `ReportService`; dùng Stream, method reference khi làm code dễ đọc hơn. Ngoại lệ (chốt 21/10): bước có side effect (trừ tồn kho trong `decreaseStock`) dùng vòng `for` cho rõ ý, không dùng `forEach`
+- [x] Mỗi quy tắc giá là một hàm; ghép bằng `andThen` / `reduce(identity, andThen)`; thêm rule mới không sửa engine (OCP)
+- [x] Báo cáo dùng `groupingBy` + `reducing` cho `BigDecimal`, `partitioningBy`, top N bằng `sorted` + `limit`; key trùng không ném exception (merge function hoặc `groupingBy`)
+- [x] Logic tính toán pure: không sửa list / `Order` đầu vào, không đọc giờ hệ thống; test không cần mock
+- [x] Test S02 + S03 vẫn xanh sau refactor (hoặc được nâng cấp có chủ đích, ghi rõ)
+- [x] Không `forEach` để add vào list bên ngoài, không đặt logic trong `peek`, không `Optional.get()` trần
+- [x] `findById` trả `Optional` ở `InventoryManager` và `Repository` (đổi D1 của S04, chốt 21/10)
 
 **Spec hành vi** (chốt 21/10, test: `domain/src/test/java/com/training/ecommerce/domain/{catalog/ProductCategoryTest, inventory/InventoryManagerSearchTest, pricing/PricingRuleTest}.java`, `app/src/test/java/com/training/ecommerce/application/{pricing/PricingEngineRuleTest, report/ReportServiceTest}.java`; nâng cấp có chủ đích `InventoryManagerTest`, `InMemoryRepositoryTest` cho `Optional` (D2), các test S02–S04 khác giữ nguyên)
 
@@ -294,14 +298,16 @@ Ngoài spec: list trả về của `search` / `topSellingProducts` có sửa đ�
 | 4 | `OrderDetailService.loadDetail(orderId)`: gọi song song 3 nguồn (thanh toán, vận chuyển, các dòng đơn) qua `ExecutorService` được inject, gộp thành `OrderDetail` (record) | `application/{order, payment, shipping}` | mới; 3 nguồn là interface trong `application` (`order.OrderLineSource`, `payment.PaymentGateway`, `shipping.ShipmentTracker`), bản giả có độ trễ (`sleep`) để demo đặt ở `infrastructure`. Cách xử lý khi một nguồn lỗi hoặc bị interrupt chốt ở spec |
 | 5 | `S06Demo` | `demo` | 100 thread cùng mua sản phẩm cuối; chuyển kho hai chiều song song; so thời gian `loadDetail` tuần tự / `newFixedThreadPool` / `newVirtualThreadPerTaskExecutor`. Bản nháp đang ở `git stash` (`S06Demo concurrency demo`) |
 
+> Đã merge (tag `s06-done`).
+
 **Acceptance**
-- [ ] 100 thread cùng mua sản phẩm còn 1: đúng 1 lần thành công, các lần còn lại ném `OutOfStockException`, stock cuối = 0, không bao giờ âm
-- [ ] Nhiều đơn nhiều dòng chạy đồng thời vẫn all-or-nothing: không đơn nào bị trừ một phần, tổng đã trừ = tổng số lượng của các đơn thành công
-- [ ] Kiểm tra và trừ nằm trong cùng một lock (không check-then-act bên ngoài lock); lock ngắn, không gọi IO hay `sleep` khi đang giữ lock
-- [ ] `transfer` hai chiều (A → B và B → A) chạy song song nhiều lần không treo (test có timeout); tổng tồn kho hai kho không đổi
-- [ ] `OrderDetailService`: 3 nguồn chạy song song, tổng thời gian ≈ nguồn chậm nhất; service không tự `new Thread()` và không tự tạo pool; bên nào tạo `ExecutorService` thì bên đó đóng (try-with-resources / `shutdown`)
-- [ ] Không nuốt `InterruptedException` (bật lại cờ bằng `Thread.currentThread().interrupt()` hoặc ném tiếp); không dùng `volatile` cho thao tác đọc-sửa-ghi
-- [ ] Module `domain/` vẫn là Java thuần; test S02–S05 vẫn xanh
+- [x] 100 thread cùng mua sản phẩm còn 1: đúng 1 lần thành công, các lần còn lại ném `OutOfStockException`, stock cuối = 0, không bao giờ âm
+- [x] Nhiều đơn nhiều dòng chạy đồng thời vẫn all-or-nothing: không đơn nào bị trừ một phần, tổng đã trừ = tổng số lượng của các đơn thành công
+- [x] Kiểm tra và trừ nằm trong cùng một lock (không check-then-act bên ngoài lock); lock ngắn, không gọi IO hay `sleep` khi đang giữ lock
+- [x] `transfer` hai chiều (A → B và B → A) chạy song song nhiều lần không treo (test có timeout); tổng tồn kho hai kho không đổi
+- [x] `OrderDetailService`: 3 nguồn chạy song song, tổng thời gian ≈ nguồn chậm nhất; service không tự `new Thread()` và không tự tạo pool; bên nào tạo `ExecutorService` thì bên đó đóng (try-with-resources / `shutdown`)
+- [x] Không nuốt `InterruptedException` (bật lại cờ bằng `Thread.currentThread().interrupt()` hoặc ném tiếp); không dùng `volatile` cho thao tác đọc-sửa-ghi
+- [x] Module `domain/` vẫn là Java thuần; test S02–S05 vẫn xanh
 
 Ngoài phạm vi: transaction / optimistic lock ở DB (để buổi JDBC), structured concurrency (preview), jcstress.
 
@@ -359,14 +365,16 @@ Ngoài spec: đo thời gian chạy (để `S06Demo` so sánh), fairness, hiệu
 | 5 | REST `/api/products`, `/api/orders` + `RestExceptionHandler` + OpenAPI | `interfaces/rest` | request/response là record; 404 / 409 / 400 bằng `ProblemDetail` |
 | 6 | `Dockerfile` + `compose.yaml` (PostgreSQL + backend) | root | profile `dev` chạy hoàn toàn trên Docker |
 
+> Đã merge (tag `s07-done`).
+
 **Acceptance**
-- [ ] Profile `local` (mặc định): BE chạy trên IDE, không cần DB, có sẵn dữ liệu mẫu
-- [ ] Profile `dev`: `docker compose up --build` chạy cả DB lẫn BE; dữ liệu còn sau `docker compose down` / `up`
-- [ ] Đặt đơn nhiều dòng là all-or-nothing trong DB: một dòng thiếu hàng thì không dòng nào bị trừ (rollback)
-- [ ] Nhiều request cùng mua sản phẩm cuối: đúng một đơn thành công, stock không âm
-- [ ] Đơn đọc lại từ DB giữ giá snapshot lúc đặt, kể cả khi giá sản phẩm đổi sau đó
-- [ ] Swagger UI ở `/swagger-ui.html` có đủ API product và order
-- [ ] Module `domain/` vẫn Java thuần; test S02–S06 vẫn xanh
+- [x] Profile `local` (mặc định): BE chạy trên IDE, không cần DB, có sẵn dữ liệu mẫu
+- [ ] Profile `dev`: `docker compose up --build` chạy cả DB lẫn BE; dữ liệu còn sau `docker compose down` / `up` _(chưa kiểm lại 13/11: cổng 8080 đang bận)_
+- [x] Đặt đơn nhiều dòng là all-or-nothing trong DB: một dòng thiếu hàng thì không dòng nào bị trừ (rollback)
+- [x] Nhiều request cùng mua sản phẩm cuối: đúng một đơn thành công, stock không âm
+- [x] Đơn đọc lại từ DB giữ giá snapshot lúc đặt, kể cả khi giá sản phẩm đổi sau đó
+- [x] Swagger UI ở `/swagger-ui.html` có đủ API product và order
+- [x] Module `domain/` vẫn Java thuần; test S02–S06 vẫn xanh
 
 Ngoài phạm vi: JPA / Spring Data, Flyway, optimistic lock bằng cột version, phân trang, auth.
 
@@ -387,12 +395,14 @@ Mô hình: **hub = hàng sẵn bán, kho = hàng dự trữ**, nối bằng lu�
 | 2 | `InventoryManager.replenish(Warehouse from, String productId, int quantity)` | `domain/inventory` | mới; kho xuất, hub cộng đúng số đó, all-or-nothing |
 | 3 | Visualizer: kịch bản `replenish`, đường `WH → hub` nét liền, sửa dữ liệu mẫu `WorldFactory` | `visualizer` | sau khi domain xanh, chạy skill `visualizer-sync` |
 
+> Đã merge vào `main`.
+
 **Acceptance**
-- [ ] `replenish` thành công: kho giảm và hub tăng đúng `quantity`; lỗi thì cả kho lẫn hub giữ nguyên
-- [ ] Không ai thấy trạng thái "kho đã trừ, hub chưa cộng"
-- [ ] `replenish`, `transfer` hai chiều và `decreaseStock` chạy song song không treo (test có timeout); tổng hub + các kho + đã bán không đổi
-- [ ] Thứ tự khóa toàn cục ghi trong Javadoc `InventoryManager` và `Warehouse`
-- [ ] `domain/` vẫn Java thuần; test S02–S07 vẫn xanh
+- [x] `replenish` thành công: kho giảm và hub tăng đúng `quantity`; lỗi thì cả kho lẫn hub giữ nguyên
+- [x] Không ai thấy trạng thái "kho đã trừ, hub chưa cộng"
+- [x] `replenish`, `transfer` hai chiều và `decreaseStock` chạy song song không treo (test có timeout); tổng hub + các kho + đã bán không đổi
+- [x] Thứ tự khóa toàn cục ghi trong Javadoc `InventoryManager` và `Warehouse`
+- [x] `domain/` vẫn Java thuần; test S02–S07 vẫn xanh
 
 **Spec hành vi** (đề xuất 30/10, test: `domain/src/test/java/com/training/ecommerce/domain/inventory/InventoryManagerReplenishTest.java`, test `increaseStock` thêm vào test sẵn có của `Product`)
 
@@ -428,6 +438,8 @@ Hiện `DiscountCode` (`domain.pricing`) chỉ dùng được qua `Discountable.
 |---|---|---|---|
 | 1 | `Cart.toOrder(DiscountCode code, BigDecimal taxRate)` | `domain/order` | overload mới; `order` phụ thuộc `pricing` (không vòng: `pricing` không import `order`) |
 | 2 | Visualizer: bước `new DiscountCode("SALE10", 10%)` trong `cart-to-order`, chốt đơn bằng mã, wire `pricing → orders` | `visualizer` | sau khi domain xanh, chạy skill `visualizer-sync` |
+
+> Đã merge vào `main` (cùng nhánh `extra/warehouse-hub`).
 
 **Spec hành vi** (đề xuất 30/10, test: nhóm `ToOrderWithDiscountCode` trong `domain/src/test/java/com/training/ecommerce/domain/order/CartTest.java`)
 
@@ -473,6 +485,8 @@ CANCELLED                ├──refuse(lý do)──▶ RETURNING ──markRe
 | 7 | `ShipmentService`: `create(orderId, address)`, `pickUp`, `deliver`, `failAttempt`, `refuse`, `markReturned`, `cancel` | `application/shipping` | `markReturned`/`cancel` là `@Transactional`: đổi trạng thái + hoàn kho cùng commit/rollback |
 | 8 | JDBC + in-memory (`shipments`, `shipment_events`), REST `/api/shipments` | `infrastructure`, `interfaces/rest/shipping` | `IllegalShipmentTransitionException` (domain) / `ActiveShipmentExistsException` (application) → 409, IAE → 400, không tìm thấy → 404; ISE chung (dữ liệu hỏng) vẫn 500 |
 | 9 | Visualizer: kịch bản giao thành công và giao thất bại 3 lần → hoàn kho | `visualizer` | sau khi domain xanh, chạy skill `visualizer-sync` |
+
+> Đã merge vào `main`.
 
 **Spec hành vi** (đề xuất 30/10, test: `ShipmentTest`, `ShippingFeeCalculatorTest` trong `domain/src/test/java/com/training/ecommerce/domain/shipping/`, `InventoryManagerRestockTest` trong `domain/src/test/java/com/training/ecommerce/domain/inventory/`, `ShipmentServiceTest` ở `app`)
 
@@ -529,12 +543,14 @@ Mô hình: kiểm **hình dạng request** ở tầng `interfaces` bằng Bean V
 | 6 | Annotation lên `ProductRequest`, `PlaceOrderRequest`, `PlaceOrderRequest.Line`, `CreateShipmentRequest`, `ReasonRequest`; `@Valid` ở controller | `interfaces/rest/**` | xem bảng spec |
 | 7 | `RestExceptionHandler`: `MethodArgumentNotValidException` → 400 `ProblemDetail` có property `errors: [{field, message}]` | `interfaces/rest` | message tiếng Việt; lỗi mức class mà không gắn field thì `field` = tên object |
 
+> Code xong 13/11 trên nhánh `extra/request-validation`, chưa merge vào `main`.
+
 **Acceptance**
-- [ ] Request sai nhiều chỗ trả **một** response 400 liệt kê **tất cả** field sai
-- [ ] Controller không còn tự kiểm field bắt buộc; `ProductMapper` chỉ còn mapping
-- [ ] Domain vẫn ném IAE khi bị gọi trực tiếp với dữ liệu sai (không bỏ kiểm tra ở domain)
-- [ ] Swagger hiển thị ràng buộc (`minimum`, `maximum`, `required`) cho field dùng annotation có sẵn
-- [ ] `domain/` vẫn Java thuần; test S02–S07 và Extra vẫn xanh (test cũ kiểm message lỗi được sửa theo format mới, không xoá)
+- [x] Request sai nhiều chỗ trả **một** response 400 liệt kê **tất cả** field sai
+- [x] Controller không còn tự kiểm field bắt buộc; `ProductMapper` chỉ còn mapping
+- [x] Domain vẫn ném IAE khi bị gọi trực tiếp với dữ liệu sai (không bỏ kiểm tra ở domain)
+- [x] Swagger hiển thị ràng buộc (`minimum`, `maximum`, `required`) cho field dùng annotation có sẵn
+- [x] `domain/` vẫn Java thuần; test S02–S07 và Extra vẫn xanh (test cũ kiểm message lỗi được sửa theo format mới, không xoá)
 
 **Spec hành vi** (đề xuất 11/11, test: `ProductSpecValidatorTest`, `EnumValueValidatorTest` trong `app/src/test/java/com/training/ecommerce/application/{catalog,validation}/` — test bằng `Validation.buildDefaultValidatorFactory()`, không cần Spring; `ProductControllerTest`, `OrderControllerTest` thêm case 400)
 
