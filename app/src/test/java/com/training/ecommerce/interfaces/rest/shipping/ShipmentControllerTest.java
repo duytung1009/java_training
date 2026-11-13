@@ -24,6 +24,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -69,6 +70,16 @@ class ShipmentControllerTest {
         mvc.perform(post("/api/shipments").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"orderId\":\"O1\",\"street\":\"\",\"city\":\"\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void blankCityAndStreetAreReportedByField() throws Exception {
+        mvc.perform(post("/api/shipments").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"orderId\":\"O1\",\"street\":\"1 Phố Huế\",\"city\":\" \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.length()").value(1))
+                .andExpect(jsonPath("$.errors[0].field").value("city"));
+        verifyNoInteractions(service);
     }
 
     @Test
@@ -137,10 +148,13 @@ class ShipmentControllerTest {
 
     @Test
     void blankReasonReturns400() throws Exception {
-        when(service.failAttempt(eq("S1"), any())).thenThrow(new IllegalArgumentException("reason không được rỗng"));
-
         mvc.perform(post("/api/shipments/S1/fail").contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("reason"));
+        mvc.perform(post("/api/shipments/S1/refuse").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("reason"));
+        verifyNoInteractions(service);
     }
 
     @Test
