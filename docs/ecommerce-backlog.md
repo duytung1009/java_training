@@ -509,3 +509,194 @@ Ngoài spec: trả hàng **sau khi đã giao** (`DELIVERED → RETURNING`, luồ
 **Thứ tự làm:** domain #1–5 (G1–G7 phần domain, Java thuần, test đỏ trước) → application + persistence + REST #6–8 (G7 phần service, G8) → visualizer #9.
 
 **Kiểm khi review:** chuyển trạng thái nằm trong `Shipment` (service không tự set status); lỗi chuyển trạng thái không để lại thay đổi nửa vời; `restock` là all-or-nothing và an toàn đa luồng như `decreaseStock`; hoàn kho cùng transaction với đổi trạng thái; `domain/` vẫn Java thuần; đã chạy `visualizer-sync`.
+
+---
+
+## Extra – Validate request REST bằng Bean Validation + constraint tự viết
+**Nhánh:** `extra/request-validation` · đề xuất 11/11, theo luồng spec đỏ · checklist: **Annotation**
+
+Hiện request REST được kiểm bằng tay, rải rác ở ba nơi: `ProductMapper.toDomain` (thiếu `type`, `months`, `itemIds`), constructor của domain (`weightKg > 0`, giá ≥ 0…) và `OrderService`. Lỗi trả về 400 nhưng mỗi lần chỉ báo **một** lỗi, dạng chuỗi tự do, không nói field nào sai. `app` chưa có `spring-boot-starter-validation`.
+
+Mô hình: kiểm **hình dạng request** ở tầng `interfaces` bằng Bean Validation (annotation có sẵn + 2 constraint tự viết); domain vẫn tự bảo vệ bất biến của nó (lớp phòng thủ thứ hai, không bỏ). Logic "spec → Product" chuyển từ `ProductMapper` xuống `application/catalog` để task import CSV dùng lại. Đã loại: tự viết bộ xử lý annotation bằng reflection (phát minh lại Hibernate Validator; để làm bài thử trong `playground/`); validate trong service (service không biết request JSON).
+
+| # | Class/Task | Package | Ghi chú |
+|---|---|---|---|
+| 1 | Thêm `spring-boot-starter-validation` | `app/pom.xml` | không đụng `domain/pom.xml` (enforcer chặn) |
+| 2 | `@EnumValue(enumClass, ignoreCase = true)` + `EnumValueValidator` | `application/validation` | constraint tự viết có **thuộc tính**; null/rỗng coi là hợp lệ (để `@NotBlank` lo) |
+| 3 | Interface `ProductSpec` (`type()`, `basePrice()`, `weightKg()`, `months()`, `discountRate()`, `itemIds()`) | `application/catalog` | request REST và dòng CSV cùng implement |
+| 4 | `@ValidProductSpec` (mức class) + `ProductSpecValidator implements ConstraintValidator<ValidProductSpec, ProductSpec>` | `application/catalog` | kiểm field bắt buộc theo `type`; lỗi gắn vào đúng field bằng `addPropertyNode(...)` |
+| 5 | `ProductFactory.create(ProductSpec, id, itemLookup)` | `application/catalog` | chuyển từ `ProductMapper.toDomain`; `ProductMapper` gọi lại |
+| 6 | Annotation lên `ProductRequest`, `PlaceOrderRequest`, `PlaceOrderRequest.Line`, `CreateShipmentRequest`, `ReasonRequest`; `@Valid` ở controller | `interfaces/rest/**` | xem bảng spec |
+| 7 | `RestExceptionHandler`: `MethodArgumentNotValidException` → 400 `ProblemDetail` có property `errors: [{field, message}]` | `interfaces/rest` | message tiếng Việt; lỗi mức class mà không gắn field thì `field` = tên object |
+
+**Acceptance**
+- [ ] Request sai nhiều chỗ trả **một** response 400 liệt kê **tất cả** field sai
+- [ ] Controller không còn tự kiểm field bắt buộc; `ProductMapper` chỉ còn mapping
+- [ ] Domain vẫn ném IAE khi bị gọi trực tiếp với dữ liệu sai (không bỏ kiểm tra ở domain)
+- [ ] Swagger hiển thị ràng buộc (`minimum`, `maximum`, `required`) cho field dùng annotation có sẵn
+- [ ] `domain/` vẫn Java thuần; test S02–S07 và Extra vẫn xanh (test cũ kiểm message lỗi được sửa theo format mới, không xoá)
+
+**Spec hành vi** (đề xuất 11/11, test: `ProductSpecValidatorTest`, `EnumValueValidatorTest` trong `app/src/test/java/com/training/ecommerce/application/{catalog,validation}/` — test bằng `Validation.buildDefaultValidatorFactory()`, không cần Spring; `ProductControllerTest`, `OrderControllerTest` thêm case 400)
+
+- **V1** Field chung của `ProductRequest`: `type` `@NotNull`; `name` `@NotBlank` `@Size(max = 255)`; `stock` `@PositiveOrZero`; `category` `@EnumValue(Category.class)`; mỗi phần tử `itemIds` `@NotBlank`.
+- **V2** `@ValidProductSpec` theo `type`: PHYSICAL cần `basePrice ≥ 0` và `weightKg > 0`; DIGITAL cần `basePrice ≥ 0`; SUBSCRIPTION cần `basePrice ≥ 0` và `months > 0`; BUNDLE cần `itemIds` không rỗng và `discountRate` trong [0, 1], **bỏ qua** `basePrice`. `type` null thì validator trả hợp lệ (đã có lỗi `@NotNull`, không báo trùng).
+- **V3** Field không thuộc `type` (vd. PHYSICAL gửi kèm `months`) bị bỏ qua như hiện nay, không báo lỗi.
+- **V4** `PlaceOrderRequest`: `lines` `@NotEmpty` và mỗi dòng `@Valid`; `Line.productId` `@NotBlank`, `Line.quantity` `@Positive`; `discountRate` `@DecimalMin("0") @DecimalMax("1")`; `taxRate` `@DecimalMin("0")` (null vẫn = 0 như hiện nay).
+- **V5** Lỗi kiểu dữ liệu JSON (chữ vào field số, enum `type` sai) vẫn đi đường `HttpMessageNotReadableException` → 400 như cũ; ngoài phạm vi báo theo field.
+
+| Method / Endpoint | Input | Kết quả mong đợi | Test |
+|---|---|---|---|
+| `ProductSpecValidator` | PHYSICAL thiếu `weightKg`; `weightKg` = 0 | 1 lỗi ở field `weightKg` (**V2**) | `physicalRequiresPositiveWeight` |
+| `ProductSpecValidator` | SUBSCRIPTION thiếu `months` | 1 lỗi ở `months` | `subscriptionRequiresMonths` |
+| `ProductSpecValidator` | BUNDLE `itemIds` rỗng, `discountRate` 1.5, `basePrice` null | 2 lỗi (`itemIds`, `discountRate`), không lỗi `basePrice` | `bundleRules` |
+| `ProductSpecValidator` | `type` null | không lỗi từ validator này | `nullTypeLeftToNotNull` |
+| `ProductSpecValidator` | PHYSICAL hợp lệ kèm `months` = 3 | hợp lệ (**V3**) | `ignoresFieldsOfOtherTypes` |
+| `EnumValueValidator` | `"fashion"`, `"FASHION"`; `"food"`; null | hợp lệ; lỗi; hợp lệ | `acceptsAnyCase`, `rejectsUnknown`, `nullIsValid` |
+| `POST /api/products` | `name` rỗng + `stock` −1 + PHYSICAL thiếu `weightKg` | 400, `errors` có đủ 3 field | `reportsAllFieldErrors` |
+| `POST /api/orders` | `lines` rỗng; `quantity` 0 ở dòng 2; `discountRate` 1.2 | 400, field lần lượt `lines`, `lines[1].quantity`, `discountRate` (**V4**) | `rejectsInvalidOrder` (parameterized) |
+| `POST /api/products` | `type` = `"FOOD"` | 400 "Body JSON không hợp lệ" (**V5**) | `unknownTypeIsUnreadableBody` |
+
+Ngoài spec: validation group (create khác update), message i18n theo `Accept-Language`, validate `@PathVariable`/`@RequestParam` (`@Validated` trên controller), kiểm trùng id bằng constraint (cần DB — để service lo).
+
+**Thứ tự làm:** #1 → validator #2–4 với test thuần (đỏ trước) → #5 refactor (test controller cũ phải xanh nguyên) → #6–7 + test controller.
+
+**Kiểm khi review:** `@Retention(RUNTIME)` và `@Target` đúng chỗ dùng; validator không ném exception mà trả `false` + violation; lỗi mức class gắn vào field cụ thể, đã `disableDefaultConstraintViolation()`; không còn kiểm field trùng lặp ở `ProductMapper`; dependency rule giữ nguyên (`interfaces → application`, `application.catalog` không import `interfaces`).
+
+---
+
+## Extra – CSV: export order/product, import product (file vài trăm MB)
+**Nhánh:** `extra/csv-import-export` · đề xuất 11/11, theo luồng spec đỏ · checklist: **I/O** · làm sau *Validate request REST* (dùng lại `ProductSpec`, `@ValidProductSpec`, `ProductFactory`)
+
+Hiện không có đường nào đưa dữ liệu ra/vào ngoài REST từng bản ghi. `JdbcOrderRepository.findAll()` nạp toàn bộ đơn vào RAM và chạy thêm một câu SELECT lấy line cho **mỗi** đơn (N+1); `JdbcProductRepository.findAll()` tương tự với `bundle_items`. `save` của product là **upsert** (`ON CONFLICT DO UPDATE`), không dùng được cho import "chỉ thêm mới".
+
+Mô hình: **export là read model** — port riêng đọc dạng stream thẳng từ DB ra hàng phẳng, không dựng `Order`/`Product` domain, không đi qua `findAll()`. **Import đọc từng dòng, ghi theo chunk**: không bao giờ giữ cả file trong bộ nhớ. CSV đọc/ghi tự viết bằng `java.io` (mục tiêu học I/O), đặt ở `shared` (Java thuần, test không cần Spring). Đã loại: Excel (`.xlsx` là zip XML, POI thường nạp cả file → OOM; giới hạn 1,048,576 dòng/sheet); thư viện CSV (Commons CSV / OpenCSV — mất phần học); import all-or-nothing một transaction (giữ lock và WAL rất lâu với vài triệu dòng, lỗi dòng cuối là mất hết).
+
+| # | Class/Task | Package | Ghi chú |
+|---|---|---|---|
+| 1 | `CsvWriter` (bọc `Writer`): `writeRow(String...)`, escape theo RFC 4180 | `shared/csv` (module `domain`) | field có `,` `"` `\r` `\n` thì bọc `"…"`, `"` nhân đôi; xuống dòng `\r\n` |
+| 2 | `CsvReader` (bọc `Reader`, `Closeable`): `nextRecord()` → `CsvRecord(lineNo, List<String>)` hoặc null; hoặc `Iterator`/`Stream` lười | `shared/csv` | đọc từng ký tự qua `BufferedReader`; field có ngoặc kép được chứa `,`/xuống dòng; `lineNo` = dòng vật lý **bắt đầu** bản ghi; bỏ BOM UTF-8 đầu file |
+| 3 | `CsvFormatException` (unchecked, có `lineNo`) | `shared/csv` | ngoặc kép không đóng, ký tự rác sau ngoặc kép đóng |
+| 4 | Port `OrderExportSource.forEachLine(Consumer<OrderLineRow>)`, `ProductExportSource.forEachProduct(Consumer<ProductRow>)` | `application/report/export` | callback thay vì trả `Stream`: adapter tự mở/đóng connection + transaction |
+| 5 | `CsvExportService`: `exportOrders(Writer)`, `exportProducts(Writer)` | `application/report/export` | header cố định, số dùng `toPlainString()`, thời gian ISO-8601 UTC |
+| 6 | `JdbcOrderExportSource`, `JdbcProductExportSource` + bản in-memory | `infrastructure/persistence/{jdbc,inmemory}` | **một** câu SQL mỗi loại, `JdbcClient…query(mapper).stream()` trong try-with-resources, `fetchSize` 1000, trong `TransactionTemplate` read-only (Postgres chỉ stream bằng cursor khi tắt autocommit); bundle items bằng `string_agg(item_id, '\|' ORDER BY position)` |
+| 7 | `ProductCsvRow` (record, implements `ProductSpec`, `@ValidProductSpec` + annotation field như `ProductRequest`) | `application/catalog/importing` | `itemIds` tách từ cột `item_ids` theo `\|` |
+| 8 | Port `ProductImportStore`: `existingIds(Collection<String>)`, `insertAll(List<Product>)` (batch INSERT, **không** upsert) | `application/catalog/importing` | JDBC + in-memory |
+| 9 | `ProductImportService.importProducts(Reader, ImportOptions, ChunkListener)` → `ImportResult(totalRows, imported, failed, List<RowError> firstErrors)` | `application/catalog/importing` | chunk 1000 dòng trong `TransactionTemplate`; `ChunkListener.onChunkCommitted(...)` chạy **trong** transaction của chunk (task job dùng để ghi checkpoint) |
+| 10 | REST: `GET /api/exports/orders.csv`, `GET /api/exports/products.csv` (`StreamingResponseBody`), `POST /api/imports/products` (multipart, đồng bộ, file ≤ 20MB) | `interfaces/rest/exporting`, `interfaces/rest/importing` | `text/csv; charset=UTF-8` + `Content-Disposition: attachment`; import trả JSON `ImportResult` |
+
+**Định dạng file** (export product và import product dùng chung một định dạng: export ra rồi đổi id là import lại được)
+
+```
+orders.csv   : order_id,created_at,discount_rate,tax_rate,line_no,product_id,quantity,unit_price
+products.csv : id,type,name,base_price,stock,category,weight_kg,months,discount_rate,item_ids
+```
+Một dòng `orders.csv` = một order line (đơn 3 dòng → 3 dòng CSV, thông tin đơn lặp lại). Ô trống = null. Thứ tự theo `seq`. Profile `local` không có `created_at` (order in-memory không lưu giờ tạo) → cột này để trống.
+
+**Acceptance**
+- [ ] Export 1 triệu order line và import file product ~300MB chạy được với `-Xmx256m` (kiểm tay bằng script sinh dữ liệu, ghi lệnh + thời gian vào PR)
+- [ ] Export không N+1: đúng một câu SELECT mỗi file (kiểm bằng log SQL hoặc test đếm)
+- [ ] Ngắt kết nối giữa chừng khi tải export thì connection được trả về pool (không rò)
+- [ ] Import: dòng hợp lệ được lưu, dòng lỗi được báo đủ (số dòng + lý do), chunk đã commit không bị mất khi chunk sau lỗi
+- [ ] Export products rồi import vào DB trống cho ra cùng dữ liệu (round-trip)
+- [ ] `domain/` vẫn Java thuần (`shared.csv` chỉ dùng `java.io`); test cũ vẫn xanh
+
+**Spec hành vi** (đề xuất 11/11, test: `CsvWriterTest`, `CsvReaderTest` trong `domain/src/test/java/com/training/ecommerce/shared/csv/`; `ProductImportServiceTest`, `CsvExportServiceTest` ở `app` với store in-memory; `Jdbc*ExportSourceTest`, `JdbcProductImportStoreTest` `@Tag("docker")`)
+
+- **C1** Ghi rồi đọc lại bằng chính `CsvReader` luôn ra đúng giá trị ban đầu, kể cả field có `,` `"` xuống dòng, tiếng Việt, chuỗi rỗng.
+- **C2** `CsvReader` lười: đọc bản ghi đầu từ một `Reader` vô hạn vẫn trả về ngay (chứng minh không đọc hết file).
+- **C3** Header sai (thiếu/thừa/sai thứ tự cột) → IAE trước khi ghi bất kỳ dòng nào (REST 400). Dòng có số cột khác header → lỗi dòng, không dừng import.
+- **C4** Import **chỉ thêm mới**: id đã có trong DB, hoặc trùng với dòng phía trên trong cùng file → lỗi dòng "trùng id"; không ghi đè.
+- **C5** Lỗi dòng = lỗi parse (số/enum sai) + vi phạm Bean Validation (`ProductCsvRow`) + lỗi domain (IAE từ constructor). Mỗi dòng lỗi báo đủ mọi vi phạm của dòng đó, gộp một message.
+- **C6** Bundle chỉ được tham chiếu item đã có trong DB **hoặc** đã nhập thành công ở dòng phía trên (kể cả cùng chunk chưa commit); item là dòng lỗi → bundle cũng lỗi.
+- **C7** Chunk 1000 dòng hợp lệ, mỗi chunk một transaction; DB lỗi giữa chunk (vd. id bị request khác tạo cùng lúc) → rollback **chỉ chunk đó**, các dòng của chunk được báo lỗi, import chạy tiếp.
+- **C8** `ImportResult.firstErrors` giữ tối đa 100 lỗi đầu; `failed` vẫn đếm đủ.
+- **C9** Export ghi số bằng `toPlainString()` (không có `1E+3`), ô null là ô trống, thời gian `2026-11-11T02:00:00Z`.
+
+| Method | Input | Kết quả mong đợi | Test |
+|---|---|---|---|
+| `CsvWriter.writeRow` | `a`, `b,c`, `say "hi"`, `x⏎y`, chuỗi rỗng | `a,"b,c","say ""hi""","x⏎y",` + `\r\n` | `escapesSpecialChars` |
+| ghi → `CsvReader` | các field trên + `Áo thun` | 6 field đúng như lúc ghi (**C1**) | `roundTrip` (parameterized) |
+| `CsvReader` | `Reader` sinh `a,b\r\n` vô hạn | bản ghi đầu = `[a, b]`, test xong trong 1 giây (**C2**) | `readsLazily` |
+| `CsvReader` | file có BOM; xuống dòng `\n` lẫn `\r\n` | BOM bị bỏ; cả hai kiểu xuống dòng đọc đúng | `skipsBom`, `acceptsLfAndCrlf` |
+| `CsvReader` | bản ghi 2 có field chứa 2 xuống dòng | bản ghi 3 có `lineNo` = 5 | `lineNoIsPhysicalStartLine` |
+| `CsvReader` | `"abc` không đóng; `"a"x` | `CsvFormatException` có `lineNo` | `unclosedQuote`, `garbageAfterQuote` |
+| `importProducts` | header thiếu cột `months` | IAE, store không có gì (**C3**) | `rejectsBadHeader` |
+| `importProducts` | 3 dòng: P1 hợp lệ, P2 `weight_kg` = `abc`, P3 SUBSCRIPTION thiếu `months` | imported 1, failed 2, lỗi ở dòng 3 và 4 (**C5**) | `reportsRowErrorsAndContinues` |
+| `importProducts` | dòng có `name` rỗng **và** `stock` −1 | 1 lỗi dòng, message nêu cả 2 field | `oneErrorPerRowWithAllViolations` |
+| `importProducts` | id đã có trong store; id lặp ở dòng 2 và 5 | dòng đó / dòng 5 lỗi "trùng id", bản cũ giữ nguyên (**C4**) | `insertOnly`, `duplicateIdInFile` |
+| `importProducts` | bundle B dùng P1 (dòng trên) + P9 (có trong DB); bundle C dùng P2 (dòng lỗi) | B nhập được; C lỗi (**C6**) | `bundleReferencesEarlierRowsOrDb` |
+| `importProducts` | 2500 dòng hợp lệ, store ném lỗi khi insert chunk 2 | chunk 1 và 3 lưu (2000 dòng), 500 dòng chunk 2 báo lỗi (**C7**) | `failedChunkRollsBackOnlyItself` |
+| `importProducts` | 250 dòng lỗi | `failed` 250, `firstErrors` 100 (**C8**) | `capsReportedErrors` |
+| `exportOrders` | đơn 2 dòng giá `1000.00`, đơn 1 dòng | 1 header + 3 dòng, `unit_price` `1000.00` (**C9**) | `oneRowPerOrderLine` |
+| export → import | 4 loại product, có bundle | DB mới có cùng dữ liệu | `productsRoundTrip` (`@Tag("docker")`) |
+
+Ngoài spec: Excel; import order; import kiểu upsert / cập nhật tồn kho; nén gzip; chọn cột / lọc theo ngày khi export qua REST; file > 20MB qua REST (làm ở task job bên dưới); tự đoán encoding khác UTF-8; chạy nhiều import song song trên cùng dữ liệu.
+
+**Thứ tự làm:** `shared.csv` #1–3 (Java thuần, đỏ trước) → export #4–6 + REST export → import #7–9 → REST import #10.
+
+**Kiểm khi review:** không chỗ nào `readAllLines`/`readAllBytes`/`List` toàn bộ file hay toàn bộ kết quả SQL; mọi `Reader`/`Writer`/`Stream` từ JDBC đóng bằng try-with-resources; `StreamingResponseBody` chạy **sau** khi controller trả về, nên transaction phải mở bên trong lambda (`@Transactional` trên controller không có tác dụng ở đây); charset ghi rõ `UTF-8`, không dùng mặc định của máy; SQL dùng tham số; `CsvWriter` flush nhưng không đóng `Writer` của người gọi (bên tạo thì bên đóng).
+
+---
+
+## Extra – Job nền: hàng đợi import file lớn + export đơn hằng đêm
+**Nhánh:** `extra/import-jobs` · đề xuất 11/11, theo luồng spec đỏ · làm sau *CSV* (dùng lại `ProductImportService`, `CsvExportService`)
+
+Import đồng bộ ở task CSV chỉ hợp với file nhỏ: file vài trăm MB mất nhiều phút, vượt timeout HTTP, và nếu app chết giữa chừng thì không ai biết đã nhập tới đâu. Multipart của Spring mặc định chỉ nhận 1MB. Project chưa có `@EnableScheduling` hay `Clock`.
+
+Mô hình: **hàng đợi job trong PostgreSQL**, không thêm broker. Upload lưu file xuống đĩa + một dòng `import_jobs` `PENDING` rồi trả 202; worker `@Scheduled(fixedDelay)` nhận job bằng `FOR UPDATE SKIP LOCKED` (nhiều instance không nhận trùng), giữ **lease** có hạn, ghi **checkpoint** (số dòng đã xử lý) và lỗi dòng **cùng transaction với chunk** — app chết rồi chạy lại thì tiếp từ checkpoint, không nhập trùng, không mất lỗi. Đã loại: `@Async` / thread pool trong bộ nhớ (mất job khi restart, không thấy tiến độ); Quartz / JobRunr (che mất phần cần học); Kafka/RabbitMQ (quá tầm).
+
+```
+PENDING ──claim──▶ RUNNING ──xong──▶ DONE
+   ▲                  │  └──lỗi không phục hồi (header sai, file mất)──▶ FAILED
+   └── lease hết hạn (app chết) và attempts < 3 ──┘   attempts = 3 ──▶ FAILED
+```
+
+| # | Class/Task | Package | Ghi chú |
+|---|---|---|---|
+| 1 | Bảng `import_jobs` (`id`, `status`, `file_path`, `total_rows`, `imported`, `failed`, `checkpoint_line`, `attempts`, `locked_until`, `message`, `created_at`, `started_at`, `finished_at`) + `import_job_errors` (`job_id`, `line_no`, `message`, PK `(job_id, line_no)`) | `schema.sql` | CHECK `status` như enum |
+| 2 | `ImportJob` (record) + `ImportJobStatus` (enum) | `application/catalog/importing/job` | job là chuyện của ứng dụng, không đưa vào `domain/` |
+| 3 | Port `ImportJobStore`: `create`, `claimNext(now, lease)`, `extendLease`, `saveProgress` (checkpoint + lỗi, gọi trong transaction chunk), `finish`, `fail`, `findById`, `errors(jobId, Consumer)` | `application/catalog/importing/job` | JDBC + in-memory (`synchronized`) |
+| 4 | `ImportJobService.submit(InputStream, filename)` → job `PENDING`; `ImportJobWorker.runOnce()` xử lý **tối đa một** job | `application/catalog/importing/job` | `runOnce()` public để test gọi thẳng, không chờ lịch |
+| 5 | `NightlyOrderExportJob.run()` + `CleanupJob.run()` | `application/report/export` | export đơn **ngày hôm trước** ra `exports/orders-YYYY-MM-DD.csv`; xoá export > 30 ngày, file import của job `DONE`/`FAILED` > 7 ngày |
+| 6 | `SchedulingConfig`: `@EnableScheduling`, bean `Clock` (`Asia/Ho_Chi_Minh`), các `@Scheduled` gọi `runOnce()` / `run()` | `infrastructure/config` | bật bằng `app.scheduling.enabled` (mặc định `true`, test để `false`); export đêm chỉ ở profile `dev` (order in-memory không có `created_at`) |
+| 7 | REST: `POST /api/import-jobs` (multipart, 202 + `Location`), `GET /api/import-jobs/{id}` (trạng thái + tiến độ), `GET /api/import-jobs/{id}/errors.csv` (stream) | `interfaces/rest/importing` | `spring.servlet.multipart.max-file-size=1GB`, `file-size-threshold` để multipart ghi ra đĩa; controller dùng `transferTo(Path)`, không đọc vào `byte[]` |
+| 8 | Cấu hình `app.import.dir`, `app.export.dir`, `app.import.lease` (mặc định 2 phút) | `application*.properties` | thư mục tạo khi khởi động nếu chưa có |
+
+**Acceptance**
+- [ ] Upload file ~300MB trả 202 trong vài giây; `GET` thấy tiến độ tăng dần tới `DONE`
+- [ ] Kill app giữa chừng rồi chạy lại: job tiếp tục từ checkpoint, tổng `imported` + `failed` = số dòng file, không có product nào bị nhập hai lần, lỗi dòng không bị ghi trùng
+- [ ] Hai instance (hoặc hai thread gọi `runOnce()`) không bao giờ xử lý cùng một job
+- [ ] Export đêm chạy lại trong cùng ngày ghi đè đúng file đó; không bao giờ để lại file CSV dở dang ở tên chính thức
+- [ ] Test không phụ thuộc giờ thật hay lịch chạy thật (inject `Clock`, gọi `runOnce()`/`run()` trực tiếp)
+- [ ] `domain/` không đổi; test cũ vẫn xanh
+
+**Spec hành vi** (đề xuất 11/11, test: `ImportJobWorkerTest`, `NightlyOrderExportJobTest`, `CleanupJobTest` với store in-memory + `Clock.fixed`; `JdbcImportJobStoreTest` `@Tag("docker")`; `ImportJobControllerTest`)
+
+- **J1** `claimNext` lấy job `PENDING` cũ nhất, **hoặc** job `RUNNING` có `locked_until < now`; đổi sang `RUNNING`, `attempts + 1`, `locked_until = now + lease`. JDBC làm trong **một** câu `UPDATE … WHERE id = (SELECT … FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING …`.
+- **J2** Sau mỗi chunk: checkpoint, đếm `imported`/`failed`, lỗi dòng và gia hạn lease cùng commit với dữ liệu chunk. Chạy lại job thì bỏ qua các dòng ≤ `checkpoint_line`.
+- **J3** `attempts` đạt 3 mà vẫn chưa xong (app chết lặp lại) → `FAILED`, giữ nguyên dữ liệu đã nhập. Lỗi không phục hồi (header sai, file mất) → `FAILED` ngay, không thử lại.
+- **J4** Worker mất lease (job bị instance khác nhận lại) thì `saveProgress` thất bại (điều kiện `locked_until`/`attempts` không khớp) → chunk rollback, worker dừng job đó, không ghi đè tiến độ của instance kia.
+- **J5** Export đêm lấy đơn có `created_at` trong `[00:00 hôm qua, 00:00 hôm nay)` giờ `Asia/Ho_Chi_Minh`; ghi ra `orders-YYYY-MM-DD.csv.tmp` rồi `Files.move(ATOMIC_MOVE, REPLACE_EXISTING)`.
+- **J6** Cleanup chỉ xoá file trong `app.export.dir`/`app.import.dir` theo tuổi; không xoá file của job `PENDING`/`RUNNING`.
+
+| Method | Input | Kết quả mong đợi | Test |
+|---|---|---|---|
+| `runOnce` | không có job | không làm gì, trả `false` | `idleWhenNoJob` |
+| `runOnce` | job `PENDING`, file 2500 dòng (10 lỗi) | `DONE`, imported 2490, failed 10, checkpoint = dòng cuối | `processesJobToDone` |
+| `claimNext` | job `RUNNING` có `locked_until` = now − 1s, attempts 1 | nhận được, attempts 2 (**J1**) | `reclaimsExpiredLease` |
+| `claimNext` | job `RUNNING` còn lease | không nhận | `respectsActiveLease` |
+| `runOnce` | job `RUNNING` hết lease, checkpoint ở dòng 1001 | chỉ xử lý từ dòng 1002; tổng cuối không trùng (**J2**) | `resumesFromCheckpoint` |
+| `runOnce` | job hết lease với attempts 3 | `FAILED`, message nêu số lần thử (**J3**) | `failsAfterMaxAttempts` |
+| `runOnce` | file sai header | `FAILED` ngay, attempts 1 | `badHeaderFailsWithoutRetry` |
+| 2 thread `claimNext` | 1 job `PENDING` (lặp 100 lần) | đúng 1 thread nhận | `noDoubleClaim` (JDBC `@Tag("docker")` + in-memory) |
+| `saveProgress` | lease đã bị instance khác lấy | ném lỗi, chunk rollback (**J4**) | `lostLeaseStopsWorker` |
+| `NightlyOrderExportJob.run` | `Clock` = 11/11 02:00 +07; đơn lúc 10/11 23:59 +07 và 11/11 00:00 +07 | file `orders-2026-11-10.csv` chỉ có đơn thứ nhất (**J5**) | `exportsPreviousLocalDay` |
+| `NightlyOrderExportJob.run` | chạy 2 lần; lần 2 bị lỗi giữa chừng | file chính thức là bản đầy đủ của lần 1, không có `.tmp` sót | `atomicReplace` |
+| `CleanupJob.run` | export 31 ngày / 29 ngày; file import của job `RUNNING` 10 ngày | xoá đúng file export 31 ngày (**J6**) | `deletesOnlyExpiredFiles` |
+| `POST /api/import-jobs` | file CSV | 202, `Location: /api/import-jobs/{id}`, body `status` `PENDING` | `submitReturnsAccepted` |
+
+Ngoài spec: nhiều worker song song trong cùng instance; ưu tiên job; huỷ job đang chạy; retry có backoff; thông báo khi xong (email/webhook); chống chạy trùng export đêm khi có nhiều instance (ShedLock / `pg_try_advisory_lock`); lưu file lên S3; theo dõi bằng metrics.
+
+**Thứ tự làm:** schema + store #1–3 (test JDBC `SKIP LOCKED` trước) → worker #4 (J1–J4) → export đêm + cleanup #5 → config + REST #6–8.
+
+**Kiểm khi review:** checkpoint và lỗi dòng nằm **trong** transaction của chunk (không phải sau commit); worker không giữ transaction trong lúc đọc file giữa hai chunk; `@Scheduled` mặc định chỉ có một thread — job dài không được chặn export đêm (cấu hình `spring.task.scheduling.pool.size` hoặc ghi rõ lý do); mọi chỗ lấy giờ đều qua `Clock`; `Files.move` atomic cùng thư mục; file upload không bao giờ bị đọc hết vào RAM.
