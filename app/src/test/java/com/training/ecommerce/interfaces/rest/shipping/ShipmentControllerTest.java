@@ -87,7 +87,8 @@ class ShipmentControllerTest {
         when(service.create(eq("O1"), any())).thenThrow(new OrderNotFoundException("O1"));
 
         mvc.perform(post("/api/shipments").contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_FOUND"));
     }
 
     @Test
@@ -95,7 +96,8 @@ class ShipmentControllerTest {
         when(service.create(eq("O1"), any())).thenThrow(new ActiveShipmentExistsException("O1"));
 
         mvc.perform(post("/api/shipments").contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ACTIVE_SHIPMENT_EXISTS"));
     }
 
     @Test
@@ -143,7 +145,8 @@ class ShipmentControllerTest {
 
         mvc.perform(post("/api/shipments/S1/cancel"))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.status").value(409));
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.code").value("ILLEGAL_SHIPMENT_TRANSITION"));
     }
 
     @Test
@@ -161,6 +164,7 @@ class ShipmentControllerTest {
     void transitionOnMissingShipmentReturns404() throws Exception {
         when(service.pickUp("nope")).thenThrow(new ShipmentNotFoundException("nope"));
 
-        mvc.perform(post("/api/shipments/nope/pick-up")).andExpect(status().isNotFound());
+        mvc.perform(post("/api/shipments/nope/pick-up")).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SHIPMENT_NOT_FOUND"));
     }
 }

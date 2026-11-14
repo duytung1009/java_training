@@ -117,7 +117,7 @@ class ShipmentTest {
         @Test
         @DisplayName("markDelivered khi chưa lấy hàng (CREATED) → ISE, message nêu CREATED")
         void cannotDeliverBeforePickUp() {
-            IllegalStateException e = assertThrows(IllegalStateException.class, () -> shipment.markDelivered());
+            IllegalShipmentTransitionException e = assertThrows(IllegalShipmentTransitionException.class, () -> shipment.markDelivered());
             assertTrue(e.getMessage().contains("CREATED"));
         }
     }
@@ -163,7 +163,7 @@ class ShipmentTest {
             shipment.failAttempt("2");
             shipment.failAttempt("3");
 
-            IllegalStateException e = assertThrows(IllegalStateException.class, () -> shipment.failAttempt("4"));
+            IllegalShipmentTransitionException e = assertThrows(IllegalShipmentTransitionException.class, () -> shipment.failAttempt("4"));
             assertTrue(e.getMessage().contains("RETURNING"));
             assertEquals(3, shipment.getFailedAttempts());
         }
@@ -194,7 +194,7 @@ class ShipmentTest {
         @Test
         @DisplayName("failAttempt ở CREATED → ISE, message nêu CREATED, attempts và history không đổi")
         void failAttemptRequiresInTransit() {
-            IllegalStateException e = assertThrows(IllegalStateException.class, () -> shipment.failAttempt("lý do"));
+            IllegalShipmentTransitionException e = assertThrows(IllegalShipmentTransitionException.class, () -> shipment.failAttempt("lý do"));
 
             assertTrue(e.getMessage().contains("CREATED"));
             assertEquals(0, shipment.getFailedAttempts());
@@ -226,14 +226,14 @@ class ShipmentTest {
         void markReturnedRequiresReturning() {
             inTransit();
 
-            IllegalStateException e = assertThrows(IllegalStateException.class, () -> shipment.markReturned());
+            IllegalShipmentTransitionException e = assertThrows(IllegalShipmentTransitionException.class, () -> shipment.markReturned());
             assertTrue(e.getMessage().contains("IN_TRANSIT"));
         }
 
         @Test
         @DisplayName("refuse ở CREATED → ISE")
         void refuseRequiresInTransit() {
-            assertThrows(IllegalStateException.class, () -> shipment.refuse("lý do"));
+            assertThrows(IllegalShipmentTransitionException.class, () -> shipment.refuse("lý do"));
         }
     }
 
@@ -255,7 +255,7 @@ class ShipmentTest {
         void cannotCancelAfterPickUp() {
             inTransit();
 
-            IllegalStateException e = assertThrows(IllegalStateException.class, () -> shipment.cancel());
+            IllegalShipmentTransitionException e = assertThrows(IllegalShipmentTransitionException.class, () -> shipment.cancel());
             assertTrue(e.getMessage().contains("IN_TRANSIT"));
             assertEquals(ShipmentStatus.IN_TRANSIT, shipment.getStatus());
         }
@@ -298,8 +298,8 @@ class ShipmentTest {
             operations.put("cancel", Shipment::cancel);
 
             operations.forEach((name, operation) -> {
-                IllegalStateException e = assertThrows(IllegalStateException.class, () -> operation.accept(s),
-                        name + " ở " + terminal + " phải ném ISE");
+                IllegalShipmentTransitionException e = assertThrows(IllegalShipmentTransitionException.class, () -> operation.accept(s),
+                        name + " ở " + terminal + " phải ném IllegalShipmentTransitionException");
                 assertTrue(e.getMessage().contains(terminal.name()), name + ": message phải nêu " + terminal);
                 assertEquals(terminal, s.getStatus());
                 assertEquals(0, s.getFailedAttempts());

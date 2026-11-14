@@ -2,6 +2,7 @@
 // SPEC S03 – nâng cấp 20/10: Product thành abstract → dùng PhysicalProduct (0.5 kg); kỳ vọng S02 giữ nguyên.
 package com.training.ecommerce.domain.order;
 
+import com.training.ecommerce.domain.catalog.OutOfStockException;
 import com.training.ecommerce.domain.catalog.PhysicalProduct;
 import com.training.ecommerce.domain.catalog.Product;
 import com.training.ecommerce.domain.catalog.SubscriptionProduct;
@@ -50,9 +51,9 @@ class OrderLineTest {
         }
 
         @Test
-        @DisplayName("quantity lớn hơn tồn kho → IllegalStateException")
+        @DisplayName("quantity lớn hơn tồn kho → OutOfStockException")
         void rejectsQuantityGreaterThanStock() {
-            assertThrows(IllegalStateException.class, () -> new OrderLine(tshirt, 51));
+            assertThrows(OutOfStockException.class, () -> new OrderLine(tshirt, 51));
         }
 
         @Test

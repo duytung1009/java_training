@@ -143,7 +143,8 @@ class OrderControllerTest {
         when(service.placeOrder(any())).thenThrow(new ProductNotFoundException("P1"));
 
         mvc.perform(post("/api/orders").contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
     }
 
     @Test
@@ -152,7 +153,8 @@ class OrderControllerTest {
 
         mvc.perform(post("/api/orders").contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.status").value(409));
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.code").value("OUT_OF_STOCK"));
     }
 
     @Test
@@ -168,7 +170,8 @@ class OrderControllerTest {
     void getMissingReturns404() throws Exception {
         when(service.findById("nope")).thenThrow(new OrderNotFoundException("nope"));
 
-        mvc.perform(get("/api/orders/nope")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/orders/nope")).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_FOUND"));
     }
 
     @Test

@@ -92,6 +92,7 @@ class ProductControllerTest {
         mvc.perform(get("/api/products/nope"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"))
                 .andExpect(jsonPath("$.detail").exists());
     }
 
@@ -123,7 +124,8 @@ class ProductControllerTest {
 
         mvc.perform(post("/api/products").contentType(MediaType.APPLICATION_JSON).content("""
                         {"id":"B1","type":"BUNDLE","name":"Combo","stock":1,"discountRate":0.2,"itemIds":["X"]}"""))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
         verify(service, never()).save(any());
     }
 
@@ -216,7 +218,8 @@ class ProductControllerTest {
         when(service.update(eq("P1"), any(Product.class))).thenThrow(new ProductNotFoundException("P1"));
 
         mvc.perform(put("/api/products/P1").contentType(MediaType.APPLICATION_JSON).content(PHYSICAL_JSON))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
     }
 
     @Test
@@ -229,7 +232,8 @@ class ProductControllerTest {
     void deleteMissingReturns404() throws Exception {
         doThrow(new ProductNotFoundException("P1")).when(service).delete(anyString());
 
-        mvc.perform(delete("/api/products/P1")).andExpect(status().isNotFound());
+        mvc.perform(delete("/api/products/P1")).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
     }
 
     @Test
@@ -238,6 +242,7 @@ class ProductControllerTest {
 
         mvc.perform(delete("/api/products/P1"))
                 .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("PRODUCT_IN_USE"))
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("P1")));
     }
 

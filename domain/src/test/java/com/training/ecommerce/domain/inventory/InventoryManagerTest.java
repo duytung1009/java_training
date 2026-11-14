@@ -3,8 +3,10 @@
 // SPEC S05 – nâng cấp 21/10: findById trả Optional (Spec S05 D2).
 package com.training.ecommerce.domain.inventory;
 
+import com.training.ecommerce.domain.catalog.OutOfStockException;
 import com.training.ecommerce.domain.catalog.PhysicalProduct;
 import com.training.ecommerce.domain.catalog.Product;
+import com.training.ecommerce.domain.catalog.ProductNotFoundException;
 import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.domain.order.OrderLine;
 import org.junit.jupiter.api.BeforeEach;
@@ -166,22 +168,22 @@ class InventoryManagerTest {
         }
 
         @Test
-        @DisplayName("Một line thiếu hàng → IllegalStateException, KHÔNG line nào bị trừ (all-or-nothing)")
+        @DisplayName("Một line thiếu hàng → OutOfStockException, KHÔNG line nào bị trừ (all-or-nothing)")
         void throwsAndChangesNothingWhenAnyLineIsInsufficient() {
             Order order = newOrder(new OrderLine(tshirt, 3), new OrderLine(jeans, 20));
             inventory.decreaseStock(newOrder(new OrderLine(jeans, 1)));   // jeans còn 19 sau khi order được tạo
 
-            assertThrows(IllegalStateException.class, () -> inventory.decreaseStock(order));
+            assertThrows(OutOfStockException.class, () -> inventory.decreaseStock(order));
             assertEquals(50, tshirt.getStock());
             assertEquals(19, jeans.getStock());
         }
 
         @Test
-        @DisplayName("Cùng product ở 2 line: cộng dồn, vượt tồn kho → IllegalStateException, kho giữ nguyên")
+        @DisplayName("Cùng product ở 2 line: cộng dồn, vượt tồn kho → OutOfStockException, kho giữ nguyên")
         void accumulatesQuantityOfSameProductAcrossLines() {
             Order order = newOrder(new OrderLine(tshirt, 30), new OrderLine(tshirt, 30));
 
-            assertThrows(IllegalStateException.class, () -> inventory.decreaseStock(order));
+            assertThrows(OutOfStockException.class, () -> inventory.decreaseStock(order));
             assertEquals(50, tshirt.getStock());
         }
 
@@ -194,12 +196,12 @@ class InventoryManagerTest {
         }
 
         @Test
-        @DisplayName("Line có product không có trong kho → IllegalArgumentException, kho giữ nguyên")
+        @DisplayName("Line có product không có trong kho → ProductNotFoundException, kho giữ nguyên")
         void rejectsProductNotInInventory() {
             Product socks = new PhysicalProduct("P003", "Tất cổ ngắn", new BigDecimal("12345.67"), 100, new BigDecimal("0.5"));
             Order order = newOrder(new OrderLine(tshirt, 2), new OrderLine(socks, 1));
 
-            assertThrows(IllegalArgumentException.class, () -> inventory.decreaseStock(order));
+            assertThrows(ProductNotFoundException.class, () -> inventory.decreaseStock(order));
             assertEquals(50, tshirt.getStock());
         }
 

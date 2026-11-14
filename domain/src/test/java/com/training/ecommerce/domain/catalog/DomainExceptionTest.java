@@ -1,9 +1,11 @@
 // SPEC S04 – sinh bởi java-start-backlog 21/10. Không sửa test để cho pass; muốn đổi spec thì sửa bảng Spec trong backlog trước.
+// Đã đổi spec: lớp cha là BusinessException – xem backlog mục "Extra – Gom lỗi nghiệp vụ".
 package com.training.ecommerce.domain.catalog;
 
 import com.training.ecommerce.domain.inventory.InventoryManager;
 import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.domain.order.OrderLine;
+import com.training.ecommerce.shared.error.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -33,12 +35,14 @@ class DomainExceptionTest {
     class ExceptionItself {
 
         @Test
-        @DisplayName("OutOfStockException: unchecked, là IllegalStateException, có dữ liệu và message có id")
+        @DisplayName("OutOfStockException: unchecked, là BusinessException (CONFLICT, OUT_OF_STOCK), có dữ liệu và message có id")
         void outOfStockCarriesData() {
             OutOfStockException e = new OutOfStockException("P002", 21, 20);
 
-            assertInstanceOf(IllegalStateException.class, e);
+            assertInstanceOf(BusinessException.class, e);
             assertInstanceOf(RuntimeException.class, e);
+            assertEquals(BusinessException.Category.CONFLICT, e.getCategory());
+            assertEquals("OUT_OF_STOCK", e.getCode());
             assertEquals("P002", e.getProductId());
             assertEquals(21, e.getRequested());
             assertEquals(20, e.getAvailable());
@@ -46,11 +50,13 @@ class DomainExceptionTest {
         }
 
         @Test
-        @DisplayName("ProductNotFoundException: unchecked, là IllegalArgumentException, message có id")
+        @DisplayName("ProductNotFoundException: unchecked, là BusinessException (NOT_FOUND, PRODUCT_NOT_FOUND), message có id")
         void notFoundCarriesId() {
             ProductNotFoundException e = new ProductNotFoundException("P999");
 
-            assertInstanceOf(IllegalArgumentException.class, e);
+            assertInstanceOf(BusinessException.class, e);
+            assertEquals(BusinessException.Category.NOT_FOUND, e.getCategory());
+            assertEquals("PRODUCT_NOT_FOUND", e.getCode());
             assertEquals("P999", e.getProductId());
             assertTrue(e.getMessage().contains("P999"), e.getMessage());
         }

@@ -87,10 +87,10 @@ API (quyết định 20/10: tiền dùng **`BigDecimal`** ngay từ S02, mọi s
 | `addProduct` | 15 product | mảng tự nới, tìm thấy đủ | `growsBeyondInitialCapacity` |
 | `addProduct` | `null`, trùng id | `IllegalArgumentException`, product cũ giữ nguyên | `rejectsNullProduct`, `rejectsDuplicateId` |
 | `decreaseStock(Order)` | 3×P001 + 2×P002; nhiều order liên tiếp; đặt đúng bằng tồn | 47 / 18 (thấy qua reference product), cộng dồn, về 0; product không có trong order không đổi; order rỗng không đổi | `decreasesStockForEachLine`, `accumulatesSuccessiveOrders`, `allowsDecreasingToZero`, `doesNotAffectProductsNotInOrder`, `emptyOrderChangesNothing` |
-| `decreaseStock(Order)` | một line thiếu hàng; cùng product ở 2 line vượt tồn (30+30 > 50) | `IllegalStateException`, **all-or-nothing**: không line nào bị trừ; trùng product thì cộng dồn (20+30 = 50 → về 0) | `throwsAndChangesNothingWhenAnyLineIsInsufficient`, `accumulatesQuantityOfSameProductAcrossLines`, `allowsSameProductAcrossLinesWithinStock` |
-| `decreaseStock(Order)` | `null`, line có product không có trong kho | `IllegalArgumentException`, kho giữ nguyên | `rejectsNullOrder`, `rejectsProductNotInInventory` |
+| `decreaseStock(Order)` | một line thiếu hàng; cùng product ở 2 line vượt tồn (30+30 > 50) | `IllegalStateException` *(nay `OutOfStockException`, xem Extra – Gom lỗi nghiệp vụ)*, **all-or-nothing**: không line nào bị trừ; trùng product thì cộng dồn (20+30 = 50 → về 0) | `throwsAndChangesNothingWhenAnyLineIsInsufficient`, `accumulatesQuantityOfSameProductAcrossLines`, `allowsSameProductAcrossLinesWithinStock` |
+| `decreaseStock(Order)` | `null`, line có product không có trong kho | `IllegalArgumentException` (product không có trong kho nay là `ProductNotFoundException`, xem Extra – Gom lỗi nghiệp vụ), kho giữ nguyên | `rejectsNullOrder`, `rejectsProductNotInInventory` |
 | `OrderLine` | quantity = stock | hợp lệ; tạo line **không** giảm stock | `allowsQuantityEqualToStock`, `doesNotChangeStock` |
-| `OrderLine` | quantity > stock | `IllegalStateException` (D8: OrderLine có kiểm tồn kho) | `rejectsQuantityGreaterThanStock` |
+| `OrderLine` | quantity > stock | `IllegalStateException` (D8: OrderLine có kiểm tồn kho; nay `OutOfStockException`, xem Extra – Gom lỗi nghiệp vụ) | `rejectsQuantityGreaterThanStock` |
 | `OrderLine` | product null, quantity 0/−5 | `IllegalArgumentException` | `rejectsNullProduct`, `rejectsNonPositiveQuantity` |
 | `lineTotal` | 150000×2, 12345.67×3, 19999.995×1, 0×5 | `300000.00`, `37037.01`, `20000.00`, `0.00` | `multipliesPriceByQuantity` |
 | `Order` | chưa có line | mọi số tiền `0.00` | `emptyOrderIsZero` |
@@ -193,7 +193,7 @@ Ngoài spec: `getBasePrice()` của BundleProduct, so sánh city không phân bi
 
 **Spec hành vi** (chốt 21/10, test: `app/src/test/java/com/training/ecommerce/infrastructure/persistence/inmemory/InMemoryRepositoryTest.java`, `domain/src/test/java/com/training/ecommerce/domain/{order/CartTest, catalog/DomainExceptionTest}.java`; test S02–S03 giữ nguyên)
 
-API (quyết định 21/10): `Identifiable<ID>` + `Repository<T extends Identifiable<ID>, ID>` (`save`, `saveAll(Collection<? extends T>)`, `findById` → `null` khi không có (S05: `Optional`), `findAll`, `deleteById`, `count`) ở `shared/repository`; `InMemoryRepository` ở app `infrastructure/persistence/inmemory`; `Product implements Identifiable<String>`. Exception **ở `domain/catalog`** (tránh vòng phụ thuộc catalog ↔ inventory): `ProductNotFoundException extends IllegalArgumentException` (`getProductId`), `OutOfStockException extends IllegalStateException` (`getProductId/getRequested/getAvailable`). `Cart` ở `domain/order`. Chưa dùng `Optional`/Stream (S05).
+API (quyết định 21/10): `Identifiable<ID>` + `Repository<T extends Identifiable<ID>, ID>` (`save`, `saveAll(Collection<? extends T>)`, `findById` → `null` khi không có (S05: `Optional`), `findAll`, `deleteById`, `count`) ở `shared/repository`; `InMemoryRepository` ở app `infrastructure/persistence/inmemory`; `Product implements Identifiable<String>`. Exception **ở `domain/catalog`** (tránh vòng phụ thuộc catalog ↔ inventory): `ProductNotFoundException extends IllegalArgumentException` (`getProductId`), `OutOfStockException extends IllegalStateException` (`getProductId/getRequested/getAvailable`) *(nay cả hai extends `BusinessException`, xem Extra – Gom lỗi nghiệp vụ)*. `Cart` ở `domain/order`. Chưa dùng `Optional`/Stream (S05).
 
 | Method | Input | Kết quả mong đợi | Test |
 |---|---|---|---|
@@ -213,7 +213,7 @@ API (quyết định 21/10): `Identifiable<ID>` + `Repository<T extends Identifi
 | `getItems` | `put` từ bên ngoài | `UnsupportedOperationException`, giỏ không đổi | `itemsAreUnmodifiable` |
 | `toOrder` | áo 1, quần 1, áo 1; discount 0.10, tax 0.08 | 2 OrderLine (áo 2, quần 1) theo thứ tự thêm; final `729000.00`; không trừ kho | `createsOrderFromItems`, `doesNotDecreaseStock` |
 | `toOrder` | giỏ rỗng; rate 1.5 | `IllegalStateException` (D6); `IllegalArgumentException` | `rejectsEmptyCart`, `rejectsInvalidRates` |
-| Exception | `new OutOfStockException("P002", 21, 20)`, `new ProductNotFoundException("P999")` | unchecked, đúng lớp cha (ISE / IAE), getter đúng, message có id | `outOfStockCarriesData`, `notFoundCarriesId` |
+| Exception | `new OutOfStockException("P002", 21, 20)`, `new ProductNotFoundException("P999")` | unchecked, đúng lớp cha (ISE / IAE; nay `BusinessException` + category + code, xem Extra – Gom lỗi nghiệp vụ), getter đúng, message có id | `outOfStockCarriesData`, `notFoundCarriesId` |
 | Nơi ném | `Product.decreaseStock(21)` (tồn 20); `new OrderLine(áo, 51)`; `InventoryManager.decreaseStock` 30 + 30 áo; product không có trong kho | `OutOfStockException` (21/20), (51/50), (60/50 – cộng dồn); `ProductNotFoundException` (P002) | `productDecreaseStock`, `orderLineOverStock`, `inventoryOutOfStock`, `inventoryProductNotFound` |
 
 Ngoài spec: `Repository.saveAll(null)`, `Cart.changeQuantity(null, …)` trả về exception khác IAE, hiệu năng.
@@ -495,7 +495,7 @@ CANCELLED                ├──refuse(lý do)──▶ RETURNING ──markRe
 - **G3** Đơn không có dòng hàng vật lý nào (chỉ digital/subscription) → IAE khi tính phí / tạo vận đơn; `order`, `address`, `orderId` null/rỗng → IAE.
 - **G4** `failAttempt(lý do)` chỉ ở `IN_TRANSIT`: `failedAttempts + 1`, giữ `IN_TRANSIT`; lần thứ 3 (`MAX_ATTEMPTS = 3`) tự chuyển `RETURNING`. Lý do null/rỗng → IAE (kiểm trước trạng thái).
 - **G5** `cancel()` chỉ ở `CREATED`; đã lấy hàng thì phải `refuse` → `markReturned`.
-- **G6** Chuyển trạng thái không có trong sơ đồ → `IllegalShipmentTransitionException` (kế thừa `IllegalStateException`, như `OutOfStockException`), message nêu trạng thái hiện tại; trạng thái kết thúc (`DELIVERED`, `RETURNED`, `CANCELLED`) không chuyển đi đâu được. Ném lỗi thì trạng thái và history không đổi.
+- **G6** Chuyển trạng thái không có trong sơ đồ → `IllegalShipmentTransitionException` (kế thừa `IllegalStateException`, như `OutOfStockException`; nay kế thừa `BusinessException`, xem Extra – Gom lỗi nghiệp vụ), message nêu trạng thái hiện tại; trạng thái kết thúc (`DELIVERED`, `RETURNED`, `CANCELLED`) không chuyển đi đâu được. Ném lỗi thì trạng thái và history không đổi.
 - **G7** `restock(Order)` cộng lại đúng số lượng theo product của đơn; product không có trong hub → `ProductNotFoundException`, không product nào được cộng (all-or-nothing như `decreaseStock`). Ở `ShipmentService`: `RETURNED` và `CANCELLED` hoàn kho, `DELIVERED` không.
 - **G8** Mỗi đơn có tối đa một vận đơn "còn hiệu lực" (khác `CANCELLED`/`RETURNED`): tạo thêm → ISE (REST 409). `DELIVERED` cũng chặn (đơn đã giao xong không giao lại); vận đơn trước đã `CANCELLED`/`RETURNED` thì được tạo mới. DB có partial unique index cùng điều kiện làm lớp phòng thủ cuối.
 
@@ -716,3 +716,45 @@ Ngoài spec: nhiều worker song song trong cùng instance; ưu tiên job; huỷ
 **Thứ tự làm:** schema + store #1–3 (test JDBC `SKIP LOCKED` trước) → worker #4 (J1–J4) → export đêm + cleanup #5 → config + REST #6–8.
 
 **Kiểm khi review:** checkpoint và lỗi dòng nằm **trong** transaction của chunk (không phải sau commit); worker không giữ transaction trong lúc đọc file giữa hai chunk; `@Scheduled` mặc định chỉ có một thread — job dài không được chặn export đêm (cấu hình `spring.task.scheduling.pool.size` hoặc ghi rõ lý do); mọi chỗ lấy giờ đều qua `Clock`; `Files.move` atomic cùng thư mục; file upload không bao giờ bị đọc hết vào RAM.
+
+---
+
+## Extra – Gom lỗi nghiệp vụ: `BusinessException` + mã lỗi trong ProblemDetail
+**Nhánh:** `extra/request-validation` · đề xuất 14/11 · checklist: **Exception**
+
+Trước đây `RestExceptionHandler` liệt kê từng class (`notFound`: 3 class, `conflict`: 4 class) và phải dựa vào "Spring chọn handler gần nhất" để 404/409 thắng 400 (vì `ProductNotFoundException` là IAE, `OutOfStockException` là ISE). Thêm một lỗi nghiệp vụ mới phải nhớ sửa handler; response chỉ có `detail` tiếng Việt, client không có mã ổn định để xử lý bằng máy.
+
+Mô hình: một cha chung `BusinessException` (domain, Java thuần) mang `Category` (nhóm lỗi) và `code` (chuỗi ổn định). Handler map **theo category** ở một chỗ và thêm property `code` vào `ProblemDetail`.
+
+| # | Class/Task | Package | Ghi chú |
+|---|---|---|---|
+| 1 | `BusinessException` (abstract, `Category { NOT_FOUND, CONFLICT }`, `getCategory()`, `getCode()`) | `shared/error` (module `domain`) | validate category/code → IAE |
+| 2 | 3 exception của domain extends `BusinessException` | `domain/catalog`, `domain/shipping` | giữ constructor, getter, message |
+| 3 | 4 exception của app extends `BusinessException` | `application/{order,shipping,catalog}` | `ProductInUseException` giữ `cause` |
+| 4 | `RestExceptionHandler`: một handler `BusinessException`, switch category → status, property `code` | `interfaces/rest` | bỏ `notFound`/`conflict` |
+| 5 | `S02Demo` bắt thêm `BusinessException` | `demo` | in kết quả như cũ |
+
+**Quyết định**
+- `HttpStatus` không đưa vào domain (domain không có Spring): domain chỉ biết `Category`, tầng `interfaces` map sang status.
+- Chỉ có `NOT_FOUND` và `CONFLICT`; chưa có `INVALID` vì chưa có chỗ dùng — lỗi đầu vào thuần vẫn là `IllegalArgumentException` → 400.
+- `OrderDetailLoadException` là lỗi kỹ thuật (không đọc được dữ liệu) nên **không** thuộc `BusinessException`, vẫn 500.
+- Hệ quả: 7 exception trên **không còn** là `IllegalArgumentException` / `IllegalStateException`. Code bắt `catch (IllegalStateException | IllegalArgumentException)` để bắt chúng phải bắt thêm `BusinessException`; test assert lớp cha ISE/IAE được đổi sang assert đúng exception cụ thể (đổi spec có chủ đích).
+
+| Exception | Category | Code | REST status |
+|---|---|---|---|
+| `ProductNotFoundException` | NOT_FOUND | `PRODUCT_NOT_FOUND` | 404 |
+| `OrderNotFoundException` | NOT_FOUND | `ORDER_NOT_FOUND` | 404 |
+| `ShipmentNotFoundException` | NOT_FOUND | `SHIPMENT_NOT_FOUND` | 404 |
+| `OutOfStockException` | CONFLICT | `OUT_OF_STOCK` | 409 |
+| `IllegalShipmentTransitionException` | CONFLICT | `ILLEGAL_SHIPMENT_TRANSITION` | 409 |
+| `ActiveShipmentExistsException` | CONFLICT | `ACTIVE_SHIPMENT_EXISTS` | 409 |
+| `ProductInUseException` | CONFLICT | `PRODUCT_IN_USE` | 409 |
+
+Response: `ProblemDetail` như cũ (`status`, `detail`) cộng property `code`. `DataIntegrityViolationException` (409) và IAE (400) không có `code`.
+
+**Acceptance**
+- [x] Một handler `BusinessException` thay cho `notFound` + `conflict`; status giữ nguyên như trước
+- [x] Response 404/409 của 7 exception có `code` đúng bảng (test controller)
+- [x] `BusinessException` validate category/code (`BusinessExceptionTest`)
+- [x] `domain/` vẫn Java thuần; test cũ xanh (chỉ sửa test assert lớp cha ISE/IAE)
+- [x] Chạy `visualizer-sync`: `domain-api.txt` không lệch (snapshot không ghi lớp cha), visualizer không bắt/mô tả các exception này theo ISE/IAE nên không phải sửa
