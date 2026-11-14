@@ -1,15 +1,17 @@
 package com.training.ecommerce.domain.catalog;
 
+import com.training.ecommerce.shared.error.BusinessException;
+
 /**
- * Không đủ hàng tồn kho. Kế thừa IllegalStateException để tương thích code cũ.
+ * Không đủ hàng tồn kho (CONFLICT, mã {@code OUT_OF_STOCK}).
  */
-public class OutOfStockException extends IllegalStateException {
+public class OutOfStockException extends BusinessException {
     private final String productId;
     private final int requested;
     private final int available;
 
     public OutOfStockException(String productId, int requested, int available) {
-        super("Không đủ hàng cho " + productId + ": còn " + available + ", cần " + requested);
+        super(Category.CONFLICT, "OUT_OF_STOCK", "Không đủ hàng cho " + productId + ": còn " + available + ", cần " + requested);
         this.productId = productId;
         this.requested = requested;
         this.available = available;

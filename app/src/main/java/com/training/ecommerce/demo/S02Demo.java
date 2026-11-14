@@ -6,6 +6,7 @@ import com.training.ecommerce.domain.inventory.InventoryManager;
 import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.domain.order.OrderLine;
 import com.training.ecommerce.interfaces.cli.ReceiptPrinter;
+import com.training.ecommerce.shared.error.BusinessException;
 
 import java.math.BigDecimal;
 
@@ -34,7 +35,7 @@ public class S02Demo {
         // Lỗi: thiếu hàng (ức gà chỉ còn 20)
         try {
             new OrderLine(inventory.findById("P03").orElseThrow(), 21);
-        } catch (IllegalStateException e) {
+        } catch (BusinessException e) {
             System.out.println(">>> Lỗi: " + e.getMessage());
         }
 
@@ -50,7 +51,7 @@ public class S02Demo {
         try {
             inventory.decreaseStock(order);
             System.out.println(printer.print(order));
-        } catch (IllegalStateException | IllegalArgumentException e) {
+        } catch (BusinessException | IllegalStateException | IllegalArgumentException e) {
             System.out.println(">>> Xử lý đơn thất bại: " + e.getMessage());
         }
     }

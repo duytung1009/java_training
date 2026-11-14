@@ -24,6 +24,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -72,11 +73,22 @@ class ShipmentControllerTest {
     }
 
     @Test
+    void blankCityAndStreetAreReportedByField() throws Exception {
+        mvc.perform(post("/api/shipments").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"orderId\":\"O1\",\"street\":\"1 Phố Huế\",\"city\":\" \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.length()").value(1))
+                .andExpect(jsonPath("$.errors[0].field").value("city"));
+        verifyNoInteractions(service);
+    }
+
+    @Test
     void unknownOrderReturns404() throws Exception {
         when(service.create(eq("O1"), any())).thenThrow(new OrderNotFoundException("O1"));
 
         mvc.perform(post("/api/shipments").contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_FOUND"));
     }
 
     @Test
@@ -84,7 +96,8 @@ class ShipmentControllerTest {
         when(service.create(eq("O1"), any())).thenThrow(new ActiveShipmentExistsException("O1"));
 
         mvc.perform(post("/api/shipments").contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ACTIVE_SHIPMENT_EXISTS"));
     }
 
     @Test
@@ -132,21 +145,26 @@ class ShipmentControllerTest {
 
         mvc.perform(post("/api/shipments/S1/cancel"))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.status").value(409));
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.code").value("ILLEGAL_SHIPMENT_TRANSITION"));
     }
 
     @Test
     void blankReasonReturns400() throws Exception {
-        when(service.failAttempt(eq("S1"), any())).thenThrow(new IllegalArgumentException("reason không được rỗng"));
-
         mvc.perform(post("/api/shipments/S1/fail").contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("reason"));
+        mvc.perform(post("/api/shipments/S1/refuse").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("reason"));
+        verifyNoInteractions(service);
     }
 
     @Test
     void transitionOnMissingShipmentReturns404() throws Exception {
         when(service.pickUp("nope")).thenThrow(new ShipmentNotFoundException("nope"));
 
-        mvc.perform(post("/api/shipments/nope/pick-up")).andExpect(status().isNotFound());
+        mvc.perform(post("/api/shipments/nope/pick-up")).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SHIPMENT_NOT_FOUND"));
     }
 }

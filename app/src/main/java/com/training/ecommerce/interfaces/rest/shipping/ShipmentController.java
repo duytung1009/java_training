@@ -5,6 +5,7 @@ import com.training.ecommerce.domain.shipping.Shipment;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,7 +38,7 @@ public class ShipmentController {
     @ApiResponse(responseCode = "400", description = "Body không hợp lệ, hoặc đơn không có hàng vật lý")
     @ApiResponse(responseCode = "404", description = "Không có đơn với orderId này")
     @ApiResponse(responseCode = "409", description = "Đơn đã có vận đơn còn hiệu lực (khác CANCELLED / RETURNED)")
-    public ResponseEntity<ShipmentResponse> create(@RequestBody CreateShipmentRequest request) {
+    public ResponseEntity<ShipmentResponse> create(@Valid @RequestBody CreateShipmentRequest request) {
         Shipment shipment = service.create(request.orderId(), ShipmentMapper.toAddress(request));
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(shipment.getId()).toUri();
         return ResponseEntity.created(location).body(ShipmentMapper.toResponse(shipment));
@@ -77,7 +78,7 @@ public class ShipmentController {
     @ApiResponse(responseCode = "400", description = "Lý do rỗng")
     @ApiResponse(responseCode = "404", description = "Không có vận đơn với id này")
     @ApiResponse(responseCode = "409", description = "Vận đơn không ở IN_TRANSIT")
-    public ShipmentResponse fail(@PathVariable String id, @RequestBody ReasonRequest request) {
+    public ShipmentResponse fail(@PathVariable String id, @Valid @RequestBody ReasonRequest request) {
         return ShipmentMapper.toResponse(service.failAttempt(id, request.reason()));
     }
 
@@ -86,7 +87,7 @@ public class ShipmentController {
     @ApiResponse(responseCode = "400", description = "Lý do rỗng")
     @ApiResponse(responseCode = "404", description = "Không có vận đơn với id này")
     @ApiResponse(responseCode = "409", description = "Vận đơn không ở IN_TRANSIT")
-    public ShipmentResponse refuse(@PathVariable String id, @RequestBody ReasonRequest request) {
+    public ShipmentResponse refuse(@PathVariable String id, @Valid @RequestBody ReasonRequest request) {
         return ShipmentMapper.toResponse(service.refuse(id, request.reason()));
     }
 

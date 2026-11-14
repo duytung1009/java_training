@@ -5,6 +5,7 @@ import com.training.ecommerce.domain.order.Order;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,7 +37,7 @@ public class OrderController {
     @ApiResponse(responseCode = "400", description = "Body không hợp lệ (rate, lines rỗng, quantity <= 0...)")
     @ApiResponse(responseCode = "404", description = "Có productId không tồn tại")
     @ApiResponse(responseCode = "409", description = "Không đủ hàng; kho và đơn không đổi")
-    public ResponseEntity<OrderResponse> place(@RequestBody PlaceOrderRequest request) {
+    public ResponseEntity<OrderResponse> place(@Valid @RequestBody PlaceOrderRequest request) {
         Order order = service.placeOrder(OrderMapper.toCommand(request));
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(order.getId()).toUri();
         return ResponseEntity.created(location).body(OrderMapper.toResponse(order));

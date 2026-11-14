@@ -1,10 +1,12 @@
 package com.training.ecommerce.interfaces.rest.catalog;
 
+import com.training.ecommerce.application.catalog.ProductFactory;
 import com.training.ecommerce.application.catalog.ProductService;
 import com.training.ecommerce.domain.catalog.Product;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,10 +50,10 @@ public class ProductController {
     @PostMapping
     @Operation(summary = "Tạo product (id trong body); id đã có thì bị ghi đè")
     @ApiResponse(responseCode = "201", description = "Đã tạo, header Location trỏ tới product")
-    @ApiResponse(responseCode = "400", description = "Body thiếu / sai field")
+    @ApiResponse(responseCode = "400", description = "Body sai field (errors liệt kê từng field), hoặc JSON không đọc được")
     @ApiResponse(responseCode = "404", description = "Item của bundle không tồn tại")
-    public ResponseEntity<ProductResponse> create(@RequestBody ProductRequest request) {
-        Product saved = service.save(ProductMapper.toDomain(request, request.id(), service::findById));
+    public ResponseEntity<ProductResponse> create(@Valid @RequestBody ProductRequest request) {
+        Product saved = service.save(ProductFactory.create(request, request.id(), service::findById));
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(location).body(ProductMapper.toResponse(saved));
     }
@@ -60,11 +62,11 @@ public class ProductController {
     @Operation(summary = "Cập nhật product; id trên path được ưu tiên")
     @ApiResponse(responseCode = "400", description = "Body sai field, hoặc id trong body khác id trên path")
     @ApiResponse(responseCode = "404", description = "Không có product (hoặc item bundle) với id này")
-    public ProductResponse update(@PathVariable String id, @RequestBody ProductRequest request) {
+    public ProductResponse update(@PathVariable String id, @Valid @RequestBody ProductRequest request) {
         if (request.id() != null && !request.id().equals(id)) {
             throw new IllegalArgumentException("id trong body (" + request.id() + ") khác id trên path (" + id + ")");
         }
-        return ProductMapper.toResponse(service.update(id, ProductMapper.toDomain(request, id, service::findById)));
+        return ProductMapper.toResponse(service.update(id, ProductFactory.create(request, id, service::findById)));
     }
 
     @DeleteMapping("/{id}")

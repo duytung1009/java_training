@@ -10,6 +10,9 @@ import com.training.ecommerce.domain.order.Order;
 import com.training.ecommerce.domain.order.OrderLine;
 import com.training.ecommerce.interfaces.rest.RestExceptionHandler;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -20,10 +23,13 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.hamcrest.Matchers.contains;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -93,7 +99,43 @@ class OrderControllerTest {
                         .content("{\"lines\":[{\"productId\":\"P1\",\"quantity\":0}]}"))
                 .andExpect(status().isBadRequest());
         mvc.perform(post("/api/orders").contentType(MediaType.APPLICATION_JSON).content("not json"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Body JSON không hợp lệ"));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("invalidOrders")
+    void rejectsInvalidOrder(String name, String body, List<String> expectedFields) throws Exception {
+        mvc.perform(post("/api/orders").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Request không hợp lệ"))
+                .andExpect(jsonPath("$.errors[*].field").value(contains(expectedFields.toArray())));
+        verifyNoInteractions(service);
+    }
+
+    /** errors được sắp theo field nên danh sách mong đợi cũng theo thứ tự chữ cái. */
+    static Stream<Arguments> invalidOrders() {
+        return Stream.of(
+                Arguments.of("lines rỗng", "{\"lines\":[]}", List.of("lines")),
+                Arguments.of("thiếu lines", "{}", List.of("lines")),
+                Arguments.of("quantity 0 ở dòng 2, discount 1.2, lines hợp lệ",
+                        "{\"discountRate\":1.2,\"lines\":[{\"productId\":\"P1\",\"quantity\":1},"
+                                + "{\"productId\":\"P2\",\"quantity\":0}]}",
+                        List.of("discountRate", "lines[1].quantity")),
+                Arguments.of("productId rỗng", "{\"lines\":[{\"productId\":\" \",\"quantity\":1}]}",
+                        List.of("lines[0].productId")),
+                Arguments.of("taxRate âm", "{\"taxRate\":-0.1,\"lines\":[{\"productId\":\"P1\",\"quantity\":1}]}",
+                        List.of("taxRate")),
+                Arguments.of("discount âm", "{\"discountRate\":-1,\"lines\":[{\"productId\":\"P1\",\"quantity\":1}]}",
+                        List.of("discountRate")));
+    }
+
+    @Test
+    void reportsEveryOrderErrorAtOnce() throws Exception {
+        mvc.perform(post("/api/orders").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"discountRate\":1.2,\"lines\":[]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[*].field").value(contains("discountRate", "lines")));
     }
 
     @Test
@@ -101,7 +143,8 @@ class OrderControllerTest {
         when(service.placeOrder(any())).thenThrow(new ProductNotFoundException("P1"));
 
         mvc.perform(post("/api/orders").contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
     }
 
     @Test
@@ -110,7 +153,8 @@ class OrderControllerTest {
 
         mvc.perform(post("/api/orders").contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.status").value(409));
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.code").value("OUT_OF_STOCK"));
     }
 
     @Test
@@ -126,7 +170,8 @@ class OrderControllerTest {
     void getMissingReturns404() throws Exception {
         when(service.findById("nope")).thenThrow(new OrderNotFoundException("nope"));
 
-        mvc.perform(get("/api/orders/nope")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/orders/nope")).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_FOUND"));
     }
 
     @Test
