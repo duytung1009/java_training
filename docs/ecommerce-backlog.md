@@ -369,7 +369,7 @@ Ngoài spec: đo thời gian chạy (để `S06Demo` so sánh), fairness, hiệu
 
 **Acceptance**
 - [x] Profile `local` (mặc định): BE chạy trên IDE, không cần DB, có sẵn dữ liệu mẫu
-- [ ] Profile `dev`: `docker compose up --build` chạy cả DB lẫn BE; dữ liệu còn sau `docker compose down` / `up` _(chưa kiểm lại 13/11: cổng 8080 đang bận)_
+- [x] Profile `dev`: `docker compose up --build` chạy cả DB lẫn BE; dữ liệu còn sau `docker compose down` / `up`
 - [x] Đặt đơn nhiều dòng là all-or-nothing trong DB: một dòng thiếu hàng thì không dòng nào bị trừ (rollback)
 - [x] Nhiều request cùng mua sản phẩm cuối: đúng một đơn thành công, stock không âm
 - [x] Đơn đọc lại từ DB giữ giá snapshot lúc đặt, kể cả khi giá sản phẩm đổi sau đó
